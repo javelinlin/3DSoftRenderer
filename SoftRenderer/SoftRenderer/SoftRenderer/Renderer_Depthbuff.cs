@@ -59,7 +59,7 @@ namespace SoftRenderer.SoftRenderer
                 clearedBuffDirty = false;
                 GetBytes(readHelper, clearedBuffValue);
                 var len = clearedBuffer.Length;
-                for (int i = 0; i < len; i += 4)
+                for (int i = 0; i < len; i += PER_VALUE_SIZE)
                 {
                     Array.Copy(readHelper, 0, clearedBuffer, i, PER_VALUE_SIZE);
                 }

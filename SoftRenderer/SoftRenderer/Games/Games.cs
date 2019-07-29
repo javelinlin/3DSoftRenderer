@@ -102,7 +102,7 @@ namespace SoftRenderer.Games
                                                             // proj-ortho
         [Category("proj-ortho")]
         [Description("屏幕高度的一半")]
-        public float size { get; set; } = 3;              // 屏幕高度的一半，单位：像素
+        public float size { get; set; } = 5;              // 屏幕高度的一半，单位：像素
                                                           // proj-perspective
         [Category("proj-perspective")]
         [Description("纵向张开角度")]

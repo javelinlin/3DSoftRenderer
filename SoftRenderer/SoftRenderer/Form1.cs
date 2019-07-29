@@ -61,7 +61,7 @@ namespace SoftRenderer
 
             renderer = new Renderer(buff_size, buff_size);
 
-            renderer.State.ClearColor = Color.Black;
+            renderer.State.ClearColor = Color.Gray;
             renderer.State.ShadingMode = ShadingMode.Shaded;
             renderer.State.BlendSrcColorFactor = BlendFactor.SrcAlpha;
             renderer.State.BlendDstColorFactor = BlendFactor.OneMinusSrcAlpha;
@@ -225,6 +225,17 @@ namespace SoftRenderer
 
             camera = new Camera();
             camera.aspect = 1;
+            // 暂时使用正交来测试
+            // 透视有校正问题没处理好
+            camera.isOrtho = true;
+            if (camera.isOrtho)
+            {
+                camera.size = 5;
+            }
+            else
+            {
+                Tz = 10;
+            }
 
 #if PROGRAMMABLE_PIPELINE
             renderer.ShaderData = shaderData = new ShaderData(1);
