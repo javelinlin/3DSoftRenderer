@@ -219,9 +219,10 @@ namespace SoftRenderer.SoftRenderer
                         }
                         else
                         {
-                            ndcPos.x = clipPos.x / clipPos.w;
-                            ndcPos.y = clipPos.y / clipPos.w;
-                            ndcPos.z = clipPos.z / clipPos.w;
+                            var invW = 1 / clipPos.w;
+                            ndcPos.x = clipPos.x * invW;
+                            ndcPos.y = clipPos.y * invW;
+                            ndcPos.z = clipPos.z * invW;
                             ndcPos.w = clipPos.w;
                             //ndcPos = clipPos / clipPos.w;
                         }
