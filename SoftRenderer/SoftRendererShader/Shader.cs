@@ -144,7 +144,6 @@ namespace SoftRendererShader
             // specular 2
             //var reflectDir = reflect(-lightDir.xyz, inNormal);
             //var RnotV = reflectDir.Dot(viewDir);
-            //c
             //var specular = shaderData.LightColor[0] * RnotV;
 
             // ambient

@@ -13,13 +13,12 @@ namespace SoftRenderer.Games
     [Description("网格对象")]
     public class Mesh
     {
-        public Vector3[] vertices;                  // 顶点坐标，目前使用到
-        public int[] triangles { get; set; }        // 顶点索引，目前使用到
-
-        public Vector3[] normals { get; set; }      // 顶点法线，暂时没用到
-        public Vector3[] tangents { get; set; }     // 顶点切线，暂时没用到
-        public Vector2[] uv { get; set; }           // 顶点uv，暂时没用到
-        public ColorNormalized[] colors { get; set; }         // 顶点颜色，暂时没用到
+        public Vector3[] vertices;                              // 顶点坐标
+        public int[] triangles { get; set; }                    // 顶点索引
+        public Vector3[] normals { get; set; }                  // 顶点法线
+        public Vector3[] tangents { get; set; }                 // 顶点切线
+        public Vector2[] uv { get; set; }                       // 顶点uv
+        public ColorNormalized[] colors { get; set; }           // 顶点颜色
 
         public void CaculateNormalAndTangent() // 计算法线与切线
         {
