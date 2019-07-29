@@ -24,7 +24,16 @@ namespace SoftRenderer.Common.Mathes
         }
 
         public float r, g, b, a;
-
+        public Vector3 rgb
+        {
+            get => new Vector3(r, g, b);
+            set
+            {
+                r = value.x;
+                g = value.y;
+                b = value.z;
+            }
+        }
         public ColorNormalized(float r, float g, float b, float a)
         {
             this.r = r;

@@ -20,6 +20,38 @@ namespace SoftRenderer.Games
         public Vector3[] tangents { get; set; }     // 顶点切线，暂时没用到
         public Vector2[] uv { get; set; }           // 顶点uv，暂时没用到
         public ColorNormalized[] colors { get; set; }         // 顶点颜色，暂时没用到
+
+        public void CaculateNormalAndTangent() // 计算法线与切线
+        {
+            if (normals == null || normals.Length != vertices.Length) normals = new Vector3[vertices.Length];
+            if (tangents == null || tangents.Length != vertices.Length) tangents = new Vector3[vertices.Length];
+
+            var len = triangles.Length;
+            for (int i = 0; i < len; i += 3)
+            {
+                var idx1 = triangles[i];
+                var idx2 = triangles[i + 1];
+                var idx3 = triangles[i + 2];
+                var v1 = vertices[idx1];
+                var v2 = vertices[idx2];
+                var v3 = vertices[idx3];
+
+                var tangent = v2 - v1;
+                var bitangent = v3 - v1;
+                var normal = tangent.Cross(bitangent);
+
+                normal.Normalize();
+                tangent.Normalize();
+
+                normals[idx1] = normal;
+                normals[idx2] = normal;
+                normals[idx3] = normal;
+
+                tangents[idx1] = tangent;
+                tangents[idx2] = tangent;
+                tangents[idx3] = tangent;
+            }
+        }
     }
 
     [Description("网格渲染器")]
@@ -91,7 +123,7 @@ namespace SoftRenderer.Games
 
         public Camera()
         {
-            View = Matrix4x4.GetMat();
+            View = Matrix4x4.Get();
         }
         public void Move(Vector3 t)
         {
@@ -161,6 +193,8 @@ namespace SoftRenderer.Games
     public class GameObject : IDisposable
     {
         private static readonly int MVP_Hash = "MVP".GetHashCode();
+        private static readonly int M_Hash = "M".GetHashCode();
+        private static readonly int M_IT_Hash = "M_IT".GetHashCode();
 
         private const int poolSize = 128;
         private static Triangle[] pool = new Triangle[poolSize];
@@ -180,6 +214,7 @@ namespace SoftRenderer.Games
         public IndexBuffer IndexBuffer { get; private set; }
 
         public Matrix4x4 ModelMat { get; private set; }
+        public Matrix4x4 ModelITMat { get; private set; }
 
         public Matrix4x4 ModelViewMat { get; private set; }
         public Matrix4x4 ModelViewProjMat { get; private set; }
@@ -206,7 +241,8 @@ namespace SoftRenderer.Games
 
         public GameObject(string name = null)
         {
-            ModelMat = Matrix4x4.GetMat();
+            ModelMat = Matrix4x4.Get();
+            ModelITMat = Matrix4x4.Get();
 
             Mesh = new Mesh();
             Name = name;
@@ -219,6 +255,9 @@ namespace SoftRenderer.Games
         {
             ModelMat.Identity();
             ModelMat = ModelMat.TRS(LocalPosition, LocalRotation, LocalScale);
+            ModelITMat.CopyFrom(ModelMat.m);
+            ModelITMat.Invert();
+            ModelITMat.Transpose();
 
             if (Parent != null)
             {
@@ -248,21 +287,30 @@ namespace SoftRenderer.Games
                 //count += Mesh.tangents != null ? Mesh.tangents.Length * 3 : 0;
                 count += Mesh.uv != null ? Mesh.uv.Length * 2 : 0;
                 count += Mesh.colors != null ? Mesh.colors.Length * 4 : 0;
+                count += Mesh.normals != null ? Mesh.normals.Length * 3 : 0;
+                //count += Mesh.tangents != null ? Mesh.tangents.Length * 3 : 0;
 
+                // unit float
+                // 这里我的单位不是byte，而是float
                 var perVertexCount =
                     3       // Vector3 
                     + 2     // uv
                     + 4     // color
+                    + 3     // normal
+                    //+ 3     // tangent
                     ;
 
                 // 定义顶点格式
                 VertexBuffer = new VertexBuffer(count, perVertexCount);
 
+                var offset = 0;
                 VertexBuffer.SetFormat(new VertexDataFormat[]
                 {
-                new VertexDataFormat { type = VertexDataType.Position, num = 0, offset = 0, count = 3 },
-                new VertexDataFormat { type = VertexDataType.UV, num = 0, offset = 3, count = 2 },
-                new VertexDataFormat { type = VertexDataType.Color, num = 0, offset = 5, count = 4 },
+                new VertexDataFormat { type = VertexDataType.Position, num = 0, offset = offset, count = 3 },
+                new VertexDataFormat { type = VertexDataType.UV, num = 0, offset = offset += 3, count = 2 },
+                new VertexDataFormat { type = VertexDataType.Color, num = 0, offset =offset += 2, count = 4 },
+                new VertexDataFormat { type = VertexDataType.Normal, num = 0, offset =offset += 4, count = 3 },
+                //new VertexDataFormat { type = VertexDataType.Tangent, num = 0, offset =offset += 3, count = 3 },
                 });
 
                 // 顶点装配索引
@@ -277,9 +325,13 @@ namespace SoftRenderer.Games
                     var v = Mesh.vertices[i];
                     var uv = Mesh.uv[i];
                     var c = Mesh.colors[i];
+                    var n = Mesh.normals[i];
+                    //var t = Mesh.tangents[i];
                     VertexBuffer.Write(v);
                     VertexBuffer.Write(uv);
                     VertexBuffer.Write(c);
+                    VertexBuffer.Write(n);
+                    //VertexBuffer.Write(t);
                 }
             }
 
@@ -298,8 +350,10 @@ namespace SoftRenderer.Games
 
             MR.Renderer.BindVertexBuff(VertexBuffer);
             MR.Renderer.BindIndexBuff(IndexBuffer);
-
+            
             Material.VS.ShaderProperties.SetUniform(MVP_Hash, ModelViewProjMat);
+            Material.VS.ShaderProperties.SetUniform(M_Hash, ModelMat);
+            Material.VS.ShaderProperties.SetUniform(M_IT_Hash, ModelITMat);
 
             MR.Renderer.ShaderProgram.SetShader(ShaderType.VertexShader, Material.VS);
             MR.Renderer.ShaderProgram.SetShader(ShaderType.FragmentShader, Material.FS);
@@ -309,10 +363,6 @@ namespace SoftRenderer.Games
 
         public void Update(float deltaMs)
         {
-            if (Mesh != null)
-            {
-
-            }
         }
 
         public void Dispose()

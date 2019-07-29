@@ -79,6 +79,19 @@ namespace RendererCommon.SoftRenderer.Common.Attributes
             this.Location = location;
         }
     }
+    [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    public sealed class TangentAttribute : Attribute
+    {
+        public byte Location { get; }
+        public TangentAttribute(byte location = 0)
+        {
+            if (location > ShaderUtil.MAX_NUM_REGISTER)
+            {
+                throw new Exception($"最多{ShaderUtil.MAX_NUM_REGISTER}个{GetType().Name}");
+            }
+            this.Location = location;
+        }
+    }
     /*=========COMMON END=========*/
 
     /*=========VS START=========*/

@@ -158,6 +158,10 @@ namespace SoftRenderer.Common.Mathes
         {
             return new Vector3(a.x + b.x, a.y + b.y, a.z + b.z);
         }
+        public static Vector3 operator +(Vector3 a, float s)
+        {
+            return new Vector3(a.x + s, a.y + s, a.z + s);
+        }
         public static Vector3 operator *(Vector3 a, float s)
         {
             return new Vector3(a.x * s, a.y * s, a.z * s);
@@ -291,6 +295,19 @@ namespace SoftRenderer.Common.Mathes
         public static readonly Vector4 zeroPos = new Vector4(0, 0, 0, 1);
 
         public float x, y, z, w;
+        // swizzle
+        // 可惜C#没有宏定义，有的话，可以写swizzle语法就爽爆了
+        // 虽然可以枚举出所有的swizzle的分量组合情况，但是太多了，懒得写
+        public Vector3 xyz
+        {
+            get => new Vector3(x, y, z);
+            set
+            {
+                x = value.x;
+                y = value.y;
+                z = value.z;
+            }
+        }
         public float length
         {
             get
@@ -334,6 +351,13 @@ namespace SoftRenderer.Common.Mathes
             this.y = v.y;
             this.z = v.z;
             this.w = 1;
+        }
+        public Vector4(Vector3 v, float w = 1)
+        {
+            this.x = v.x;
+            this.y = v.y;
+            this.z = v.z;
+            this.w = w;
         }
         public float Dot(Vector4 other)
         {
@@ -537,6 +561,91 @@ namespace SoftRenderer.Common.Mathes
         public static Matrix4x4 Lerp(Matrix4x4 from, Matrix4x4 to, float t, float tt) => from * tt + to * t;
     }
 
+    // http://www.songho.ca/opengl/gl_matrix.html
+    public struct Matrix3x3
+    {
+        public static Matrix3x3 Get()=> new Matrix3x3 { m = new float[9] };
+        private static float[] tmp = new float[9];
+
+        public float[] m;
+
+        public Matrix3x3(float[] n, bool copy = true)
+        {
+            this.m = new float[9];
+            if (copy)
+            {
+                for (int i = 0; i < 9; i++)
+                {
+                    this.m[i] = n[i];
+                }
+            }
+            else this.m = n;
+        }
+
+        public Matrix3x3(Matrix4x4 m4)
+        {
+            m = new float[9];
+            Set(m4.m);
+        }
+
+        public void Set(Matrix4x4 m4)
+        {
+            Set(m4.m);
+        }
+
+        public void Set(float[] m4)
+        {
+            m[0] = m4[0]; m[3] = m4[4]; m[6] = m4[8];
+            m[1] = m4[1]; m[4] = m4[5]; m[7] = m4[9];
+            m[2] = m4[2]; m[5] = m4[6]; m[8] = m4[10];
+        }
+
+        public void Identity()
+        {
+            m[0] = m[4] = m[8] = 1;
+            m[1] = m[2] = m[3] = m[5] = m[6] = m[7] = 0;
+        }
+
+        ///////////////////////////////////////////////////////////////////////////////
+        // inverse 3x3 matrix
+        // If cannot find inverse, set identity matrix
+        ///////////////////////////////////////////////////////////////////////////////
+        public void Invert()
+        {
+            float determinant, invDeterminant;
+
+            tmp[0] = m[4] * m[8] - m[5] * m[7];
+            tmp[1] = m[2] * m[7] - m[1] * m[8];
+            tmp[2] = m[1] * m[5] - m[2] * m[4];
+            tmp[3] = m[5] * m[6] - m[3] * m[8];
+            tmp[4] = m[0] * m[8] - m[2] * m[6];
+            tmp[5] = m[2] * m[3] - m[0] * m[5];
+            tmp[6] = m[3] * m[7] - m[4] * m[6];
+            tmp[7] = m[1] * m[6] - m[0] * m[7];
+            tmp[8] = m[0] * m[4] - m[1] * m[3];
+
+            // check determinant if it is 0
+            determinant = m[0] * tmp[0] + m[1] * tmp[3] + m[2] * tmp[6];
+            if(Math.Abs(determinant) <= float.Epsilon)
+            {
+                Identity(); // cannot inverse, make it idenety matrix
+                return;
+            }
+
+            // divide by the determinant
+            invDeterminant = 1.0f / determinant;
+            m[0] = invDeterminant* tmp[0];
+            m[1] = invDeterminant* tmp[1];
+            m[2] = invDeterminant* tmp[2];
+            m[3] = invDeterminant* tmp[3];
+            m[4] = invDeterminant* tmp[4];
+            m[5] = invDeterminant* tmp[5];
+            m[6] = invDeterminant* tmp[6];
+            m[7] = invDeterminant* tmp[7];
+            m[8] = invDeterminant* tmp[8];
+        }
+}
+
     // jave.lin 2019.07.17
     // 下面我们将使用OpenGL的主列矩阵
     // http://www.songho.ca/opengl/gl_matrix.html
@@ -545,6 +654,7 @@ namespace SoftRenderer.Common.Mathes
     public struct Matrix4x4
     {
         public const float DEG2RAD = (float)Math.PI / 180f;
+        private static Matrix3x3 mat3Helper = Matrix3x3.Get();
 
         //public static readonly Matrix4x4 IDENTITY_MAT = new Matrix4x4(
         //    1, 0, 0, 0,
@@ -552,7 +662,7 @@ namespace SoftRenderer.Common.Mathes
         //    0, 0, 1, 0,
         //    0, 0, 0, 1
         //    );
-        public static Matrix4x4 GetMat(bool identity = true)
+        public static Matrix4x4 Get(bool identity = true)
         {
             var result = new Matrix4x4();
             result.m = new float[16];
@@ -919,37 +1029,41 @@ namespace SoftRenderer.Common.Mathes
         }
         public void CopyTo(float[] m)
         {
-            var len = m.Length;
-            for (int i = 0; i < len; i++)
-            {
-                m[i] = this.m[i];
-            }
+            //var len = m.Length;
+            //for (int i = 0; i < len; i++)
+            //{
+            //    m[i] = this.m[i];
+            //}
+            Array.Copy(this.m, m, this.m.Length);
         }
         public void CopyTo(Matrix4x4 mat)
         {
-            var m = mat.m;
-            var len = m.Length;
-            for (int i = 0; i < len; i++)
-            {
-                m[i] = this.m[i];
-            }
+            //var m = mat.m;
+            //var len = m.Length;
+            //for (int i = 0; i < len; i++)
+            //{
+            //    m[i] = this.m[i];
+            //}
+            Array.Copy(this.m, mat.m, m.Length);
         }
         public void CopyFrom(float[] m)
         {
-            var len = m.Length;
-            for (int i = 0; i < len; i++)
-            {
-                this.m[i] = m[i];
-            }
+            //var len = m.Length;
+            //for (int i = 0; i < len; i++)
+            //{
+            //    this.m[i] = m[i];
+            //}
+            Array.Copy(m, this.m, m.Length);
         }
         public void CopyFrom(Matrix4x4 mat)
         {
-            var m = mat.m;
-            var len = m.Length;
-            for (int i = 0; i < len; i++)
-            {
-                this.m[i] = m[i];
-            }
+            //var m = mat.m;
+            //var len = m.Length;
+            //for (int i = 0; i < len; i++)
+            //{
+            //    this.m[i] = m[i];
+            //}
+            Array.Copy(mat.m, m, m.Length);
         }
         public Vector4 GetCol(int idx)
         {
@@ -994,6 +1108,158 @@ namespace SoftRenderer.Common.Mathes
         {
             m[0] = m[5] = m[10] = m[15] = 1;
             m[1] = m[2] = m[3] = m[4] = m[6] = m[7] = m[8] = m[9] = m[11] = m[12] = m[13] = m[14] = 0;
+        }
+        public void Transpose()
+        {
+            var t = m[1];
+            m[1] = m[4];m[4] = t;
+
+            t = m[2];
+            m[2] = m[8]; m[8] = t;
+
+            t = m[3];
+            m[3] = m[12]; m[12] = t;
+
+            t = m[6];
+            m[6] = m[9]; m[9] = t;
+
+            t = m[7];
+            m[7] = m[13]; m[13] = t;
+
+            t = m[11];
+            m[11] = m[14]; m[14] = t;
+        }
+        //http://www.songho.ca/opengl/gl_matrix.html#inverse
+        public void Invert()
+        {
+            // If the 4th row is [0,0,0,1] then it is affine matrix and
+            // it has no projective transformation.
+            if(m[3] == 0 && m[7] == 0 && m[11] == 0 && m[15] == 1)
+                InvertAffine();
+            else
+            {
+                InvertGeneral();
+                /*@@ invertProjective() is not optimized (slower than generic one)
+                if(fabs(m[0]*m[5] - m[1]*m[4]) > EPSILON)
+                    this->invertProjective();   // inverse using matrix partition
+                else
+                    this->invertGeneral();      // generalized inverse
+                */
+            }
+        }
+        //http://www.songho.ca/opengl/gl_matrix.html#inverse
+        ///////////////////////////////////////////////////////////////////////////////
+        // compute the inverse of a 4x4 affine transformation matrix
+        //
+        // Affine transformations are generalizations of Euclidean transformations.
+        // Affine transformation includes translation, rotation, reflection, scaling,
+        // and shearing. Length and angle are NOT preserved.
+        // M = [ R | T ]
+        //     [ --+-- ]    (R denotes 3x3 rotation/scale/shear matrix)
+        //     [ 0 | 1 ]    (T denotes 1x3 translation matrix)
+        //
+        // y = M*x  ->  y = R*x + T  ->  x = R^-1*(y - T)  ->  x = R^-1*y - R^-1*T
+        //
+        //  [ R | T ]-1   [ R^-1 | -R^-1 * T ]
+        //  [ --+-- ]   = [ -----+---------- ]
+        //  [ 0 | 1 ]     [  0   +     1     ]
+        ///////////////////////////////////////////////////////////////////////////////
+        public void InvertAffine()
+        {
+            // R^-1
+            mat3Helper.Set(m);
+            mat3Helper.Invert();
+            var r = mat3Helper.m;
+            m[0] = r[0];  m[1] = r[1];  m[2] = r[2];
+            m[4] = r[3];  m[5] = r[4];  m[6] = r[5];
+            m[8] = r[6];  m[9] = r[7];  m[10]= r[8];
+
+            // -R^-1 * T
+            float x = m[12];
+            float y = m[13];
+            float z = m[14];
+            m[12] = -(r[0] * x + r[3] * y + r[6] * z);
+            m[13] = -(r[1] * x + r[4] * y + r[7] * z);
+            m[14] = -(r[2] * x + r[5] * y + r[8] * z);
+
+            // last row should be unchanged (0,0,0,1)
+            //m[3] = m[7] = m[11] = 0.0f;
+            //m[15] = 1.0f;
+        }
+
+        //http://www.songho.ca/opengl/gl_matrix.html#inverse
+        ///////////////////////////////////////////////////////////////////////////////
+        // compute the inverse of a general 4x4 matrix using Cramer's Rule
+        // If cannot find inverse, return indentity matrix
+        // M^-1 = adj(M) / det(M)
+        ///////////////////////////////////////////////////////////////////////////////
+        public void InvertGeneral()
+        {
+            // get cofactors of minor matrices
+            float cofactor0 = getCofactor(m[5], m[6], m[7], m[9], m[10], m[11], m[13], m[14], m[15]);
+            float cofactor1 = getCofactor(m[4], m[6], m[7], m[8], m[10], m[11], m[12], m[14], m[15]);
+            float cofactor2 = getCofactor(m[4], m[5], m[7], m[8], m[9], m[11], m[12], m[13], m[15]);
+            float cofactor3 = getCofactor(m[4], m[5], m[6], m[8], m[9], m[10], m[12], m[13], m[14]);
+
+            // get determinant
+            float determinant = m[0] * cofactor0 - m[1] * cofactor1 + m[2] * cofactor2 - m[3] * cofactor3;
+            if(Math.Abs(determinant) <= float.Epsilon)
+            {
+                Identity();
+            }
+
+            // get rest of cofactors for adj(M)
+            float cofactor4 = getCofactor(m[1], m[2], m[3], m[9], m[10], m[11], m[13], m[14], m[15]);
+            float cofactor5 = getCofactor(m[0], m[2], m[3], m[8], m[10], m[11], m[12], m[14], m[15]);
+            float cofactor6 = getCofactor(m[0], m[1], m[3], m[8], m[9], m[11], m[12], m[13], m[15]);
+            float cofactor7 = getCofactor(m[0], m[1], m[2], m[8], m[9], m[10], m[12], m[13], m[14]);
+
+            float cofactor8 = getCofactor(m[1], m[2], m[3], m[5], m[6], m[7], m[13], m[14], m[15]);
+            float cofactor9 = getCofactor(m[0], m[2], m[3], m[4], m[6], m[7], m[12], m[14], m[15]);
+            float cofactor10 = getCofactor(m[0], m[1], m[3], m[4], m[5], m[7], m[12], m[13], m[15]);
+            float cofactor11 = getCofactor(m[0], m[1], m[2], m[4], m[5], m[6], m[12], m[13], m[14]);
+
+            float cofactor12 = getCofactor(m[1], m[2], m[3], m[5], m[6], m[7], m[9], m[10], m[11]);
+            float cofactor13 = getCofactor(m[0], m[2], m[3], m[4], m[6], m[7], m[8], m[10], m[11]);
+            float cofactor14 = getCofactor(m[0], m[1], m[3], m[4], m[5], m[7], m[8], m[9], m[11]);
+            float cofactor15 = getCofactor(m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]);
+
+            // build inverse matrix = adj(M) / det(M)
+            // adjugate of M is the transpose of the cofactor matrix of M
+            float invDeterminant = 1.0f / determinant;
+            m[0] =  invDeterminant* cofactor0;
+            m[1] = -invDeterminant* cofactor4;
+            m[2] =  invDeterminant* cofactor8;
+            m[3] = -invDeterminant* cofactor12;
+
+            m[4] = -invDeterminant* cofactor1;
+            m[5] =  invDeterminant* cofactor5;
+            m[6] = -invDeterminant* cofactor9;
+            m[7] =  invDeterminant* cofactor13;
+
+            m[8] =  invDeterminant* cofactor2;
+            m[9] = -invDeterminant* cofactor6;
+            m[10]=  invDeterminant* cofactor10;
+            m[11]= -invDeterminant* cofactor14;
+
+            m[12]= -invDeterminant* cofactor3;
+            m[13]=  invDeterminant* cofactor7;
+            m[14]= -invDeterminant* cofactor11;
+            m[15]=  invDeterminant* cofactor15;
+        }
+        //http://www.songho.ca/opengl/gl_matrix.html#inverse
+        ///////////////////////////////////////////////////////////////////////////////
+        // compute cofactor of 3x3 minor matrix without sign
+        // input params are 9 elements of the minor matrix
+        // NOTE: The caller must know its sign.
+        ///////////////////////////////////////////////////////////////////////////////
+        private float getCofactor(float m0, float m1, float m2,
+                        float m3, float m4, float m5,
+                        float m6, float m7, float m8)
+        {
+            return m0* (m4* m8 - m5* m7) -
+                   m1* (m3* m8 - m5* m6) +
+                   m2* (m3* m7 - m4* m6);
         }
         /*
             Mat * Vec

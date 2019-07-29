@@ -96,6 +96,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="bin\Debug\Images\GitHubIcon.PNG" />
     <Content Include="bin\Debug\Images\heightMap1.jpg" />
     <Content Include="bin\Debug\Images\tex.jpg" />
     <Content Include="bin\Debug\Images\icon.PNG" />

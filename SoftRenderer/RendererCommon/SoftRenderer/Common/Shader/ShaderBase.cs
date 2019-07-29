@@ -11,6 +11,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
     [Description("输入的布局限定符")]
     public enum InLayout
     {
+        SV_Position,
         Position,
         Color,
         Texcoord,
@@ -23,6 +24,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
     {
         SV_Position,
         SV_Target,
+        Position,
         Color,
         Texcoord,
         Normal,
@@ -57,13 +59,14 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             var colorAtType = typeof(ColorAttribute);
             var uvAtType = typeof(TexcoordAttribute);
             var normalAtType = typeof(NormalAttribute);
+            var tangentAtType = typeof(TangentAttribute);
             var svposAtType = typeof(SV_PositionAttribute);
             var svtargetAtType = typeof(SV_TargetAttribute);
             foreach (var f in fs)
             {
                 foreach (var at in f.CustomAttributes)
                 {
-                    // uniform
+                    // 收集uniform字段
                     if (at.AttributeType.IsEquivalentTo(uniformAtType))
                     {
                         var conflict = f.GetCustomAttribute(outAtType); // conflict out
@@ -79,8 +82,10 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                         uniformFieldDictName[f.Name] = f;
                         uniformFieldDictHash[f.Name.GetHashCode()] = f;
                     }
+                    // 收集in字段
                     else if (at.AttributeType.IsEquivalentTo(inAtType))
                     {
+                        // TODO 后面可以让一个字段同时是in也可以同时是out
                         var conflict = f.GetCustomAttribute(outAtType); // conflict out
                         if (conflict != null)
                         {
@@ -94,16 +99,20 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                         inFieldDictName[f.Name] = f;
                         inFieldDictHash[f.Name.GetHashCode()] = f;
 
+                        var svpos = f.GetCustomAttribute(svposAtType);
                         var pos = f.GetCustomAttribute(posAtType);
                         var color = f.GetCustomAttribute(colorAtType);
                         var uv = f.GetCustomAttribute(uvAtType);
                         var normal = f.GetCustomAttribute(normalAtType);
+                        var tangent = f.GetCustomAttribute(tangentAtType);
                         Dictionary<int, FieldInfo> dict = null;
-                        InLayout layout = InLayout.Tangent;
+                        InLayout layout = InLayout.SV_Position;
+                        if (svpos != null) layout = InLayout.SV_Position;
                         if (pos != null) layout = InLayout.Position;
                         if (color != null) layout = InLayout.Color;
                         if (uv != null) layout = InLayout.Texcoord;
                         if (normal != null) layout = InLayout.Normal;
+                        if (tangent != null) layout = InLayout.Tangent;
                         inLayoutFieldDict.TryGetValue(layout, out dict);
                         if (dict == null)
                             inLayoutFieldDict[layout] = dict = new Dictionary<int, FieldInfo>();
@@ -131,13 +140,16 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                         var color = f.GetCustomAttribute(colorAtType);
                         var uv = f.GetCustomAttribute(uvAtType);
                         var normal = f.GetCustomAttribute(normalAtType);
+                        var tangent = f.GetCustomAttribute(tangentAtType);
                         Dictionary<int, FieldInfo> dict = null;
                         OutLayout layout = OutLayout.Tangent;
                         if (svpos != null) layout = OutLayout.SV_Position;
                         if (svtarget != null) layout = OutLayout.SV_Target;
+                        if (pos != null) layout = OutLayout.Position;
                         if (color != null) layout = OutLayout.Color;
                         if (uv != null) layout = OutLayout.Texcoord;
                         if (normal != null) layout = OutLayout.Normal;
+                        //if (tangent != null) layout = OutLayout.Tangent; // 默认是Tangent
                         outLayoutFieldDict.TryGetValue(layout, out dict);
                         if (dict == null)
                             outLayoutFieldDict[layout] = dict = new Dictionary<int, FieldInfo>();
@@ -169,10 +181,14 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         // 根据输出限定符来输入数据
         public void SetInWithOut<T>(OutLayout layout, T value, int num = 0)
         {
-            if (layout == OutLayout.SV_Position || layout == OutLayout.SV_Target)
+            if (layout == OutLayout.SV_Target)
                 return;
-            InLayout inlayout = InLayout.Color;
-            if (layout == OutLayout.Color) /* noops */;
+            InLayout inlayout = InLayout.SV_Position;
+            if (layout == OutLayout.SV_Position)/* noops */;
+            else if (layout == OutLayout.Position)
+                inlayout = InLayout.Position;
+            else if (layout == OutLayout.Color)
+                inlayout = InLayout.Color;
             else if (layout == OutLayout.Normal)
                 inlayout = InLayout.Normal;
             else if (layout == OutLayout.Texcoord)
@@ -288,6 +304,9 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         protected static Vector3 clamp(Vector3 v, float min, float max) => Mathf.Clamp(v, min, max);
         protected static Vector4 clamp(Vector4 v, float min, float max) => Mathf.Clamp(v, min, max);
         protected static ColorNormalized tex2D(Sampler2D sampler, Texture2D tex, Vector2 uv)=> sampler.Sample(tex, uv);
+        protected static float pow(float v, float times) => (float)Math.Pow(v, times);
+        protected static float min(float a, float b) => Mathf.Min(a, b);
+        protected static float max(float a, float b) => Mathf.Max(a, b);
 
         public ShaderFieldReflection ShaderProperties;
         [SharedData]

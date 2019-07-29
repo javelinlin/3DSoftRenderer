@@ -180,16 +180,21 @@ namespace SoftRenderer
             var colors = new ColorNormalized[vertices.Length];
             for (int i = 0; i < colors.Length; i+=4)
             {
+                //colors[i + 0] = ColorNormalized.red;
+                //colors[i + 1] = ColorNormalized.green;
+                //colors[i + 2] = ColorNormalized.blue;
+                //colors[i + 3] = ColorNormalized.yellow;
                 colors[i + 0] = ColorNormalized.red;
-                colors[i + 1] = ColorNormalized.green;
-                colors[i + 2] = ColorNormalized.blue;
-                colors[i + 3] = ColorNormalized.yellow;
+                colors[i + 1] = ColorNormalized.red;
+                colors[i + 2] = ColorNormalized.red;
+                colors[i + 3] = ColorNormalized.red;
             }
             var mesh = new Mesh();
             mesh.vertices = vertices;
             mesh.triangles = indices;
             mesh.uv = uvs;
             mesh.colors = colors;
+            mesh.CaculateNormalAndTangent();
             go.Mesh = mesh;
             // 第一个游戏对象
             gameObjs.Add(go);
@@ -197,9 +202,13 @@ namespace SoftRenderer
             colors = new ColorNormalized[vertices.Length];
             for (int i = 0; i < colors.Length; i += 4)
             {
-                colors[i + 0] = ColorNormalized.lightBlue;
-                colors[i + 1] = ColorNormalized.pink;
-                colors[i + 2] = ColorNormalized.purple;
+                //colors[i + 0] = ColorNormalized.lightBlue;
+                //colors[i + 1] = ColorNormalized.pink;
+                //colors[i + 2] = ColorNormalized.purple;
+                //colors[i + 3] = ColorNormalized.green;
+                colors[i + 0] = ColorNormalized.green;
+                colors[i + 1] = ColorNormalized.green;
+                colors[i + 2] = ColorNormalized.green;
                 colors[i + 3] = ColorNormalized.green;
             }
             go = new GameObject("Cube1");
@@ -209,6 +218,7 @@ namespace SoftRenderer
             mesh.triangles = indices;
             mesh.uv = uvs;
             mesh.colors = colors;
+            mesh.CaculateNormalAndTangent();
             go.Mesh = mesh;
             // 第二个游戏对象
             gameObjs.Add(go);
@@ -230,7 +240,8 @@ namespace SoftRenderer
             var vsShader = renderer.ShaderMgr.CreateShader(vs_shaderHash);
             var fsShader = renderer.ShaderMgr.CreateShader(fs_shaderHash);
 
-            var tex_bmp = new Bitmap("Images/heightMap1.jpg");
+            var tex_bmp = new Bitmap("Images/GitHubIcon.PNG");
+            //var tex_bmp = new Bitmap("Images/heightMap1.jpg");
             //var tex_bmp = new Bitmap("Images/tex.jpg");
             //var tex_bmp = new Bitmap("Images/icon.PNG");
             var tex = new Texture2D(tex_bmp);
@@ -321,14 +332,14 @@ namespace SoftRenderer
 
 #if PROGRAMMABLE_PIPELINE
             // shader uniform block update
-            shaderData.Ambient = new ColorNormalized(1, 1, 1, 1);
-            shaderData.LightPos[0] = new Vector3(0, 0.5f, 1);
-            shaderData.LightColor[0] = new ColorNormalized(1, 1, 1, 1);
+            shaderData.Ambient = new ColorNormalized(0.2f, 0.2f, 0, 1);
+            // directional light
+            shaderData.LightPos[0] = new Vector3(1, -0.5f, 1).normalized;
+            shaderData.LightColor[0] = new ColorNormalized(1, 0, 0, 1);
             shaderData.LightItensity[0] = Vector4.one;
             shaderData.LightParams1[0] = Vector4.one;
             shaderData.CameraPos = camera.Translate;
             shaderData.CameraParams = new Vector4(camera.near, camera.far, 0, 0);
-
 
             shaderData.NowDataWriteToBuff();
 #else

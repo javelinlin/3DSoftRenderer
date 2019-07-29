@@ -348,6 +348,17 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                         {
                             v = newP;
                         }
+                        else if (refV.layout == OutLayout.Position)
+                        {
+#if PERSPECTIVE_CORRECT
+                            v = PerspectiveInterpolation(
+                                (Vector4)refV.value,
+                                (Vector4)f1.UpperStageOutInfos[j].value,
+                                newZ, p0InvZ, p1InvZ, t, tt);
+#else
+                            v = Mathf.Lerp((Vector4)refV.value, (Vector4)f1.UpperStageOutInfos[j].value, t, tt);
+#endif
+                        }
                         else if (refV.layout == OutLayout.Color)
                         {
 #if PERSPECTIVE_CORRECT
@@ -380,6 +391,17 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
                             v = Mathf.Lerp((Vector2)refV.value, (Vector2)f1.UpperStageOutInfos[j].value, t, tt);
+#endif
+                        }
+                        else if (refV.layout == OutLayout.Tangent)
+                        {
+#if PERSPECTIVE_CORRECT
+                            v = PerspectiveInterpolation(
+                                (Vector3)refV.value,
+                                (Vector3)f1.UpperStageOutInfos[j].value,
+                                newZ, p0InvZ, p1InvZ, t, tt);
+#else
+                            v = Mathf.Lerp((Vector3)refV.value, (Vector3)f1.UpperStageOutInfos[j].value, t, tt);
 #endif
                         }
                         else
@@ -851,6 +873,9 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                         var p0InvZ = 1 / (leftF.p.z == 0 ? 1 : leftF.p.z);
                         var p1InvZ = 1 / (rightF.p.z == 0 ? 1 : rightF.p.z);
 #endif
+                        var p1top0 = (triangle.f1.p - triangle.f0.p).xyz;
+                        var p2top0 = (triangle.f2.p - triangle.f0.p).xyz;
+                        var n = p1top0.Cross(p2top0).normalized;
 
                         for (int i = 0; i < dx; i++)
                         {
@@ -884,6 +909,17 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                                 {
                                     v = newP;
                                 }
+                                else if (refV.layout == OutLayout.Position)
+                                {
+#if PERSPECTIVE_CORRECT
+                                    v = PerspectiveInterpolation(
+                                        (Vector4)refV.value,
+                                        (Vector4)rightF.UpperStageOutInfos[j].value,
+                                        newZ, p0InvZ, p1InvZ, t, tt);
+#else
+                                    v = Mathf.Lerp((Vector4)refV.value, (Vector4)rightF.UpperStageOutInfos[j].value, t, tt);
+#endif
+                                }
                                 else if (refV.layout == OutLayout.Color)
                                 {
 #if PERSPECTIVE_CORRECT
@@ -905,6 +941,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
 #else
                                     v = Mathf.Lerp((Vector3)refV.value, (Vector3)rightF.UpperStageOutInfos[j].value, t, tt);
 #endif
+                                    v = n;
                                 }
                                 else if (refV.layout == OutLayout.Texcoord)
                                 {
@@ -915,6 +952,17 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
                                     v = Mathf.Lerp((Vector2)refV.value, (Vector2)rightF.UpperStageOutInfos[j].value, t, tt);
+#endif
+                                }
+                                else if (refV.layout == OutLayout.Tangent)
+                                {
+#if PERSPECTIVE_CORRECT
+                                    v = PerspectiveInterpolation(
+                                        (Vector3)refV.value,
+                                        (Vector3)rightF.UpperStageOutInfos[j].value,
+                                        newZ, p0InvZ, p1InvZ, t, tt);
+#else
+                                    v = Mathf.Lerp((Vector3)refV.value, (Vector3)rightF.UpperStageOutInfos[j].value, t, tt);
 #endif
                                 }
                                 else

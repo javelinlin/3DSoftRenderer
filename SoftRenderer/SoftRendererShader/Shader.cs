@@ -4,6 +4,8 @@ using RendererCommon.SoftRenderer.Common.Shader;
 using SoftRenderer.Common.Mathes;
 using System.ComponentModel;
 
+using Color = SoftRenderer.Common.Mathes.ColorNormalized;
+
 namespace SoftRendererShader
 {
     [VS]
@@ -16,24 +18,24 @@ namespace SoftRendererShader
         /* ==========Uniform======== */
         [Uniform] public Matrix4x4 MVP;
         [Uniform] public Matrix4x4 M;
+        [Uniform] public Matrix4x4 M_IT;
 
         /* ==========In======== */
 
         [In] [Position] public Vector4 inPos;
         [In] [Texcoord] public Vector2 inUV;
-        [In] [Color] public ColorNormalized inColor;
-        //[In]
-        //[Normal]
-        //public Vector3 inNormal;
+        [In] [Color] public Color inColor;
+        [In] [Normal] public Vector3 inNormal;
+        //[In] [Tangent] public Vector3 inTangent;
 
         /* ==========Out======== */
 
         [Out] [SV_Position] public Vector4 outPos;
+        [Out] [Position] public Vector4 outWorldPos;
         [Out] [Texcoord] public Vector2 outUV;
-        [Out] [Color] public ColorNormalized outColor;
-        //[Out]
-        //[Normal]
-        //public Vector3 outNormal;
+        [Out] [Color] public Color outColor;
+        [Out] [Normal] public Vector3 outNormal;
+        //[Out] [Tangent] public Vector3 outTangent;
 
         public VertexShader(BasicShaderData data) : base(data)
         {
@@ -43,9 +45,11 @@ namespace SoftRendererShader
         public override void Main()
         {
             outPos = MVP * inPos;
+            outWorldPos = M * inPos;
             outUV = inUV;
             outColor = inColor;
-            //outNormal = inNormal;
+            outNormal = M_IT * inNormal;
+            //outTangent = M_IT * inTangent;
         }
     }
 
@@ -59,16 +63,14 @@ namespace SoftRendererShader
         [Uniform] public Texture2D mainTex;
         public Sampler2D sampler;
 
-        //[In]
-        //[Position]
-        //public Vector4 inPos;
+        [In] [SV_Position] public Vector4 inPos;
+        [In] [Position] public Vector4 inWorldPos;
         [In] [Texcoord] public Vector2 inUV;
-        [In] [Color] public ColorNormalized inColor;
-        //[In]
-        //[Normal]
-        //public Vector3 inNormal;
+        [In] [Color] public Color inColor;
+        [In] [Normal] public Vector3 inNormal;
+        //[In] [Tangent] public Vector3 inTangent;
 
-        [Out] [SV_Target] public ColorNormalized outColor;
+        [Out] [SV_Target] public Color outColor;
 
         public FragmentShader(BasicShaderData data) : base(data)
         {
@@ -90,7 +92,7 @@ namespace SoftRendererShader
         public override void Main()
         {
             //1
-            //var shaderData = Data as ShaderData;
+            var shaderData = Data as ShaderData;
             //
             //Vector3 lightDir = shaderData.LightPos[0];
             //float LdotN = Vector3.Dot(lightDir, inNormal);
@@ -122,7 +124,36 @@ namespace SoftRendererShader
             //var b = outColor.r + outColor.g + outColor.b;
             //b *= 0.3f;
             //if (b < 0.9f) discard = true;
-            outColor = tex2D(sampler, mainTex, inUV) + new ColorNormalized(inUV.x, inUV.y, 1, 1);
+
+            // diffuse
+            var lightDir = shaderData.LightPos[0].xyz;
+            var LdotN = lightDir.Dot(inNormal);// * 0.5f + 0.5f;
+            var diffuse = (1 - tex2D(sampler, mainTex, inUV)) * (LdotN * 0.5f + 0.5f) * inColor;
+            // specular
+            var viewDir = shaderData.CameraPos.xyz - inWorldPos.xyz;
+            var specular = Color.zero;
+            // specular 1
+            // 高光也可以使用：光源角与视角的半角来算
+            if (LdotN > 0)
+            {
+                var halfAngleDir = (lightDir + viewDir).normalized;
+                var HdotN = max(0, halfAngleDir.Dot(inNormal));
+                HdotN = pow(HdotN, 80f);
+                specular = shaderData.LightColor[0] * HdotN;
+            }
+            // specular 2
+            //var reflectDir = reflect(-lightDir.xyz, inNormal);
+            //var RnotV = reflectDir.Dot(viewDir);
+            //c
+            //var specular = shaderData.LightColor[0] * RnotV;
+
+            // ambient
+            var ambient = shaderData.Ambient;
+
+            outColor = diffuse + specular + ambient;
+
+            // test
+            //outColor.rgb = inNormal * 0.5f + 0.5f;
         }
     }
 }
