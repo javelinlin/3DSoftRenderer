@@ -35,10 +35,10 @@ blog:https://blog.csdn.net/linjf520/article/details/96047240
 - 栅格化：线、三角形
 - 简单封装GameObject,Mesh,Camera,Material
 - FrontFace 决定正背面
-- CullFace 提出面向
+- CullFace 剔除面向
 - Scissor 裁剪矩形
 - Depth offset 深度偏移
-- DepthTest 更像是Early-z，因为再fragment shader前测试
+- DepthTest 更像是Early-z，因为在fragment shader前测试
 - AlphaTest Alpha测试
 - Blend 混合
 - Similar Programmable pipeline 没有并行的可编程管线
