@@ -88,7 +88,7 @@ namespace SoftRenderer.SoftRenderer
                 throw new Exception("current index buffer not binding.");
 
             var vs = ShaderProgram.GetShader(ShaderType.VertexShader);
-            var fs = ShaderProgram.GetShader(ShaderType.FragmentShader);
+            var fs = ShaderProgram.GetShader(ShaderType.FragmentShader) as FSBase;
 
             if (vs == null) throw new Exception("Not setting vs, it is required shader.");
             if (fs == null) throw new Exception("Not setting fs, it is required shader.");
@@ -227,8 +227,10 @@ namespace SoftRenderer.SoftRenderer
                             //ndcPos = clipPos / clipPos.w;
                         }
                         // ndc 2 win
-                        var wposX = cw * 0.5f * ndcPos.x + (cx + cw * 0.5f);
-                        var wposY = ch * 0.5f * ndcPos.y + (cy + ch * 0.5f);
+                        var wposX = cx + cw * (ndcPos.x * 0.5f + 0.5f);
+                        var wposY = cy + ch * (ndcPos.y * 0.5f + 0.5f);
+                        //var wposX = cw * 0.5f * ndcPos.x + (cx + cw * 0.5f);
+                        //var wposY = ch * 0.5f * ndcPos.y + (cy + ch * 0.5f);
                         var wposZ = (f - n) * 0.5f * ndcPos.z + (f + n) * 0.5f;
                         var winPos = new Vector4(wposX, wposY, wposZ, ndcPos.w);
                         outInfos[j].value = winPos;
@@ -265,7 +267,7 @@ namespace SoftRenderer.SoftRenderer
             }
         }
 
-        private void RasterizeAndFragmentShader(ShaderBase fs)
+        private void RasterizeAndFragmentShader(FSBase fs)
         {
             switch (State.PolygonMode)
             {
@@ -290,7 +292,7 @@ namespace SoftRenderer.SoftRenderer
         }
 
         private void InnerFragmentShader(
-            ShaderBase fs, 
+            FSBase fs, 
             List<FragInfo> shadedResult, 
             List<FragInfo> wireframeResult,
             List<FragInfo> normalLineResult)
@@ -319,9 +321,9 @@ namespace SoftRenderer.SoftRenderer
             /* ======depth end====== */
 
             /* ======alpha test start====== */
-            var alphaTest = State.AlphaTest;
-            var alphaTestComp = State.AlphaTestComp;
-            var alphaTestRef = State.AlphaTestRef;
+            //var alphaTest = State.AlphaTest;
+            //var alphaTestComp = State.AlphaTestComp;
+            //var alphaTestRef = State.AlphaTestRef;
             /* ======alpha test start====== */
 
             /* ======blend start====== */
@@ -348,11 +350,6 @@ namespace SoftRenderer.SoftRenderer
                 // 深度测试
                 if (depthbuff.Test(State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
                 {
-                    // 是否开启深度写入
-                    if (depthwrite == DepthWrite.On)
-                    {
-                        depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
-                    }
                     // 执行fragment shader
                     var jLen = f.UpperStageOutInfos.Length;
                     for (int j = 0; j < jLen; j++)
@@ -360,18 +357,28 @@ namespace SoftRenderer.SoftRenderer
                         var info = f.UpperStageOutInfos[j];
                         fs.ShaderProperties.SetInWithOut(info.layout, info.value, info.location);
                     }
+                    fs.Reset();
                     fs.Main();
-                    var srcColor = fs.ShaderProperties.GetOut<ColorNormalized>(OutLayout.SV_Target); // 目前值处理SV_Target0
-                    // alpha 测试
-                    if (alphaTest == AlphaTest.On)
+                    // 丢弃片段
+                    if (fs.discard) continue;
+
+                    // 是否开启深度写入
+                    if (depthwrite == DepthWrite.On)
                     {
-                        var srcAlpha = Mathf.Clamp(srcColor.a, 0, 1);
-                        if (!Per_Frag.AlphaTest(alphaTestComp, alphaTestRef, srcAlpha))
-                        {
-                            //f.discard = true; // alpha 测试失败
-                            continue;
-                        }
+                        depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
                     }
+
+                    var srcColor = fs.ShaderProperties.GetOut<ColorNormalized>(OutLayout.SV_Target); // 目前值处理SV_Target0
+                    //// alpha 测试
+                    //if (alphaTest == AlphaTest.On)
+                    //{
+                    //    var srcAlpha = Mathf.Clamp(srcColor.a, 0, 1);
+                    //    if (!Per_Frag.AlphaTest(alphaTestComp, alphaTestRef, srcAlpha))
+                    //    {
+                    //        //f.discard = true; // alpha 测试失败
+                    //        continue;
+                    //    }
+                    //}
 
                     // 是否开启混合
                     if (blend == Blend.On)

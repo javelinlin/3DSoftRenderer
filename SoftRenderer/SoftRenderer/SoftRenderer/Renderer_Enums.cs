@@ -42,12 +42,12 @@ namespace SoftRenderer.SoftRenderer
         Off,
         On,
     }
-    [Description("Alpha测试开关枚举")]
-    public enum AlphaTest
-    {
-        Off,
-        On
-    }
+    //[Description("Alpha测试开关枚举")]
+    //public enum AlphaTest
+    //{
+    //    Off,
+    //    On
+    //}
     [Description("决定正/反面的枚举")]
     public enum FrontFace
     {

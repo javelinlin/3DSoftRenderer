@@ -327,4 +327,20 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             Data = null;
         }
     }
+
+    [Description("FragmentShader基类")]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class FSBase : ShaderBase
+    {
+        public bool discard;
+
+        public FSBase(BasicShaderData data) : base(data)
+        {
+        }
+
+        public virtual void Reset()
+        {
+            discard = false;
+        }
+    }
 }

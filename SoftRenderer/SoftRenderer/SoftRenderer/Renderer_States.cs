@@ -56,14 +56,14 @@ namespace SoftRenderer.SoftRenderer
         }
         [Category("Scissor")]
         public Scissor Scissor { get; set; }
-        [Category("AlphaTest")]
-        public AlphaTest AlphaTest { get; set; }
-        [Category("AlphaTest")]
-        [Description("Alpha测试的比较关系")]
-        public ComparisonFunc AlphaTestComp { get; set; } = ComparisonFunc.LEqual;
-        [Category("AlphaTest")]
-        [Description("Alpha测试的参考值")]
-        public float AlphaTestRef { get; set; } = 1f;
+        //[Category("AlphaTest")]
+        //public AlphaTest AlphaTest { get; set; }
+        //[Category("AlphaTest")]
+        //[Description("Alpha测试的比较关系")]
+        //public ComparisonFunc AlphaTestComp { get; set; } = ComparisonFunc.LEqual;
+        //[Category("AlphaTest")]
+        //[Description("Alpha测试的参考值")]
+        //public float AlphaTestRef { get; set; } = 1f;
         [Category("Facing-Culling")]
         public FrontFace FrontFace { get; set; }
         [Category("Facing-Culling")]

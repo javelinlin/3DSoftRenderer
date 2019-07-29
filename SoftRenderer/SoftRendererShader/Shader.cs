@@ -51,7 +51,7 @@ namespace SoftRendererShader
 
     [FS]
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class FragmentShader : ShaderBase
+    public class FragmentShader : FSBase
     {
         [Name] public static readonly string Name = "MyTestFSShader";
         [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
@@ -116,10 +116,13 @@ namespace SoftRendererShader
             //outColor = sampler.Sample(mainTex, inUV);
             // 7
             //outColor = tex2D(sampler, mainTex, inUV);
-            // 8
-            var c = new ColorNormalized(inUV.x, inUV.y, 1, 1);
-            outColor = tex2D(sampler, mainTex, inUV) + c; // * c;
-            //outColor = new ColorNormalized(inUV.x, inUV.y, 1, 1);
+            // 8 alpha test in here
+            //var c = new ColorNormalized(inUV.x, inUV.y, 0, 1);
+            //outColor = tex2D(sampler, mainTex, inUV) + c; // * c;
+            //var b = outColor.r + outColor.g + outColor.b;
+            //b *= 0.3f;
+            //if (b < 0.9f) discard = true;
+            outColor = tex2D(sampler, mainTex, inUV) + new ColorNormalized(inUV.x, inUV.y, 1, 1);
         }
     }
 }
