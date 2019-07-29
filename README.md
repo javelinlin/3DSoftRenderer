@@ -7,6 +7,11 @@ blog:https://blog.csdn.net/linjf520/article/details/96047240
 为了增加对图形方面的经验而写的软渲染流程。
 代码有很大的优化空间。
 
+# 项目简单分类
+- SoftRenderer 是主要运行入口的项目
+- SoftRendererCommon 公共库SoftRenderer、SoftRendererShader都会应用到
+- SoftRendererShader 自定义Shader库
+
 # 遗留问题
 - 投影矩阵：未能完全理解数值的推导
 - 透视校正：使用了1/z线性变换因子来处理，但是结果还是不对，主要对投影矩阵未能基准理解
