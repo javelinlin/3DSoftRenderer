@@ -195,20 +195,6 @@ namespace SoftRenderer.Games
         private static readonly int M_Hash = "M".GetHashCode();
         private static readonly int M_IT_Hash = "M_IT".GetHashCode();
 
-        private const int poolSize = 128;
-        private static Triangle[] pool = new Triangle[poolSize];
-        private static int topIdx = -1;
-
-        private static Triangle fromPool()
-        {
-            if (topIdx == -1) return new Triangle();
-            return pool[topIdx--];
-        }
-        private static void toPool(Triangle t)
-        {
-            if (topIdx + 1 < poolSize) pool[++topIdx] = t;
-        }
-
         public VertexBuffer VertexBuffer { get; private set; }
         public IndexBuffer IndexBuffer { get; private set; }
 
@@ -282,8 +268,6 @@ namespace SoftRenderer.Games
                 // 
 
                 var count = Mesh.vertices != null ? Mesh.vertices.Length * 3 : 0;
-                //count += Mesh.normals != null ? Mesh.normals.Length * 3 : 0;
-                //count += Mesh.tangents != null ? Mesh.tangents.Length * 3 : 0;
                 count += Mesh.uv != null ? Mesh.uv.Length * 2 : 0;
                 count += Mesh.colors != null ? Mesh.colors.Length * 4 : 0;
                 count += Mesh.normals != null ? Mesh.normals.Length * 3 : 0;
@@ -305,10 +289,10 @@ namespace SoftRenderer.Games
                 var offset = 0;
                 VertexBuffer.SetFormat(new VertexDataFormat[]
                 {
-                new VertexDataFormat { type = VertexDataType.Position, num = 0, offset = offset, count = 3 },
-                new VertexDataFormat { type = VertexDataType.UV, num = 0, offset = offset += 3, count = 2 },
-                new VertexDataFormat { type = VertexDataType.Color, num = 0, offset =offset += 2, count = 4 },
-                new VertexDataFormat { type = VertexDataType.Normal, num = 0, offset =offset += 4, count = 3 },
+                new VertexDataFormat { type = VertexDataType.Position, location = 0, offset = offset, count = 3 },
+                new VertexDataFormat { type = VertexDataType.UV, location = 0, offset = offset += 3, count = 2 },
+                new VertexDataFormat { type = VertexDataType.Color, location = 0, offset =offset += 2, count = 4 },
+                new VertexDataFormat { type = VertexDataType.Normal, location = 0, offset =offset += 4, count = 3 },
                 //new VertexDataFormat { type = VertexDataType.Tangent, num = 0, offset =offset += 3, count = 3 },
                 });
 
@@ -333,19 +317,6 @@ namespace SoftRenderer.Games
                     //VertexBuffer.Write(t);
                 }
             }
-
-            //// VertexBuffer按需是否需要实时更新到Shader，如果没有变换就不需要，一般不会有变化
-            //VertexBuffer.writePos = 0;
-            //var len = Mesh.vertices.Length;
-            //for (int i = 0; i < len; i++)
-            //{
-            //    var v = Mesh.vertices[i];
-            //    var uv = Mesh.uv[i];
-            //    var c = Mesh.colors[i];
-            //    VertexBuffer.Write(v);
-            //    VertexBuffer.Write(uv);
-            //    VertexBuffer.Write(c);
-            //}
 
             MR.Renderer.BindVertexBuff(VertexBuffer);
             MR.Renderer.BindIndexBuff(IndexBuffer);

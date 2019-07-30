@@ -5,26 +5,11 @@ using System.ComponentModel;
 
 namespace SoftRenderer.SoftRenderer
 {
-    [Description("逐顶点(暂时没用上，未开始编写)")]
-    public class Per_Vertex : IDisposable
-    {
-        public Renderer Renderer { get; private set; }
-        public Per_Vertex(Renderer renderer)
-        {
-            Renderer = renderer;
-        }
-
-        public void Dispose()
-        {
-            Renderer = null;
-        }
-    }
-
     [Description("顶点数据格式")]
     public struct VertexDataFormat
     {
         public VertexDataType type;
-        public int num;
+        public byte location;
         public int offset;
         public int count;
     }

@@ -33,7 +33,6 @@ namespace SoftRenderer
         private Rectangle bmdRect = new Rectangle(0, 0, buff_size, buff_size);
         private Random ran = new Random();
         private bool paused = false;
-        private List<Vector2> vecs = new List<Vector2>();
         private List<GameObject> gameObjs = new List<GameObject>();
         public List<GameObject> GameObjs { get => gameObjs; }
         private Camera camera;
@@ -72,10 +71,6 @@ namespace SoftRenderer
             this.PictureBox.Height = buff_size;
 
             PropertyGrid.SelectedObject = renderer;
-
-            vecs.Add(new Vector2());
-            vecs.Add(new Vector2());
-            vecs.Add(new Vector2());
 
             gameObjs = new List<GameObject>();
 
@@ -184,10 +179,10 @@ namespace SoftRenderer
                 //colors[i + 1] = ColorNormalized.green;
                 //colors[i + 2] = ColorNormalized.blue;
                 //colors[i + 3] = ColorNormalized.yellow;
-                colors[i + 0] = ColorNormalized.red;
-                colors[i + 1] = ColorNormalized.red;
-                colors[i + 2] = ColorNormalized.red;
-                colors[i + 3] = ColorNormalized.red;
+                colors[i + 0] = ColorNormalized.yellow;
+                colors[i + 1] = ColorNormalized.yellow;
+                colors[i + 2] = ColorNormalized.yellow;
+                colors[i + 3] = ColorNormalized.yellow;
             }
             var mesh = new Mesh();
             mesh.vertices = vertices;
@@ -206,10 +201,10 @@ namespace SoftRenderer
                 //colors[i + 1] = ColorNormalized.pink;
                 //colors[i + 2] = ColorNormalized.purple;
                 //colors[i + 3] = ColorNormalized.green;
-                colors[i + 0] = ColorNormalized.green;
-                colors[i + 1] = ColorNormalized.green;
-                colors[i + 2] = ColorNormalized.green;
-                colors[i + 3] = ColorNormalized.green;
+                colors[i + 0] = ColorNormalized.blue;
+                colors[i + 1] = ColorNormalized.blue;
+                colors[i + 2] = ColorNormalized.blue;
+                colors[i + 3] = ColorNormalized.blue;
             }
             go = new GameObject("Cube1");
             go.LocalPosition = new Vector3(1, 0, -1);
@@ -227,7 +222,7 @@ namespace SoftRenderer
             camera.aspect = 1;
             // 暂时使用正交来测试
             // 透视有校正问题没处理好
-            camera.isOrtho = true;
+            camera.isOrtho = false;
             if (camera.isOrtho)
             {
                 camera.size = 5;
@@ -343,10 +338,10 @@ namespace SoftRenderer
 
 #if PROGRAMMABLE_PIPELINE
             // shader uniform block update
-            shaderData.Ambient = new ColorNormalized(0.2f, 0.2f, 0, 1);
+            shaderData.Ambient = new ColorNormalized(0.2f, 0.2f, 0, 0.5f);
             // directional light
             shaderData.LightPos[0] = new Vector3(1, -0.5f, 1).normalized;
-            shaderData.LightColor[0] = new ColorNormalized(1, 0, 0, 1);
+            shaderData.LightColor[0] = new ColorNormalized(1, 0, 0, 0.5f);
             shaderData.LightItensity[0] = Vector4.one;
             shaderData.LightParams1[0] = Vector4.one;
             shaderData.CameraPos = camera.Translate;
@@ -429,6 +424,7 @@ namespace SoftRenderer
                 {
                     go.LocalRotation += new Vector3(0.25f + i * 0.1f, 0.5f + i * 0.01f, i * 0.5f);
                 }
+#if !PROGRAMMABLE_PIPELINE
                 if (go.Mesh != null)
                 {
                     var mesh = go.Mesh;
@@ -473,6 +469,7 @@ namespace SoftRenderer
                     //    renderer.Rasterizer.DrawTriangle(triangles[j], Color.Pink, Color.White);
                     //}
                 }
+#endif
             }
         }
 

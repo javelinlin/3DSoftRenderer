@@ -12,6 +12,8 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
+using Color = SoftRenderer.Common.Mathes.ColorNormalized;
+
 namespace SoftRenderer.SoftRenderer.Rasterization
 {
     // 栅格器
@@ -317,7 +319,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 throw new Exception("error");
             }
 
-            var infoCount = f0.UpperStageOutInfos.Length;
+            var infoCount = f0.UpperStageOutInfos != null ? f0.UpperStageOutInfos.Length : 0;
 
 #if PERSPECTIVE_CORRECT
             var p0InvZ = 1 / (p0.z == 0 ? 1 : p0.z);
@@ -363,11 +365,11 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                         {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
-                                (ColorNormalized)refV.value,
-                                (ColorNormalized)f1.UpperStageOutInfos[j].value,
+                                (Color)refV.value,
+                                (Color)f1.UpperStageOutInfos[j].value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                            v = Mathf.Lerp((ColorNormalized)refV.value, (ColorNormalized)f1.UpperStageOutInfos[j].value, t, tt);
+                            v = Mathf.Lerp((Color)refV.value, (Color)f1.UpperStageOutInfos[j].value, t, tt);
 #endif
 
                         }
@@ -444,14 +446,14 @@ namespace SoftRenderer.SoftRenderer.Rasterization
         {
             return newZ * Mathf.Lerp(v1 * invZ0, v2 * invZ1, t, tt);
         }
-        private ColorNormalized PerspectiveInterpolation(ColorNormalized v1, ColorNormalized v2, float newZ, float invZ0, float invZ1, float t, float tt)
+        private Color PerspectiveInterpolation(Color v1, Color v2, float newZ, float invZ0, float invZ1, float t, float tt)
         {
             return newZ * Mathf.Lerp(v1 * invZ0, v2 * invZ1, t, tt);
         }
         // =============== 顶点数据的插值 end===============
 
         // 绘制三角形：旧版管线中的绘制三角
-        public void DrawTriangle(Triangle t, ColorNormalized triangleColor, ColorNormalized wireFrameColor)
+        public void DrawTriangle(Triangle t, Color triangleColor, Color wireFrameColor)
         {
             var validated = (t.Validated() && !CullingTriangle(t));
             if (!validated) return;
@@ -614,7 +616,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             // shaded
             var len = fragList.Count;
             var bmd = renderer.Begin(); // begin
-            var finalColor = new ColorNormalized();
+            var finalColor = new Color();
             for (int i = 0; i < len; i++)
             {
                 var f = fragList[i];
@@ -689,7 +691,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             // debug: show normal line
             if (renderer.State.DebugShowNormal)
             {
-                var blueColor = new ColorNormalized(0, 0, 1, 1);
+                var blueColor = new Color(0, 0, 1, 1);
                 var normalPos0 = t.p0;
                 var normalPos1 = normalPos0 + faceNormal.normalized * renderer.State.DebugNormalLen;
                 ToPool(fragsHelper1);
@@ -924,11 +926,11 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                                 {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
-                                        (ColorNormalized)refV.value,
-                                        (ColorNormalized)rightF.UpperStageOutInfos[j].value,
+                                        (Color)refV.value,
+                                        (Color)rightF.UpperStageOutInfos[j].value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                    v = Mathf.Lerp((ColorNormalized)refV.value, (ColorNormalized)rightF.UpperStageOutInfos[j].value, t, tt);
+                                    v = Mathf.Lerp((Color)refV.value, (Color)rightF.UpperStageOutInfos[j].value, t, tt);
 #endif
                                 }
                                 else if (refV.layout == OutLayout.Normal)
@@ -1062,29 +1064,46 @@ namespace SoftRenderer.SoftRenderer.Rasterization
 
             // normal line fragments
             // debug: show normal line
-            if (Renderer.State.DebugShowNormal && false) // 暂时屏蔽掉
+            if (Renderer.State.DebugShowNormal)
             {
-                var blueColor = new ColorNormalized(0, 0, 1, 1);
-                var normalPos0 = triangle.f0.p;
-                var faceNormal = (triangle.f1.p - triangle.f0.p).Cross(triangle.f2.p - triangle.f0.p).normalized;
-                var normalPos1 = normalPos0 + faceNormal.normalized * renderer.State.DebugNormalLen;
-
-                var n0 = FragInfo.GetFragInfo();
-                n0.p = triangle.f0.p;
-                var n1 = FragInfo.GetFragInfo();
-                n1.p = normalPos1;
-
-                GenLineFrag(tvF, bvF, normalLineResult);
-
-                var len = normalLineResult.Count;
+                var triangleVertices = new FragInfo[] { triangle.f0, triangle.f1, triangle.f2 };
+                var len = triangleVertices.Length;
                 for (int i = 0; i < len; i++)
                 {
-                    var f = normalLineResult[i];
-                    if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY)
+                    var f = triangleVertices[i];
+                    Vector3? n = null;
+                    var jLen = f.UpperStageOutInfos.Length;
+                    for (int j = 0; j < jLen; j++)
                     {
-                        f.discard = true;
-                        continue;
-                    };
+                        var info = f.UpperStageOutInfos[j];
+                        if (info.layout == OutLayout.Normal)
+                        {
+                            n = (Vector3)info.value;
+                            break;
+                        }
+                    }
+                    if (n.HasValue)
+                    {
+                        var normalPos1 = f.p + new Vector4(n.Value * renderer.State.DebugNormalLen, 1);
+
+                        var n0 = FragInfo.GetFragInfo();
+                        n0.p = f.p;
+                        var n1 = FragInfo.GetFragInfo();
+                        n1.p = normalPos1;
+
+                        GenLineFrag(n0, n1, normalLineResult, false);
+
+                        var count = normalLineResult.Count;
+                        for (int fI = 0; fI < count; fI++)
+                        {
+                            var nrlF = normalLineResult[fI];
+                            if (nrlF.p.x < minX || nrlF.p.x > maxX || nrlF.p.y < minY || nrlF.p.y > maxY)
+                            {
+                                nrlF.discard = true;
+                                continue;
+                            }
+                        }
+                    }
                 }
             }
         }

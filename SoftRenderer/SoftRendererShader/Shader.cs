@@ -127,19 +127,20 @@ namespace SoftRendererShader
 
             // diffuse
             var lightDir = shaderData.LightPos[0].xyz;
-            var LdotN = lightDir.Dot(inNormal);// * 0.5f + 0.5f;
+            var LdotN = dot(lightDir, inNormal);// * 0.5f + 0.5f;
             var diffuse = (1 - tex2D(sampler, mainTex, inUV)) * (LdotN * 0.5f + 0.5f) * inColor;
+            diffuse *= 2;
             // specular
             var viewDir = shaderData.CameraPos.xyz - inWorldPos.xyz;
-            var specular = Color.zero;
+            var specular = Color.black;
             // specular 1
             // 高光也可以使用：光源角与视角的半角来算
             if (LdotN > 0)
             {
                 var halfAngleDir = (lightDir + viewDir).normalized;
-                var HdotN = max(0, halfAngleDir.Dot(inNormal));
+                var HdotN = max(0, dot(halfAngleDir, inNormal));
                 HdotN = pow(HdotN, 80f);
-                specular = shaderData.LightColor[0] * HdotN;
+                specular.rgb = (shaderData.LightColor[0] * HdotN).rgb * shaderData.LightColor[0].a;
             }
             // specular 2
             //var reflectDir = reflect(-lightDir.xyz, inNormal);
@@ -148,6 +149,7 @@ namespace SoftRendererShader
 
             // ambient
             var ambient = shaderData.Ambient;
+            ambient.rgb *= ambient.a;
 
             outColor = diffuse + specular + ambient;
 

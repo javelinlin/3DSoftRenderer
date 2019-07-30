@@ -45,7 +45,6 @@ namespace SoftRenderer.SoftRenderer
         public int BackBufferHeight { get => backBufferHeight; }
 
         public Per_Frag Per_Frag { get; private set; }
-        public Per_Vertex Per_Vertex { get; private set; }
 
         public VertexBuffer CurVertexBuffer { get; private set; }
         public IndexBuffer CurIndexBuffer { get; private set; }
@@ -62,7 +61,6 @@ namespace SoftRenderer.SoftRenderer
             State = new RenderState(this);
             Rasterizer = new Rasterizer(this);
             Per_Frag = new Per_Frag(this);
-            Per_Vertex = new Per_Vertex(this);
             ShaderData = new ShaderData(1);
             ShaderMgr = new ShaderLoadMgr(this);
             ShaderProgram = new ShaderProgram(this);
@@ -518,11 +516,6 @@ namespace SoftRenderer.SoftRenderer
             {
                 Per_Frag.Dispose();
                 Per_Frag = null;
-            }
-            if (Per_Vertex != null)
-            {
-                Per_Vertex.Dispose();
-                Per_Vertex = null;
             }
             if (ShaderData != null)
             {
