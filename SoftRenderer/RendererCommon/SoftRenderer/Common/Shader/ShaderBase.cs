@@ -107,17 +107,17 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                         var tangent = f.GetCustomAttribute(tangentAtType);
                         Dictionary<int, FieldInfo> dict = null;
                         InLayout layout = InLayout.SV_Position;
-                        if (svpos != null) layout = InLayout.SV_Position;
-                        if (pos != null) layout = InLayout.Position;
-                        if (color != null) layout = InLayout.Color;
-                        if (uv != null) layout = InLayout.Texcoord;
-                        if (normal != null) layout = InLayout.Normal;
-                        if (tangent != null) layout = InLayout.Tangent;
+                        var location = 0;
+                        if (svpos != null) { layout = InLayout.SV_Position; location = 0; } // only one:0
+                        if (pos != null) { layout = InLayout.Position; location = 0; } // only one:0
+                        if (color != null) { layout = InLayout.Color; location = ((ColorAttribute)color).Location; }
+                        if (uv != null) { layout = InLayout.Texcoord; location = ((TexcoordAttribute)uv).Location; }
+                        if (normal != null) { layout = InLayout.Normal; location = ((NormalAttribute)normal).Location; }
+                        if (tangent != null) { layout = InLayout.Tangent; location = ((TangentAttribute)tangent).Location; }
                         inLayoutFieldDict.TryGetValue(layout, out dict);
                         if (dict == null)
                             inLayoutFieldDict[layout] = dict = new Dictionary<int, FieldInfo>();
-                        var num = at.ConstructorArguments.Count > 0 ? (int)at.ConstructorArguments[0].Value : 0;
-                        dict[num] = f;
+                        dict[location] = f;
                     }
                     else if (at.AttributeType.IsEquivalentTo(outAtType))
                     {
@@ -143,18 +143,18 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                         var tangent = f.GetCustomAttribute(tangentAtType);
                         Dictionary<int, FieldInfo> dict = null;
                         OutLayout layout = OutLayout.Tangent;
-                        if (svpos != null) layout = OutLayout.SV_Position;
-                        if (svtarget != null) layout = OutLayout.SV_Target;
-                        if (pos != null) layout = OutLayout.Position;
-                        if (color != null) layout = OutLayout.Color;
-                        if (uv != null) layout = OutLayout.Texcoord;
-                        if (normal != null) layout = OutLayout.Normal;
-                        //if (tangent != null) layout = OutLayout.Tangent; // 默认是Tangent
+                        var location = 0;
+                        if (svpos != null) { layout = OutLayout.SV_Position; location = 0; } // only one:0
+                        if (svtarget != null) { layout = OutLayout.SV_Target; location = ((SV_TargetAttribute)svtarget).Location; }
+                        if (pos != null) { layout = OutLayout.Position; location = 0; } // only one:0
+                        if (color != null) { layout = OutLayout.Color; location = ((ColorAttribute)color).Location; }
+                        if (uv != null) { layout = OutLayout.Texcoord; location = ((TexcoordAttribute)uv).Location; }
+                        if (normal != null) { layout = OutLayout.Normal; location = ((NormalAttribute)normal).Location; }
+                        if (tangent != null) { layout = OutLayout.Tangent; location = ((TangentAttribute)tangent).Location; }
                         outLayoutFieldDict.TryGetValue(layout, out dict);
                         if (dict == null)
                             outLayoutFieldDict[layout] = dict = new Dictionary<int, FieldInfo>();
-                        var num = at.ConstructorArguments.Count > 0 ? (int)at.ConstructorArguments[0].Value : 0;
-                        dict[num] = f;
+                        dict[location] = f;
                     }
                 }
             }
@@ -315,7 +315,14 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         {
             this.Data = data;
 
-            ShaderProperties = new ShaderFieldReflection(this);
+            try
+            {
+                ShaderProperties = new ShaderFieldReflection(this);
+            }
+            catch (Exception er)
+            {
+                Console.WriteLine($"error:{er.StackTrace}");
+            }
         }
 
         public virtual void Begin()

@@ -944,7 +944,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                                     v = Mathf.Lerp((Vector3)refV.value, (Vector3)rightF.UpperStageOutInfos[j].value, t, tt);
 #endif
                                     // 暂时测试用
-                                    v = n;
+                                    //v = n;
                                 }
                                 else if (refV.layout == OutLayout.Texcoord)
                                 {

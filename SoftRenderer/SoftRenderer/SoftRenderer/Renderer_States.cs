@@ -99,7 +99,7 @@ namespace SoftRenderer.SoftRenderer
         public bool DebugShowNormal { get; set; }
         [Category("Debug")]
         [Description("调试用：显示法线的长度")]
-        public float DebugNormalLen { get; set; } = 50;
+        public float DebugNormalLen { get; set; } = 10;
         [Category("Debug")]
         [Description("调试用：方向灯光")]
         public Vector3 DebugDirectionalLight = new Vector3(0, 0.5f, 1);

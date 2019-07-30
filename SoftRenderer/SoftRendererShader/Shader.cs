@@ -152,6 +152,7 @@ namespace SoftRendererShader
             ambient.rgb *= ambient.a;
 
             outColor = diffuse + specular + ambient;
+            //outColor.rgb = inNormal;
 
             // test
             //outColor.rgb = inNormal * 0.5f + 0.5f;
