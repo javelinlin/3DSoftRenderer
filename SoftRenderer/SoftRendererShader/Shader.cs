@@ -4,7 +4,12 @@ using RendererCommon.SoftRenderer.Common.Shader;
 using SoftRenderer.Common.Mathes;
 using System.ComponentModel;
 
-using Color = SoftRenderer.Common.Mathes.ColorNormalized;
+using color = SoftRenderer.Common.Mathes.ColorNormalized;
+using vec2 = SoftRenderer.Common.Mathes.Vector2;
+using vec3 = SoftRenderer.Common.Mathes.Vector3;
+using vec4 = SoftRenderer.Common.Mathes.Vector4;
+using mat4 = SoftRenderer.Common.Mathes.Matrix4x4;
+using System;
 
 namespace SoftRendererShader
 {
@@ -16,26 +21,23 @@ namespace SoftRendererShader
         [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
 
         /* ==========Uniform======== */
-        [Uniform] public Matrix4x4 MVP;
-        [Uniform] public Matrix4x4 M;
-        [Uniform] public Matrix4x4 M_IT;
+        [Uniform] public mat4 MVP;
+        [Uniform] public mat4 M;
+        [Uniform] public mat4 M_IT;
 
         /* ==========In======== */
 
-        [In] [Position] public Vector4 inPos;
-        [In] [Texcoord] public Vector2 inUV;
-        [In] [Color] public Color inColor;
-        [In] [Normal] public Vector3 inNormal;
-        //[In] [Tangent] public Vector3 inTangent;
+        [In] [Position] public vec4 inPos;
 
         /* ==========Out======== */
 
-        [Out] [SV_Position] public Vector4 outPos;
-        [Out] [Position] public Vector4 outWorldPos;
-        [Out] [Texcoord] public Vector2 outUV;
-        [Out] [Color] public Color outColor;
-        [Out] [Normal] public Vector3 outNormal;
-        //[Out] [Tangent] public Vector3 outTangent;
+        [In][Out] [Texcoord] public vec2 ioUV;
+        [In][Out] [Color] public color ioColor;
+        [In] [Out] [Normal] public vec3 ioNormal;
+        //[In] [Out] [Tangent] public Vector3 ioTangent;
+
+        [Out] [SV_Position] public vec4 outPos;
+        [Out] [Position] public vec4 outWorldPos;
 
         public VertexShader(BasicShaderData data) : base(data)
         {
@@ -46,10 +48,8 @@ namespace SoftRendererShader
         {
             outPos = MVP * inPos;
             outWorldPos = M * inPos;
-            outUV = inUV;
-            outColor = inColor;
-            outNormal = M_IT * inNormal;
-            //outTangent = M_IT * inTangent;
+            ioNormal = M_IT * ioNormal;
+            //outTangent = M_IT * ioTangent;
         }
     }
 
@@ -61,16 +61,16 @@ namespace SoftRendererShader
         [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
 
         [Uniform] public Texture2D mainTex;
-        public Sampler2D sampler;
+        private Sampler2D sampler;
 
-        [In] [SV_Position] public Vector4 inPos;
-        [In] [Position] public Vector4 inWorldPos;
-        [In] [Texcoord] public Vector2 inUV;
-        [In] [Color] public Color inColor;
-        [In] [Normal] public Vector3 inNormal;
+        [In] [SV_Position] public vec4 inPos;
+        [In] [Position] public vec4 inWorldPos;
+        [In] [Texcoord] public vec2 inUV;
+        [In] [Color] public color inColor;
+        [In] [Normal] public vec3 inNormal;
         //[In] [Tangent] public Vector3 inTangent;
 
-        [Out] [SV_Target] public Color outColor;
+        [Out] [SV_Target] public color outColor;
 
         public FragmentShader(BasicShaderData data) : base(data)
         {
@@ -126,36 +126,57 @@ namespace SoftRendererShader
             //if (b < 0.9f) discard = true;
 
             // diffuse
-            var lightDir = shaderData.LightPos[0].xyz;
+            var lightPos = shaderData.LightPos[0];
+            var lightType = lightPos.w;
+            vec3 lightDir;
+            if (lightType == 0) // 方向光
+                lightDir = lightPos.xyz;
+            else if (lightType == 1) // 点光源
+                lightDir = (lightPos.xyz - inWorldPos.xyz).normalized;
+            else
+                throw new Exception($"not implements lightType:{lightType}");
+            lightDir = new Vector3(1, -0.5f, 1).normalized;
             var LdotN = dot(lightDir, inNormal);// * 0.5f + 0.5f;
             var diffuse = (1 - tex2D(sampler, mainTex, inUV)) * (LdotN * 0.5f + 0.5f) * inColor;
             diffuse *= 2;
             // specular
-            var viewDir = shaderData.CameraPos.xyz - inWorldPos.xyz;
-            var specular = Color.black;
-            // specular 1
-            // 高光也可以使用：光源角与视角的半角来算
+            var viewDir = (shaderData.CameraPos.xyz - inWorldPos.xyz);
+            var specular = color.black;
+
             if (LdotN > 0)
             {
-                var halfAngleDir = (lightDir + viewDir).normalized;
+                // specular 1
+                // 高光也可以使用：光源角与视角的半角来算
+                var halfAngleDir = (lightDir + viewDir);
+                halfAngleDir.Normalize();
                 var HdotN = max(0, dot(halfAngleDir, inNormal));
-                HdotN = pow(HdotN, 80f);
+                HdotN = pow(HdotN, 90f);
                 specular.rgb = (shaderData.LightColor[0] * HdotN).rgb * shaderData.LightColor[0].a;
+                // specular 2
+                //var reflectDir = reflect(-lightDir, inNormal);
+                //var RnotV = max(0, dot(reflectDir, viewDir));
+                //specular.rgb = (shaderData.LightColor[0] * RnotV).rgb * shaderData.LightColor[0].a;
             }
-            // specular 2
-            //var reflectDir = reflect(-lightDir.xyz, inNormal);
-            //var RnotV = reflectDir.Dot(viewDir);
-            //var specular = shaderData.LightColor[0] * RnotV;
+
 
             // ambient
             var ambient = shaderData.Ambient;
             ambient.rgb *= ambient.a;
+            ambient.rgb = 0; // test
 
             outColor = diffuse + specular + ambient;
-            //outColor.rgb = inNormal;
+            outColor.rgb = LdotN;
+            //outColor.rgb = inNormal + specular.rgb;
+            outColor.rgb = inNormal;
 
             // test
             //outColor.rgb = inNormal * 0.5f + 0.5f;
+            //var reflectDir = reflect(-lightDir, inNormal);
+            //var RnotV = max(0, dot(reflectDir, viewDir));
+            //outColor.rgb = lightDir; return;
+            //outColor.rgb = new Vector3(1, -0.5f, 1).normalized; return;
+
+            //outColor.rgb = reflectDir;
         }
     }
 }

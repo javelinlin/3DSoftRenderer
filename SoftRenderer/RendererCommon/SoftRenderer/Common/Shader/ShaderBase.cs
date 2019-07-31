@@ -55,13 +55,6 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             var uniformAtType = typeof(UniformAttribute);
             var inAtType = typeof(InAttribute);
             var outAtType = typeof(OutAttribute);
-            var posAtType = typeof(PositionAttribute);
-            var colorAtType = typeof(ColorAttribute);
-            var uvAtType = typeof(TexcoordAttribute);
-            var normalAtType = typeof(NormalAttribute);
-            var tangentAtType = typeof(TangentAttribute);
-            var svposAtType = typeof(SV_PositionAttribute);
-            var svtargetAtType = typeof(SV_TargetAttribute);
             foreach (var f in fs)
             {
                 foreach (var at in f.CustomAttributes)
@@ -69,15 +62,15 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                     // 收集uniform字段
                     if (at.AttributeType.IsEquivalentTo(uniformAtType))
                     {
-                        var conflict = f.GetCustomAttribute(outAtType); // conflict out
-                        if (conflict != null)
+                        var outConflict = f.GetCustomAttribute<OutAttribute>(); // conflict out
+                        if (outConflict != null)
                         {
-                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {conflict.GetType().Name}");
+                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {outConflict.GetType().Name}");
                         }
-                        conflict = f.GetCustomAttribute(inAtType);  // conflict in
-                        if (conflict != null)
+                        var inConflict = f.GetCustomAttribute<InAttribute>();  // conflict in
+                        if (inConflict != null)
                         {
-                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {conflict.GetType().Name}");
+                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {inConflict.GetType().Name}");
                         }
                         uniformFieldDictName[f.Name] = f;
                         uniformFieldDictHash[f.Name.GetHashCode()] = f;
@@ -85,13 +78,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                     // 收集in字段
                     else if (at.AttributeType.IsEquivalentTo(inAtType))
                     {
-                        // TODO 后面可以让一个字段同时是in也可以同时是out
-                        var conflict = f.GetCustomAttribute(outAtType); // conflict out
-                        if (conflict != null)
-                        {
-                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {conflict.GetType().Name}");
-                        }
-                        conflict = f.GetCustomAttribute(uniformAtType); // conflict uniform
+                        var conflict = f.GetCustomAttribute<UniformAttribute>(); // conflict uniform
                         if (conflict != null)
                         {
                             throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {conflict.GetType().Name}");
@@ -99,21 +86,22 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                         inFieldDictName[f.Name] = f;
                         inFieldDictHash[f.Name.GetHashCode()] = f;
 
-                        var svpos = f.GetCustomAttribute(svposAtType);
-                        var pos = f.GetCustomAttribute(posAtType);
-                        var color = f.GetCustomAttribute(colorAtType);
-                        var uv = f.GetCustomAttribute(uvAtType);
-                        var normal = f.GetCustomAttribute(normalAtType);
-                        var tangent = f.GetCustomAttribute(tangentAtType);
+                        var svpos = f.GetCustomAttribute<SV_PositionAttribute>();
+                        var svtarget = f.GetCustomAttribute<SV_TargetAttribute>();
+                        var pos = f.GetCustomAttribute<PositionAttribute>();
+                        var color = f.GetCustomAttribute<ColorAttribute>();
+                        var uv = f.GetCustomAttribute<TexcoordAttribute>();
+                        var normal = f.GetCustomAttribute<NormalAttribute>();
+                        var tangent = f.GetCustomAttribute<TangentAttribute>();
                         Dictionary<int, FieldInfo> dict = null;
                         InLayout layout = InLayout.SV_Position;
                         var location = 0;
                         if (svpos != null) { layout = InLayout.SV_Position; location = 0; } // only one:0
                         if (pos != null) { layout = InLayout.Position; location = 0; } // only one:0
-                        if (color != null) { layout = InLayout.Color; location = ((ColorAttribute)color).Location; }
-                        if (uv != null) { layout = InLayout.Texcoord; location = ((TexcoordAttribute)uv).Location; }
-                        if (normal != null) { layout = InLayout.Normal; location = ((NormalAttribute)normal).Location; }
-                        if (tangent != null) { layout = InLayout.Tangent; location = ((TangentAttribute)tangent).Location; }
+                        if (color != null) { layout = InLayout.Color; location = color.Location; }
+                        if (uv != null) { layout = InLayout.Texcoord; location = uv.Location; }
+                        if (normal != null) { layout = InLayout.Normal; location = normal.Location; }
+                        if (tangent != null) { layout = InLayout.Tangent; location = tangent.Location; }
                         inLayoutFieldDict.TryGetValue(layout, out dict);
                         if (dict == null)
                             inLayoutFieldDict[layout] = dict = new Dictionary<int, FieldInfo>();
@@ -121,36 +109,31 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                     }
                     else if (at.AttributeType.IsEquivalentTo(outAtType))
                     {
-                        var conflict = f.GetCustomAttribute(inAtType); // conflict in
-                        if (conflict != null)
+                        var uniformConflict = f.GetCustomAttribute<UniformAttribute>(); // conflict uniform
+                        if (uniformConflict != null)
                         {
-                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {conflict.GetType().Name}");
-                        }
-                        conflict = f.GetCustomAttribute(uniformAtType); // conflict uniform
-                        if (conflict != null)
-                        {
-                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {conflict.GetType().Name}");
+                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {uniformConflict.GetType().Name}");
                         }
                         inFieldDictName[f.Name] = f;
                         inFieldDictHash[f.Name.GetHashCode()] = f;
 
-                        var svpos = f.GetCustomAttribute(svposAtType);
-                        var svtarget = f.GetCustomAttribute(svtargetAtType);
-                        var pos = f.GetCustomAttribute(posAtType);
-                        var color = f.GetCustomAttribute(colorAtType);
-                        var uv = f.GetCustomAttribute(uvAtType);
-                        var normal = f.GetCustomAttribute(normalAtType);
-                        var tangent = f.GetCustomAttribute(tangentAtType);
+                        var svpos = f.GetCustomAttribute<SV_PositionAttribute>();
+                        var svtarget = f.GetCustomAttribute<SV_TargetAttribute>();
+                        var pos = f.GetCustomAttribute<PositionAttribute>();
+                        var color = f.GetCustomAttribute<ColorAttribute>();
+                        var uv = f.GetCustomAttribute<TexcoordAttribute>();
+                        var normal = f.GetCustomAttribute<NormalAttribute>();
+                        var tangent = f.GetCustomAttribute<TangentAttribute>();
                         Dictionary<int, FieldInfo> dict = null;
                         OutLayout layout = OutLayout.Tangent;
                         var location = 0;
                         if (svpos != null) { layout = OutLayout.SV_Position; location = 0; } // only one:0
-                        if (svtarget != null) { layout = OutLayout.SV_Target; location = ((SV_TargetAttribute)svtarget).Location; }
+                        if (svtarget != null) { layout = OutLayout.SV_Target; location = svtarget.Location; }
                         if (pos != null) { layout = OutLayout.Position; location = 0; } // only one:0
-                        if (color != null) { layout = OutLayout.Color; location = ((ColorAttribute)color).Location; }
-                        if (uv != null) { layout = OutLayout.Texcoord; location = ((TexcoordAttribute)uv).Location; }
-                        if (normal != null) { layout = OutLayout.Normal; location = ((NormalAttribute)normal).Location; }
-                        if (tangent != null) { layout = OutLayout.Tangent; location = ((TangentAttribute)tangent).Location; }
+                        if (color != null) { layout = OutLayout.Color; location = color.Location; }
+                        if (uv != null) { layout = OutLayout.Texcoord; location = uv.Location; }
+                        if (normal != null) { layout = OutLayout.Normal; location = normal.Location; }
+                        if (tangent != null) { layout = OutLayout.Tangent; location = tangent.Location; }
                         outLayoutFieldDict.TryGetValue(layout, out dict);
                         if (dict == null)
                             outLayoutFieldDict[layout] = dict = new Dictionary<int, FieldInfo>();

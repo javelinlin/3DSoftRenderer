@@ -198,6 +198,10 @@ namespace SoftRenderer.Common.Mathes
         {
             return new Vector3(v.x, v.y, v.z);
         }
+        public static implicit operator Vector3(float v)
+        {
+            return new Vector3(v, v, v);
+        }
         public static bool AnyNaN(Vector3 v)
         {
             return float.IsNaN(v.x) || float.IsNaN(v.y) || float.IsNaN(v.z);

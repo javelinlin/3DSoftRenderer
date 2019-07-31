@@ -66,6 +66,8 @@ namespace SoftRenderer
             renderer.State.BlendDstColorFactor = BlendFactor.OneMinusSrcAlpha;
             renderer.State.BlendSrcAlphaFactor = BlendFactor.One;
             renderer.State.BlendDstAlphaFactor = BlendFactor.One;
+            // test
+            renderer.State.Cull = FaceCull.Off;
 
             this.PictureBox.Width = buff_size;
             this.PictureBox.Height = buff_size;
@@ -75,7 +77,7 @@ namespace SoftRenderer
             gameObjs = new List<GameObject>();
 
             var go = new GameObject("Cube");
-
+            //go.LocalRotation = new Vector3(45, 0, 0);
             /*
                
                
@@ -109,6 +111,12 @@ namespace SoftRenderer
             var size = 1f;
             var vertices = new Vector3[]
             {
+//#region test normal
+//                new Vector3(size, size,-size),          // 0
+//                new Vector3(-size,-size,-size),         // 1
+//                new Vector3(size,-size,-size),          // 2
+//                new Vector3(-size, size,-size),         // 3
+//#endregion
 #region front
                 new Vector3(size, size,-size),          // 0
                 new Vector3(-size,-size,-size),         // 1
@@ -146,9 +154,10 @@ namespace SoftRenderer
                 new Vector3(-size,-size,-size),         // 23
 #endregion
             };
-            var indices = new int[36];
+            var indices = new int[vertices.Length / 4 * 6];
             var idx = 0;
-            for (int i = 0; i < 36; i+=6)
+            //for (int i = 0; i < 36; i+=6)
+            for (int i = 0; i < indices.Length; i+=6)
             {
                 indices[i + 0] = 0 + 4 * idx;
                 indices[i + 1] = 1 + 4 * idx;
@@ -216,7 +225,7 @@ namespace SoftRenderer
             mesh.CaculateNormalAndTangent();
             go.Mesh = mesh;
             // 第二个游戏对象
-            gameObjs.Add(go);
+            //gameObjs.Add(go);
 
             camera = new Camera();
             camera.aspect = 1;
@@ -338,10 +347,10 @@ namespace SoftRenderer
 
 #if PROGRAMMABLE_PIPELINE
             // shader uniform block update
-            shaderData.Ambient = new ColorNormalized(0.2f, 0.2f, 0, 0.5f);
+            shaderData.Ambient = new ColorNormalized(0.3f, 0.2f, 0.1f, 0.7f);
             // directional light
             shaderData.LightPos[0] = new Vector3(1, -0.5f, 1).normalized;
-            shaderData.LightColor[0] = new ColorNormalized(1, 0, 0, 0.5f);
+            shaderData.LightColor[0] = new ColorNormalized(1, 0, 0, 1f);
             shaderData.LightItensity[0] = Vector4.one;
             shaderData.LightParams1[0] = Vector4.one;
             shaderData.CameraPos = camera.Translate;
@@ -422,7 +431,8 @@ namespace SoftRenderer
                 var go = gameObjs[i];
                 if (autoRotate)
                 {
-                    go.LocalRotation += new Vector3(0.25f + i * 0.1f, 0.5f + i * 0.01f, i * 0.5f);
+                    //go.LocalRotation += new Vector3(0.25f + i * 0.1f, 0.5f + i * 0.01f, i * 0.5f);
+                    go.LocalRotation += new Vector3(0.25f, 0.8f, 0.7f);
                 }
 #if !PROGRAMMABLE_PIPELINE
                 if (go.Mesh != null)
