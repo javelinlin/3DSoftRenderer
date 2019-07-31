@@ -37,7 +37,11 @@
             this.SelectCameraBtn = new System.Windows.Forms.Button();
             this.SelectRendererBtn = new System.Windows.Forms.Button();
             this.SelectFormBtn = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
+            this.statusStrip1 = new System.Windows.Forms.StatusStrip();
+            this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)(this.PictureBox)).BeginInit();
+            this.statusStrip1.SuspendLayout();
             this.SuspendLayout();
             // 
             // PictureBox
@@ -56,7 +60,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.PropertyGrid.Location = new System.Drawing.Point(377, 12);
             this.PropertyGrid.Name = "PropertyGrid";
-            this.PropertyGrid.Size = new System.Drawing.Size(169, 358);
+            this.PropertyGrid.Size = new System.Drawing.Size(175, 389);
             this.PropertyGrid.TabIndex = 5;
             // 
             // timer1
@@ -70,7 +74,7 @@
             this.FpsLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.FpsLabel1.AutoSize = true;
             this.FpsLabel1.BackColor = System.Drawing.Color.Transparent;
-            this.FpsLabel1.Location = new System.Drawing.Point(12, 325);
+            this.FpsLabel1.Location = new System.Drawing.Point(12, 355);
             this.FpsLabel1.Name = "FpsLabel1";
             this.FpsLabel1.Size = new System.Drawing.Size(31, 15);
             this.FpsLabel1.TabIndex = 7;
@@ -79,7 +83,7 @@
             // PauseBtn
             // 
             this.PauseBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.PauseBtn.Location = new System.Drawing.Point(12, 343);
+            this.PauseBtn.Location = new System.Drawing.Point(12, 373);
             this.PauseBtn.Name = "PauseBtn";
             this.PauseBtn.Size = new System.Drawing.Size(88, 27);
             this.PauseBtn.TabIndex = 8;
@@ -90,7 +94,7 @@
             // SelectCameraBtn
             // 
             this.SelectCameraBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectCameraBtn.Location = new System.Drawing.Point(106, 343);
+            this.SelectCameraBtn.Location = new System.Drawing.Point(106, 373);
             this.SelectCameraBtn.Name = "SelectCameraBtn";
             this.SelectCameraBtn.Size = new System.Drawing.Size(118, 27);
             this.SelectCameraBtn.TabIndex = 9;
@@ -101,7 +105,7 @@
             // SelectRendererBtn
             // 
             this.SelectRendererBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectRendererBtn.Location = new System.Drawing.Point(230, 343);
+            this.SelectRendererBtn.Location = new System.Drawing.Point(230, 373);
             this.SelectRendererBtn.Name = "SelectRendererBtn";
             this.SelectRendererBtn.Size = new System.Drawing.Size(141, 27);
             this.SelectRendererBtn.TabIndex = 10;
@@ -112,7 +116,7 @@
             // SelectFormBtn
             // 
             this.SelectFormBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectFormBtn.Location = new System.Drawing.Point(230, 310);
+            this.SelectFormBtn.Location = new System.Drawing.Point(230, 340);
             this.SelectFormBtn.Name = "SelectFormBtn";
             this.SelectFormBtn.Size = new System.Drawing.Size(141, 27);
             this.SelectFormBtn.TabIndex = 11;
@@ -120,11 +124,41 @@
             this.SelectFormBtn.UseVisualStyleBackColor = true;
             this.SelectFormBtn.Click += new System.EventHandler(this.SelectFormBtn_Click);
             // 
+            // button1
+            // 
+            this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.button1.Location = new System.Drawing.Point(106, 340);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(118, 27);
+            this.button1.TabIndex = 12;
+            this.button1.Text = "SnapshotPic";
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click);
+            // 
+            // statusStrip1
+            // 
+            this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
+            this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.statusLabel});
+            this.statusStrip1.Location = new System.Drawing.Point(0, 401);
+            this.statusStrip1.Name = "statusStrip1";
+            this.statusStrip1.Size = new System.Drawing.Size(564, 25);
+            this.statusStrip1.TabIndex = 13;
+            this.statusStrip1.Text = "statusStrip1";
+            // 
+            // statusLabel
+            // 
+            this.statusLabel.Name = "statusLabel";
+            this.statusLabel.Size = new System.Drawing.Size(31, 20);
+            this.statusLabel.Text = "OK";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(558, 382);
+            this.ClientSize = new System.Drawing.Size(564, 426);
+            this.Controls.Add(this.statusStrip1);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.SelectFormBtn);
             this.Controls.Add(this.SelectRendererBtn);
             this.Controls.Add(this.SelectCameraBtn);
@@ -137,6 +171,8 @@
             this.Name = "MainForm";
             this.Text = "Jave.Lin-SoftRenderer";
             ((System.ComponentModel.ISupportInitialize)(this.PictureBox)).EndInit();
+            this.statusStrip1.ResumeLayout(false);
+            this.statusStrip1.PerformLayout();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -151,6 +187,9 @@
         private System.Windows.Forms.Button SelectCameraBtn;
         private System.Windows.Forms.Button SelectRendererBtn;
         private System.Windows.Forms.Button SelectFormBtn;
+        private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.StatusStrip statusStrip1;
+        private System.Windows.Forms.ToolStripStatusLabel statusLabel;
     }
 }
 

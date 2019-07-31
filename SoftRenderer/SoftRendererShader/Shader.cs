@@ -89,6 +89,7 @@ namespace SoftRendererShader
         [Main]
         public override void Main()
         {
+            //outColor.rgb = inNormal;return;
             //1
             var shaderData = Data as ShaderData;
             //

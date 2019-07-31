@@ -10,6 +10,7 @@ using SoftRenderer.SoftRenderer.Rasterization;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.Drawing.Imaging;
 
 namespace SoftRenderer.SoftRenderer
@@ -439,6 +440,18 @@ namespace SoftRenderer.SoftRenderer
         public void BindIndexBuff(IndexBuffer buffer)
         {
             CurIndexBuffer = buffer;
+        }
+
+        public void BackbuffSaveAs(string path)
+        {
+            Bitmap bmp = frontBuffer;
+            bmp.Save(path);
+        }
+
+        public Bitmap BackbuffSaveAs()
+        {
+            Bitmap bmp = frontBuffer;
+            return bmp.Clone(new Rectangle(0, 0, bmp.Width, bmp.Height), bmp.PixelFormat);
         }
 
         internal BitmapData Begin()

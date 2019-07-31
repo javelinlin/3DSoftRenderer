@@ -11,6 +11,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.IO;
 using System.Windows.Forms;
 
 namespace SoftRenderer
@@ -504,6 +505,18 @@ namespace SoftRenderer
         private void SelectFormBtn_Click(object sender, EventArgs e)
         {
             PropertyGrid.SelectedObject = this;
+        }
+
+        private void button1_Click(object sender, EventArgs e)
+        {
+            var srcPaused = paused;
+            paused = false;
+            statusLabel.Text = $"Snapshotting...";
+            if (!Directory.Exists("Snapshots")) Directory.CreateDirectory("Snapshots");
+            var path = $"Snapshots/{DateTime.Now.Ticks}.png";
+            renderer.BackbuffSaveAs(path);
+            statusLabel.Text = $"Snapshot : {path} Complete.";
+            paused = srcPaused;
         }
     }
 }
