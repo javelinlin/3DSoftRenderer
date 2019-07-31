@@ -420,7 +420,7 @@ namespace SoftRenderer.SoftRenderer
                 {
                     var f = normalLineResult[i];
                     if (f.discard) continue;
-                    BeginSetPixel(bmd.Scan0, f.p, blueColor);
+                    BeginSetPixel(bmd.Scan0, f.p, f.normalLineColor);
                 }
             }
 

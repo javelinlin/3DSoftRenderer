@@ -135,27 +135,27 @@ namespace SoftRendererShader
                 // intensity = max(0, 1 - distance / range);
             else
                 throw new Exception($"not implements lightType:{lightType}");
-            lightDir = new Vector3(1, -0.5f, 1).normalized;
             var LdotN = dot(lightDir, inNormal);// * 0.5f + 0.5f;
-            var diffuse = (tex2D(sampler, mainTex, inUV)) * (LdotN * 0.5f + 0.5f) * inColor;
+            var diffuse = (1 - tex2D(sampler, mainTex, inUV)) * (LdotN * 0.5f + 0.5f) * inColor;
             diffuse *= 2;
             // specular
             var viewDir = (shaderData.CameraPos.xyz - inWorldPos.xyz);
+            viewDir.Normalize();
             var specular = color.black;
 
             if (LdotN > 0)
             {
                 // specular 1
                 // 高光也可以使用：光源角与视角的半角来算
-                var halfAngleDir = (lightDir + viewDir);
-                halfAngleDir.Normalize();
-                var HdotN = max(0, dot(halfAngleDir, inNormal));
-                HdotN = pow(HdotN, 90f);
-                specular.rgb = (shaderData.LightColor[0] * HdotN).rgb * shaderData.LightColor[0].a;
+                //var halfAngleDir = (lightDir + viewDir);
+                //halfAngleDir.Normalize();
+                //var HdotN = max(0, dot(halfAngleDir, inNormal));
+                //HdotN = pow(HdotN, 90f);
+                //specular.rgb = (shaderData.LightColor[0] * HdotN).rgb * shaderData.LightColor[0].a;
                 // specular 2
-                //var reflectDir = reflect(-lightDir, inNormal);
-                //var RnotV = max(0, dot(reflectDir, viewDir));
-                //specular.rgb = (shaderData.LightColor[0] * RnotV).rgb * shaderData.LightColor[0].a;
+                var reflectDir = reflect(-lightDir, inNormal);
+                var RnotV = max(0, dot(reflectDir, viewDir));
+                specular.rgb = (shaderData.LightColor[0] * RnotV).rgb * shaderData.LightColor[0].a;
             }
 
 

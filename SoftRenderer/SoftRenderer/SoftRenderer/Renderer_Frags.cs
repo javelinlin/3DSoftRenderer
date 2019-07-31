@@ -50,6 +50,8 @@ namespace SoftRenderer.SoftRenderer
         //	float reciprocalW = 1.0f / vertex.pos.w;
         public float reciprocalW;
 
+        public ColorNormalized normalLineColor; // 调试用
+
         public Vector4 p;
 
         public int PosIdx { get; private set; }

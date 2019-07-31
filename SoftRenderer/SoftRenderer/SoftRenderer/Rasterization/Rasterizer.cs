@@ -1082,6 +1082,10 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             {
                 var triangleVertices = new FragInfo[] { triangle.f0, triangle.f1, triangle.f2 };
                 var len = triangleVertices.Length;
+
+                var blue = Color.blue;
+                var white = Color.white;
+
                 for (int i = 0; i < len; i++)
                 {
                     var f = triangleVertices[i];
@@ -1105,13 +1109,28 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                         var n1 = FragInfo.GetFragInfo();
                         n1.p = normalPos1;
 
+                        var srcIdx = normalLineResult.Count;
                         GenLineFrag(n0, n1, normalLineResult, false);
 
                         var count = normalLineResult.Count;
+                        var count1 = normalLineResult.Count - srcIdx;
+                        for (int newI = srcIdx; newI < count; newI++)
+                        {
+                            var nrlF = normalLineResult[newI];
+                            if (nrlF.p.x < minX || nrlF.p.x > maxX || nrlF.p.y < minY || nrlF.p.y > maxY)
+                            {
+                                nrlF.discard = true;
+                                continue;
+                            }
+                            var t = (float)(newI - srcIdx)/ count1;
+                            nrlF.normalLineColor = Mathf.Lerp(blue, white, t);
+                        }
+
+                        count = normalLineResult.Count;
                         for (int fI = 0; fI < count; fI++)
                         {
                             var nrlF = normalLineResult[fI];
-                            if (nrlF.p.x < minX || nrlF.p.x > maxX || nrlF.p.y < minY || nrlF.p.y > maxY)
+                            if (nrlF.discard || nrlF.p.x < minX || nrlF.p.x > maxX || nrlF.p.y < minY || nrlF.p.y > maxY)
                             {
                                 nrlF.discard = true;
                                 continue;
