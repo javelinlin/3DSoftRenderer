@@ -67,7 +67,7 @@ namespace SoftRenderer
             renderer.State.BlendSrcAlphaFactor = BlendFactor.One;
             renderer.State.BlendDstAlphaFactor = BlendFactor.One;
             // test
-            renderer.State.Cull = FaceCull.Off;
+            //renderer.State.Cull = FaceCull.Off;
 
             this.PictureBox.Width = buff_size;
             this.PictureBox.Height = buff_size;
@@ -255,7 +255,8 @@ namespace SoftRenderer
             var vsShader = renderer.ShaderMgr.CreateShader(vs_shaderHash);
             var fsShader = renderer.ShaderMgr.CreateShader(fs_shaderHash);
 
-            var tex_bmp = new Bitmap("Images/GitHubIcon.PNG");
+            var tex_bmp = new Bitmap("Images/texture.png");
+            //var tex_bmp = new Bitmap("Images/GitHubIcon.PNG");
             //var tex_bmp = new Bitmap("Images/heightMap1.jpg");
             //var tex_bmp = new Bitmap("Images/tex.jpg");
             //var tex_bmp = new Bitmap("Images/icon.PNG");
@@ -350,7 +351,7 @@ namespace SoftRenderer
             shaderData.Ambient = new ColorNormalized(0.3f, 0.2f, 0.1f, 0.7f);
             // directional light
             shaderData.LightPos[0] = new Vector3(1, -0.5f, 1).normalized;
-            shaderData.LightColor[0] = new ColorNormalized(1, 0, 0, 1f);
+            shaderData.LightColor[0] = new ColorNormalized(1, 1, 1, 1f);
             shaderData.LightItensity[0] = Vector4.one;
             shaderData.LightParams1[0] = Vector4.one;
             shaderData.CameraPos = camera.Translate;

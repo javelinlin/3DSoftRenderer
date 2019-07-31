@@ -25,15 +25,13 @@ namespace SoftRendererShader
         [Uniform] public mat4 M;
         [Uniform] public mat4 M_IT;
 
-        /* ==========In======== */
+        /* ==========In or Out======== */
 
         [In] [Position] public vec4 inPos;
 
-        /* ==========Out======== */
-
         [In][Out] [Texcoord] public vec2 ioUV;
         [In][Out] [Color] public color ioColor;
-        [In] [Out] [Normal] public vec3 ioNormal;
+        [In] [Out] [Normal] [Nointerpolation] public vec3 ioNormal;
         //[In] [Out] [Tangent] public Vector3 ioTangent;
 
         [Out] [SV_Position] public vec4 outPos;
@@ -103,23 +101,24 @@ namespace SoftRendererShader
             //2
             //outColor = inColor;
             //3
-            //if (inUV.x >= 0 && inUV.x <= 0.25f) outColor = ColorNormalized.red;
+            //if (inUV.x >= 0 && inUV.x <= 0.25f) outColor = color.red;
             //else if (inUV.x > 0.25f && inUV.x <= 0.5f) outColor = ColorNormalized.green;
             //else if (inUV.x > 0.5f && inUV.x <= 0.75f) outColor = ColorNormalized.blue;
             //else outColor = ColorNormalized.yellow;
             // 4
             //var v = inUV.y * 100;
             //var times = (int)(v / 5);
-            //if (times % 2 == 0) outColor = ColorNormalized.red;
-            //else outColor = ColorNormalized.green;
+            //if (times % 2 == 0) outColor = color.red;
+            //else outColor = color.green;
+            //return;
             // 5
-            //outColor = new ColorNormalized(inUV.x, inUV.y, 0, 1);
+            //outColor = new color(inUV.x, inUV.y, 0, 1);
             // 6
             //outColor = sampler.Sample(mainTex, inUV);
             // 7
             //outColor = tex2D(sampler, mainTex, inUV);
             // 8 alpha test in here
-            //var c = new ColorNormalized(inUV.x, inUV.y, 0, 1);
+            //var c = new color(inUV.x, inUV.y, 0, 1);
             //outColor = tex2D(sampler, mainTex, inUV) + c; // * c;
             //var b = outColor.r + outColor.g + outColor.b;
             //b *= 0.3f;
@@ -133,11 +132,12 @@ namespace SoftRendererShader
                 lightDir = lightPos.xyz;
             else if (lightType == 1) // 点光源
                 lightDir = (lightPos.xyz - inWorldPos.xyz).normalized;
+                // intensity = max(0, 1 - distance / range);
             else
                 throw new Exception($"not implements lightType:{lightType}");
             lightDir = new Vector3(1, -0.5f, 1).normalized;
             var LdotN = dot(lightDir, inNormal);// * 0.5f + 0.5f;
-            var diffuse = (1 - tex2D(sampler, mainTex, inUV)) * (LdotN * 0.5f + 0.5f) * inColor;
+            var diffuse = (tex2D(sampler, mainTex, inUV)) * (LdotN * 0.5f + 0.5f) * inColor;
             diffuse *= 2;
             // specular
             var viewDir = (shaderData.CameraPos.xyz - inWorldPos.xyz);
@@ -162,12 +162,12 @@ namespace SoftRendererShader
             // ambient
             var ambient = shaderData.Ambient;
             ambient.rgb *= ambient.a;
-            ambient.rgb = 0; // test
+            //ambient.rgb = 0; // test
 
             outColor = diffuse + specular + ambient;
-            outColor.rgb = LdotN;
+            //outColor.rgb = LdotN;
             //outColor.rgb = inNormal + specular.rgb;
-            outColor.rgb = inNormal;
+            //outColor.rgb = inNormal;
 
             // test
             //outColor.rgb = inNormal * 0.5f + 0.5f;

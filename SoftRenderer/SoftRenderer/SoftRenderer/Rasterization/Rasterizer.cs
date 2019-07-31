@@ -346,69 +346,76 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                     {
                         var refV = f0.UpperStageOutInfos[j];
                         object v = null;
-                        if (refV.layout == OutLayout.SV_Position)
+                        if (refV.nointerpolation)
                         {
-                            v = newP;
+                            v = refV.value;
                         }
-                        else if (refV.layout == OutLayout.Position)
+                        else
                         {
+                            if (refV.layout == OutLayout.SV_Position)
+                            {
+                                v = newP;
+                            }
+                            else if (refV.layout == OutLayout.Position)
+                            {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
                                 (Vector4)refV.value,
                                 (Vector4)f1.UpperStageOutInfos[j].value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                            v = Mathf.Lerp((Vector4)refV.value, (Vector4)f1.UpperStageOutInfos[j].value, t, tt);
+                                v = Mathf.Lerp((Vector4)refV.value, (Vector4)f1.UpperStageOutInfos[j].value, t, tt);
 #endif
-                        }
-                        else if (refV.layout == OutLayout.Color)
-                        {
+                            }
+                            else if (refV.layout == OutLayout.Color)
+                            {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
                                 (Color)refV.value,
                                 (Color)f1.UpperStageOutInfos[j].value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                            v = Mathf.Lerp((Color)refV.value, (Color)f1.UpperStageOutInfos[j].value, t, tt);
+                                v = Mathf.Lerp((Color)refV.value, (Color)f1.UpperStageOutInfos[j].value, t, tt);
 #endif
 
-                        }
-                        else if (refV.layout == OutLayout.Normal)
-                        {
+                            }
+                            else if (refV.layout == OutLayout.Normal)
+                            {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
                                 (Vector3)refV.value,
                                 (Vector3)f1.UpperStageOutInfos[j].value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                            v = Mathf.Lerp((Vector3)refV.value, (Vector3)f1.UpperStageOutInfos[j].value, t, tt);
+                                v = Mathf.Lerp((Vector3)refV.value, (Vector3)f1.UpperStageOutInfos[j].value, t, tt);
 #endif
-                        }
-                        else if (refV.layout == OutLayout.Texcoord)
-                        {
+                            }
+                            else if (refV.layout == OutLayout.Texcoord)
+                            {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
                                 (Vector2)refV.value,
                                 (Vector2)f1.UpperStageOutInfos[j].value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                            v = Mathf.Lerp((Vector2)refV.value, (Vector2)f1.UpperStageOutInfos[j].value, t, tt);
+                                v = Mathf.Lerp((Vector2)refV.value, (Vector2)f1.UpperStageOutInfos[j].value, t, tt);
 #endif
-                        }
-                        else if (refV.layout == OutLayout.Tangent)
-                        {
+                            }
+                            else if (refV.layout == OutLayout.Tangent)
+                            {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
                                 (Vector3)refV.value,
                                 (Vector3)f1.UpperStageOutInfos[j].value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                            v = Mathf.Lerp((Vector3)refV.value, (Vector3)f1.UpperStageOutInfos[j].value, t, tt);
+                                v = Mathf.Lerp((Vector3)refV.value, (Vector3)f1.UpperStageOutInfos[j].value, t, tt);
 #endif
-                        }
-                        else
-                        {
-                            throw new Exception($"new layout data : {refV.layout} handle, not implements");
+                            }
+                            else
+                            {
+                                throw new Exception($"new layout data : {refV.layout} handle, not implements");
+                            }
                         }
                         infos[j] = new OutInfo
                         {
@@ -907,70 +914,77 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                             {
                                 var refV = leftF.UpperStageOutInfos[j];
                                 object v = null;
-                                if (refV.layout == OutLayout.SV_Position)
+                                if (refV.nointerpolation)
                                 {
-                                    v = newP;
+                                    v = refV.value;
                                 }
-                                else if (refV.layout == OutLayout.Position)
+                                else
                                 {
+                                    if (refV.layout == OutLayout.SV_Position)
+                                    {
+                                        v = newP;
+                                    }
+                                    else if (refV.layout == OutLayout.Position)
+                                    {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
                                         (Vector4)refV.value,
                                         (Vector4)rightF.UpperStageOutInfos[j].value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                    v = Mathf.Lerp((Vector4)refV.value, (Vector4)rightF.UpperStageOutInfos[j].value, t, tt);
+                                        v = Mathf.Lerp((Vector4)refV.value, (Vector4)rightF.UpperStageOutInfos[j].value, t, tt);
 #endif
-                                }
-                                else if (refV.layout == OutLayout.Color)
-                                {
+                                    }
+                                    else if (refV.layout == OutLayout.Color)
+                                    {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
                                         (Color)refV.value,
                                         (Color)rightF.UpperStageOutInfos[j].value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                    v = Mathf.Lerp((Color)refV.value, (Color)rightF.UpperStageOutInfos[j].value, t, tt);
+                                        v = Mathf.Lerp((Color)refV.value, (Color)rightF.UpperStageOutInfos[j].value, t, tt);
 #endif
-                                }
-                                else if (refV.layout == OutLayout.Normal)
-                                {
+                                    }
+                                    else if (refV.layout == OutLayout.Normal)
+                                    {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
                                         (Vector3)refV.value,
                                         (Vector3)rightF.UpperStageOutInfos[j].value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                    v = Mathf.Lerp((Vector3)refV.value, (Vector3)rightF.UpperStageOutInfos[j].value, t, tt);
+                                        v = Mathf.Lerp((Vector3)refV.value, (Vector3)rightF.UpperStageOutInfos[j].value, t, tt);
 #endif
-                                    // 暂时测试用
-                                    //v = n;
-                                }
-                                else if (refV.layout == OutLayout.Texcoord)
-                                {
+                                        // 暂时测试用
+                                        //v = n;
+                                    }
+                                    else if (refV.layout == OutLayout.Texcoord)
+                                    {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
                                         (Vector2)refV.value,
                                         (Vector2)rightF.UpperStageOutInfos[j].value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                    v = Mathf.Lerp((Vector2)refV.value, (Vector2)rightF.UpperStageOutInfos[j].value, t, tt);
+                                        v = Mathf.Lerp((Vector2)refV.value, (Vector2)rightF.UpperStageOutInfos[j].value, t, tt);
 #endif
-                                }
-                                else if (refV.layout == OutLayout.Tangent)
-                                {
+                                    }
+                                    else if (refV.layout == OutLayout.Tangent)
+                                    {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
                                         (Vector3)refV.value,
                                         (Vector3)rightF.UpperStageOutInfos[j].value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                    v = Mathf.Lerp((Vector3)refV.value, (Vector3)rightF.UpperStageOutInfos[j].value, t, tt);
+                                        v = Mathf.Lerp((Vector3)refV.value, (Vector3)rightF.UpperStageOutInfos[j].value, t, tt);
 #endif
-                                }
-                                else
-                                {
-                                    throw new Exception($"new layout data : {refV.layout} handle, not implements");
+                                    }
+                                    else
+                                    {
+                                        throw new Exception($"new layout data : {refV.layout} handle, not implements");
+                                    }
                                 }
                                 infos[j] = new OutInfo
                                 {

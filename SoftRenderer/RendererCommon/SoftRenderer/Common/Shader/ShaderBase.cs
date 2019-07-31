@@ -44,6 +44,8 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         private Dictionary<InLayout, Dictionary<int, FieldInfo>> inLayoutFieldDict = new Dictionary<InLayout, Dictionary<int, FieldInfo>>();
         private Dictionary<OutLayout, Dictionary<int, FieldInfo>> outLayoutFieldDict = new Dictionary<OutLayout, Dictionary<int, FieldInfo>>();
 
+        private Dictionary<FieldInfo, bool> interpolationFlagDict = new Dictionary<FieldInfo, bool>();
+
         public ShaderBase Shader { get; private set; }
 
         public ShaderFieldReflection(ShaderBase shader)
@@ -55,6 +57,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             var uniformAtType = typeof(UniformAttribute);
             var inAtType = typeof(InAttribute);
             var outAtType = typeof(OutAttribute);
+            var nointerpolation = typeof(NointerpolationAttribute);
             foreach (var f in fs)
             {
                 foreach (var at in f.CustomAttributes)
@@ -139,6 +142,10 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                             outLayoutFieldDict[layout] = dict = new Dictionary<int, FieldInfo>();
                         dict[location] = f;
                     }
+                    else if (at.AttributeType.IsEquivalentTo(nointerpolation))
+                    {
+                        interpolationFlagDict[f] = true;
+                    }
                 }
             }
         }
@@ -201,8 +208,13 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             {
                 foreach (var kkvv in kv.Value)
                 {
-                    result[idx++] = new OutInfo {
-                        layout = kv.Key, location = kkvv.Key, value = kkvv.Value.GetValue(Shader)
+                    interpolationFlagDict.TryGetValue(kkvv.Value, out bool nointerpolation);
+                    result[idx++] = new OutInfo
+                    {
+                        layout = kv.Key,
+                        location = kkvv.Key,
+                        value = kkvv.Value.GetValue(Shader),
+                        nointerpolation = nointerpolation
                     };
                 }
             }
@@ -250,6 +262,11 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                 outLayoutFieldDict.Clear();
                 outLayoutFieldDict = null;
             }
+            if (interpolationFlagDict != null)
+            {
+                interpolationFlagDict.Clear();
+                interpolationFlagDict = null;
+            }
             Shader = null;
         }
     }
@@ -261,6 +278,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         public OutLayout layout;
         public int location;
         public object value;
+        public bool nointerpolation;
 
         public T Get<T>()
         {

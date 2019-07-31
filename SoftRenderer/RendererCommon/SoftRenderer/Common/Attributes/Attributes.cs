@@ -26,6 +26,9 @@ namespace RendererCommon.SoftRenderer.Common.Attributes
 
     /*=========COMMON START=========*/
 
+    [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
+    public sealed class NointerpolationAttribute : Attribute { }
+
     [AttributeUsage(AttributeTargets.Property, Inherited = false, AllowMultiple = false)]
     public sealed class SharedDataAttribute : Attribute { }
     [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
