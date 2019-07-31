@@ -45,8 +45,8 @@ namespace SoftRendererShader
         [Main]
         public override void Main()
         {
+            inPos.xyz += ioNormal * outlineOffset;
             outPos = MVP * inPos;
-            outPos.xyz += ioNormal * outlineOffset;
             outWorldPos = M * inPos;
             ioNormal = M_IT * ioNormal;
             //outTangent = M_IT * ioTangent;
