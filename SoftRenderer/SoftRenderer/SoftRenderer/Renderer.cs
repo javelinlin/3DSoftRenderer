@@ -1,6 +1,6 @@
 ﻿// jave.lin 2019.07.15
 
-//#define DOUBLE_BUFF // 使用双缓存
+#define DOUBLE_BUFF // 使用双缓存
 //#define BUFF_RGBA // 使用4通道缓存，不开使用3通道，没有Alpha
 
 using RendererCommon.SoftRenderer.Common.Shader;
@@ -115,6 +115,10 @@ namespace SoftRenderer.SoftRenderer
             // 而不必等到所有的所有图元都光栅完再处理FragmentShader
             // 那个时候，片段列表会非常大，因为片段多
             RasterizeAndFragmentShader(fs);
+
+#if DOUBLE_BUFF
+            bufferDirty = true;
+#endif
         }
 
         private void VertexShader(ShaderBase vs)
@@ -473,9 +477,6 @@ namespace SoftRenderer.SoftRenderer
         {
             //if (x < 0 || x >= backBufferWidth || y < 0 || y >= backBufferHeight) return;
             backBuffer.SetPixel(x, y, color);
-#if DOUBLE_BUFF
-            bufferDirty = true;
-#endif
         }
 
         public ColorBuffer SwapBuffer()

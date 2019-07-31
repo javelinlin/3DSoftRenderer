@@ -29,8 +29,8 @@ namespace SoftRendererShader
 
         [In] [Position] public vec4 inPos;
 
-        [In][Out] [Texcoord] public vec2 ioUV;
-        [In][Out] [Color] public color ioColor;
+        [In] [Out] [Texcoord] public vec2 ioUV;
+        [In] [Out] [Color] public color ioColor;
         [In] [Out] [Normal] [Nointerpolation] public vec3 ioNormal;
         //[In] [Out] [Tangent] public Vector3 ioTangent;
 
@@ -59,7 +59,7 @@ namespace SoftRendererShader
         [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
 
         [Uniform] public Texture2D mainTex;
-        private Sampler2D sampler;
+        private Sampler2D sampler = default(Sampler2D);
 
         [In] [SV_Position] public vec4 inPos;
         [In] [Position] public vec4 inWorldPos;
@@ -136,8 +136,7 @@ namespace SoftRendererShader
             else
                 throw new Exception($"not implements lightType:{lightType}");
             var LdotN = dot(lightDir, inNormal);// * 0.5f + 0.5f;
-            var diffuse = (1 - tex2D(sampler, mainTex, inUV)) * (LdotN * 0.5f + 0.5f) * inColor;
-            diffuse *= 2;
+            var diffuse = (1 - tex2D(sampler, mainTex, inUV)) * 2 * (LdotN * 0.5f + 0.5f) * inColor;
             // specular
             var viewDir = (shaderData.CameraPos.xyz - inWorldPos.xyz);
             viewDir.Normalize();
