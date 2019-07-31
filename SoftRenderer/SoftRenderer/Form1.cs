@@ -19,6 +19,7 @@ namespace SoftRenderer
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public partial class MainForm : Form
     {
+        private static readonly int outlineOffsetHash = "outlineOffset".GetHashCode();
         private const int buff_size = 200;
         private Renderer renderer;
 
@@ -54,6 +55,10 @@ namespace SoftRenderer
         public float Rx { get; set; }
         public float Ry { get; set; }
         public float Rz { get; set; }
+
+        // 法线描边的偏移值，这个需要好的模型才能测试出来
+        // TODO 后面添加支持：加载*.obj模型
+        public float normalOutlineOffset { get; set; } = 1f;
 
         public MainForm()
         {
@@ -303,8 +308,9 @@ namespace SoftRenderer
 
             if (!paused)
             {
-                Update(dt);
-                UpdateGameObjs(dt);
+                var usingDt = dt * TimeScaleSlider.Value / 500f;
+                Update(usingDt);
+                UpdateGameObjs(usingDt);
                 Draw();
                 PictureBox.Image = renderer.SwapBuffer();
 
@@ -360,6 +366,11 @@ namespace SoftRenderer
             shaderData.CameraParams = new Vector4(camera.near, camera.far, 0, 0);
 
             shaderData.NowDataWriteToBuff();
+
+            for (int i = 0; i < gameObjs.Count; i++)
+            {
+                gameObjs[i].Material.VS.ShaderProperties.SetUniform(outlineOffsetHash, normalOutlineOffset);
+            }
 #else
             renderer.State.CamX = camera.Translate.x;
             renderer.State.CamY = camera.Translate.y;
@@ -434,8 +445,7 @@ namespace SoftRenderer
                 var go = gameObjs[i];
                 if (autoRotate)
                 {
-                    go.LocalRotation += new Vector3(0.25f + i * 0.1f, 0.5f + i * 0.01f, 0.2f + i * 0.5f);
-                    //go.LocalRotation += new Vector3(0.25f, 0.8f, 0.7f);
+                    go.LocalRotation += new Vector3(0.1f + i * 0.01f, 0.015f + i * 0.02f, 0.016f + i * 0.03f) * deltaMs;
                 }
 #if !PROGRAMMABLE_PIPELINE
                 if (go.Mesh != null)
@@ -517,6 +527,21 @@ namespace SoftRenderer
             renderer.BackbuffSaveAs(path);
             statusLabel.Text = $"Snapshot : {path} Complete.";
             paused = srcPaused;
+        }
+
+        private void resetTRS_Click(object sender, EventArgs e)
+        {
+            for (int i = 0; i < gameObjs.Count; i++)
+            {
+                gameObjs[i].LocalPosition = Vector3.zero;
+                gameObjs[i].LocalRotation = Vector3.zero;
+                gameObjs[i].LocalScale = Vector3.one;
+            }
+        }
+
+        private void TimeScaleSlider_ValueChanged(object sender, EventArgs e)
+        {
+            TimeScaleValueLabel.Text = TimeScaleSlider.Value.ToString();
         }
     }
 }

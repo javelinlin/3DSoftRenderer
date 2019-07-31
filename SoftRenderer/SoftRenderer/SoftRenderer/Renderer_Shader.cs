@@ -190,10 +190,6 @@ namespace SoftRenderer.SoftRenderer
                         {
                             throw new Exception($"shader:{type.Name} not found Out & SV_Position attribute");
                         }
-                        //if (fs == null)
-                        //{
-                        //    fs = Activator.CreateInstance(type, new[] { shaderData }) as ShaderBase;
-                        //}
                     }
                     else
                     {
@@ -203,18 +199,18 @@ namespace SoftRenderer.SoftRenderer
                     }
 
                     var f = type.GetField(name, BindingFlags.GetField | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                    if (f == null || !f.IsInitOnly)
+                        throw new Exception($"Shader Class Name:{type.Name}, not defines the 'public static readonly string {name};' field");
                     var shaderName = (string)f.GetValue(null);
                     f = type.GetField(hash, BindingFlags.GetField | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                    if (f == null || !f.IsInitOnly)
+                        throw new Exception($"Shader Class Name:{type.Name}, not defines the 'public static readonly string {hash};' field");
                     var shaderHash = (int)f.GetValue(null);
 
                     if (shaderTypeDictName.ContainsKey(shaderName))
-                    {
                         throw new Exception($"shaderName existing, shader:{shaderName}, type:{type.Name}, in buff shader.type:{shaderTypeDictName[shaderName].Name}");
-                    }
                     if (shaderTypeDictHash.ContainsKey(shaderHash))
-                    {
                         throw new Exception($"shaderName existing, shaderHash:{shaderHash}, type:{type.Name}, in buff shader.type:{shaderTypeDictName[shaderName].Name}");
-                    }
                     shaderTypeDictName[shaderName] = type;
                     shaderTypeDictHash[shaderHash] = type;
 

@@ -44,7 +44,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         private Dictionary<InLayout, Dictionary<int, FieldInfo>> inLayoutFieldDict = new Dictionary<InLayout, Dictionary<int, FieldInfo>>();
         private Dictionary<OutLayout, Dictionary<int, FieldInfo>> outLayoutFieldDict = new Dictionary<OutLayout, Dictionary<int, FieldInfo>>();
 
-        private Dictionary<FieldInfo, bool> interpolationFlagDict = new Dictionary<FieldInfo, bool>();
+        private Dictionary<FieldInfo, bool> nointerpolationFlagDict = new Dictionary<FieldInfo, bool>();
 
         public ShaderBase Shader { get; private set; }
 
@@ -144,7 +144,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                     }
                     else if (at.AttributeType.IsEquivalentTo(nointerpolation))
                     {
-                        interpolationFlagDict[f] = true;
+                        nointerpolationFlagDict[f] = true;
                     }
                 }
             }
@@ -208,7 +208,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             {
                 foreach (var kkvv in kv.Value)
                 {
-                    interpolationFlagDict.TryGetValue(kkvv.Value, out bool nointerpolation);
+                    nointerpolationFlagDict.TryGetValue(kkvv.Value, out bool nointerpolation);
                     result[idx++] = new OutInfo
                     {
                         layout = kv.Key,
@@ -262,10 +262,10 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                 outLayoutFieldDict.Clear();
                 outLayoutFieldDict = null;
             }
-            if (interpolationFlagDict != null)
+            if (nointerpolationFlagDict != null)
             {
-                interpolationFlagDict.Clear();
-                interpolationFlagDict = null;
+                nointerpolationFlagDict.Clear();
+                nointerpolationFlagDict = null;
             }
             Shader = null;
         }
@@ -359,7 +359,8 @@ namespace RendererCommon.SoftRenderer.Common.Shader
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class FSBase : ShaderBase
     {
-        public bool discard;
+        public bool discard;    // 是否丢弃片段, default: false
+        public bool front;      // 是否正面, default: true
 
         public FSBase(BasicShaderData data) : base(data)
         {
@@ -368,6 +369,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         public virtual void Reset()
         {
             discard = false;
+            front = true;
         }
     }
 }

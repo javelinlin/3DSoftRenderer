@@ -24,6 +24,7 @@ namespace SoftRendererShader
         [Uniform] public mat4 MVP;
         [Uniform] public mat4 M;
         [Uniform] public mat4 M_IT;
+        [Uniform] public float outlineOffset;
 
         /* ==========In or Out======== */
 
@@ -45,6 +46,7 @@ namespace SoftRendererShader
         public override void Main()
         {
             outPos = MVP * inPos;
+            outPos.xyz += ioNormal * outlineOffset;
             outWorldPos = M * inPos;
             ioNormal = M_IT * ioNormal;
             //outTangent = M_IT * ioTangent;

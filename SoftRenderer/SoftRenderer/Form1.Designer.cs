@@ -40,8 +40,13 @@
             this.button1 = new System.Windows.Forms.Button();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.resetTRS = new System.Windows.Forms.Button();
+            this.TimeScaleLabel = new System.Windows.Forms.Label();
+            this.TimeScaleSlider = new System.Windows.Forms.TrackBar();
+            this.TimeScaleValueLabel = new System.Windows.Forms.Label();
             ((System.ComponentModel.ISupportInitialize)(this.PictureBox)).BeginInit();
             this.statusStrip1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.TimeScaleSlider)).BeginInit();
             this.SuspendLayout();
             // 
             // PictureBox
@@ -60,7 +65,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.PropertyGrid.Location = new System.Drawing.Point(377, 12);
             this.PropertyGrid.Name = "PropertyGrid";
-            this.PropertyGrid.Size = new System.Drawing.Size(175, 389);
+            this.PropertyGrid.Size = new System.Drawing.Size(239, 461);
             this.PropertyGrid.TabIndex = 5;
             // 
             // timer1
@@ -74,7 +79,7 @@
             this.FpsLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.FpsLabel1.AutoSize = true;
             this.FpsLabel1.BackColor = System.Drawing.Color.Transparent;
-            this.FpsLabel1.Location = new System.Drawing.Point(12, 355);
+            this.FpsLabel1.Location = new System.Drawing.Point(12, 427);
             this.FpsLabel1.Name = "FpsLabel1";
             this.FpsLabel1.Size = new System.Drawing.Size(31, 15);
             this.FpsLabel1.TabIndex = 7;
@@ -83,7 +88,7 @@
             // PauseBtn
             // 
             this.PauseBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.PauseBtn.Location = new System.Drawing.Point(12, 373);
+            this.PauseBtn.Location = new System.Drawing.Point(12, 445);
             this.PauseBtn.Name = "PauseBtn";
             this.PauseBtn.Size = new System.Drawing.Size(88, 27);
             this.PauseBtn.TabIndex = 8;
@@ -94,7 +99,7 @@
             // SelectCameraBtn
             // 
             this.SelectCameraBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectCameraBtn.Location = new System.Drawing.Point(106, 373);
+            this.SelectCameraBtn.Location = new System.Drawing.Point(106, 445);
             this.SelectCameraBtn.Name = "SelectCameraBtn";
             this.SelectCameraBtn.Size = new System.Drawing.Size(118, 27);
             this.SelectCameraBtn.TabIndex = 9;
@@ -105,7 +110,7 @@
             // SelectRendererBtn
             // 
             this.SelectRendererBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectRendererBtn.Location = new System.Drawing.Point(230, 373);
+            this.SelectRendererBtn.Location = new System.Drawing.Point(230, 445);
             this.SelectRendererBtn.Name = "SelectRendererBtn";
             this.SelectRendererBtn.Size = new System.Drawing.Size(141, 27);
             this.SelectRendererBtn.TabIndex = 10;
@@ -116,7 +121,7 @@
             // SelectFormBtn
             // 
             this.SelectFormBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectFormBtn.Location = new System.Drawing.Point(230, 340);
+            this.SelectFormBtn.Location = new System.Drawing.Point(230, 412);
             this.SelectFormBtn.Name = "SelectFormBtn";
             this.SelectFormBtn.Size = new System.Drawing.Size(141, 27);
             this.SelectFormBtn.TabIndex = 11;
@@ -127,7 +132,7 @@
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.button1.Location = new System.Drawing.Point(106, 340);
+            this.button1.Location = new System.Drawing.Point(106, 412);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(118, 27);
             this.button1.TabIndex = 12;
@@ -140,9 +145,9 @@
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.statusLabel});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 401);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 473);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(564, 25);
+            this.statusStrip1.Size = new System.Drawing.Size(628, 25);
             this.statusStrip1.TabIndex = 13;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -152,11 +157,55 @@
             this.statusLabel.Size = new System.Drawing.Size(31, 20);
             this.statusLabel.Text = "OK";
             // 
+            // resetTRS
+            // 
+            this.resetTRS.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.resetTRS.Location = new System.Drawing.Point(283, 379);
+            this.resetTRS.Name = "resetTRS";
+            this.resetTRS.Size = new System.Drawing.Size(88, 27);
+            this.resetTRS.TabIndex = 14;
+            this.resetTRS.Text = "ResetTRS";
+            this.resetTRS.UseVisualStyleBackColor = true;
+            this.resetTRS.Click += new System.EventHandler(this.resetTRS_Click);
+            // 
+            // TimeScaleLabel
+            // 
+            this.TimeScaleLabel.AutoSize = true;
+            this.TimeScaleLabel.Location = new System.Drawing.Point(12, 319);
+            this.TimeScaleLabel.Name = "TimeScaleLabel";
+            this.TimeScaleLabel.Size = new System.Drawing.Size(151, 15);
+            this.TimeScaleLabel.TabIndex = 15;
+            this.TimeScaleLabel.Text = "TimeScale[0,1000]:";
+            // 
+            // TimeScaleSlider
+            // 
+            this.TimeScaleSlider.Location = new System.Drawing.Point(161, 318);
+            this.TimeScaleSlider.Maximum = 1000;
+            this.TimeScaleSlider.Name = "TimeScaleSlider";
+            this.TimeScaleSlider.Size = new System.Drawing.Size(151, 56);
+            this.TimeScaleSlider.TabIndex = 16;
+            this.TimeScaleSlider.TickStyle = System.Windows.Forms.TickStyle.None;
+            this.TimeScaleSlider.Value = 500;
+            this.TimeScaleSlider.ValueChanged += new System.EventHandler(this.TimeScaleSlider_ValueChanged);
+            // 
+            // TimeScaleValueLabel
+            // 
+            this.TimeScaleValueLabel.AutoSize = true;
+            this.TimeScaleValueLabel.Location = new System.Drawing.Point(318, 319);
+            this.TimeScaleValueLabel.Name = "TimeScaleValueLabel";
+            this.TimeScaleValueLabel.Size = new System.Drawing.Size(31, 15);
+            this.TimeScaleValueLabel.TabIndex = 17;
+            this.TimeScaleValueLabel.Text = "500";
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(564, 426);
+            this.ClientSize = new System.Drawing.Size(628, 498);
+            this.Controls.Add(this.TimeScaleValueLabel);
+            this.Controls.Add(this.TimeScaleSlider);
+            this.Controls.Add(this.TimeScaleLabel);
+            this.Controls.Add(this.resetTRS);
             this.Controls.Add(this.statusStrip1);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.SelectFormBtn);
@@ -173,6 +222,7 @@
             ((System.ComponentModel.ISupportInitialize)(this.PictureBox)).EndInit();
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.TimeScaleSlider)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -190,6 +240,10 @@
         private System.Windows.Forms.Button button1;
         private System.Windows.Forms.StatusStrip statusStrip1;
         private System.Windows.Forms.ToolStripStatusLabel statusLabel;
+        private System.Windows.Forms.Button resetTRS;
+        private System.Windows.Forms.Label TimeScaleLabel;
+        private System.Windows.Forms.TrackBar TimeScaleSlider;
+        private System.Windows.Forms.Label TimeScaleValueLabel;
     }
 }
 
