@@ -44,6 +44,7 @@
             this.TimeScaleLabel = new System.Windows.Forms.Label();
             this.TimeScaleSlider = new System.Windows.Forms.TrackBar();
             this.TimeScaleValueLabel = new System.Windows.Forms.Label();
+            this.focusCtrlLabel = new System.Windows.Forms.ToolStripStatusLabel();
             ((System.ComponentModel.ISupportInitialize)(this.PictureBox)).BeginInit();
             this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.TimeScaleSlider)).BeginInit();
@@ -52,6 +53,7 @@
             // PictureBox
             // 
             this.PictureBox.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.PictureBox.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.PictureBox.Location = new System.Drawing.Point(12, 12);
             this.PictureBox.Name = "PictureBox";
             this.PictureBox.Size = new System.Drawing.Size(300, 300);
@@ -144,7 +146,8 @@
             // 
             this.statusStrip1.ImageScalingSize = new System.Drawing.Size(20, 20);
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.statusLabel});
+            this.statusLabel,
+            this.focusCtrlLabel});
             this.statusStrip1.Location = new System.Drawing.Point(0, 473);
             this.statusStrip1.Name = "statusStrip1";
             this.statusStrip1.Size = new System.Drawing.Size(628, 25);
@@ -197,6 +200,11 @@
             this.TimeScaleValueLabel.TabIndex = 17;
             this.TimeScaleValueLabel.Text = "500";
             // 
+            // focusCtrlLabel
+            // 
+            this.focusCtrlLabel.Name = "focusCtrlLabel";
+            this.focusCtrlLabel.Size = new System.Drawing.Size(0, 20);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
@@ -244,6 +252,7 @@
         private System.Windows.Forms.Label TimeScaleLabel;
         private System.Windows.Forms.TrackBar TimeScaleSlider;
         private System.Windows.Forms.Label TimeScaleValueLabel;
+        private System.Windows.Forms.ToolStripStatusLabel focusCtrlLabel;
     }
 }
 
