@@ -33,9 +33,9 @@ namespace SoftRendererShader
         [In] [Out] [Texcoord] public vec2 ioUV;
         [In] [Out] [Color] public color ioColor;
         [In] [Out] [Normal] [Nointerpolation] public vec3 ioNormal;
-        [In] [Out] [Tangent] public vec3 ioTangent;
+        [In] [Out] [Tangent] [Nointerpolation] public vec3 ioTangent;
         
-        [Out] [Tangent(1)] public vec3 outBitangent;
+        [Out] [Tangent(1)] [Nointerpolation] public vec3 outBitangent;
 
         [Out] [SV_Position] public vec4 outPos;
         [Out] [Position] public vec4 outWorldPos;
