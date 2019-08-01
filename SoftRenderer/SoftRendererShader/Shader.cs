@@ -33,7 +33,9 @@ namespace SoftRendererShader
         [In] [Out] [Texcoord] public vec2 ioUV;
         [In] [Out] [Color] public color ioColor;
         [In] [Out] [Normal] [Nointerpolation] public vec3 ioNormal;
-        //[In] [Out] [Tangent] public Vector3 ioTangent;
+        [In] [Out] [Tangent] public vec3 ioTangent;
+        
+        [Out] [Tangent(1)] public vec3 outBitangent;
 
         [Out] [SV_Position] public vec4 outPos;
         [Out] [Position] public vec4 outWorldPos;
@@ -49,7 +51,8 @@ namespace SoftRendererShader
             outPos = MVP * inPos;
             outWorldPos = M * inPos;
             ioNormal = M_IT * ioNormal;
-            //outTangent = M_IT * ioTangent;
+            ioTangent = M_IT * ioTangent;
+            outBitangent = ioNormal.Cross(ioTangent);
         }
     }
 
@@ -68,7 +71,8 @@ namespace SoftRendererShader
         [In] [Texcoord] public vec2 inUV;
         [In] [Color] public color inColor;
         [In] [Normal] public vec3 inNormal;
-        //[In] [Tangent] public Vector3 inTangent;
+        [In] [Tangent] public vec3 inTangent;
+        [In] [Tangent(1)] public vec3 inBitangent;
 
         [Out] [SV_Target] public color outColor;
 
@@ -91,6 +95,7 @@ namespace SoftRendererShader
         [Main]
         public override void Main()
         {
+            //outColor = inColor;return;
             //outColor.rgb = inNormal;return;
             //1
             var shaderData = Data as ShaderData;

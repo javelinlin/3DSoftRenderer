@@ -95,11 +95,11 @@ namespace SoftRenderer.SoftRenderer
         public bool IsOrtho { get; set; }
 
         [Category("Debug")]
-        [Description("调试用：显示法线")]
-        public bool DebugShowNormal { get; set; }
+        [Description("调试用：显示TBN切线、副切线、法线")]
+        public bool DebugShowTBN { get; set; } = true;
         [Category("Debug")]
-        [Description("调试用：显示法线的长度")]
-        public float DebugNormalLen { get; set; } = 30;
+        [Description("调试用：显示TBN切线、副切线、法线的长度")]
+        public float DebugTBNlLen { get; set; } = 30;
         [Category("Debug")]
         [Description("调试用：方向灯光")]
         public Vector3 DebugDirectionalLight = new Vector3(0, 0.5f, 1);

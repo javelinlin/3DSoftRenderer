@@ -312,6 +312,15 @@ namespace SoftRenderer.Common.Mathes
                 z = value.z;
             }
         }
+        public Vector2 xy
+        {
+            get => new Vector2(x, y);
+            set
+            {
+                x = value.x;
+                y = value.y;
+            }
+        }
         public float length
         {
             get
@@ -792,8 +801,8 @@ namespace SoftRenderer.Common.Mathes
             return Matrix4x4.MulMat(GenTranslateMat(translate.x, translate.y, translate.z), mat);
         }
         /*
-     http://www.songho.ca/opengl/gl_matrix.html#example2
-     * */
+         http://www.songho.ca/opengl/gl_matrix.html#example2
+         * */
         public static Matrix4x4 GenFrustum(
             float l, float r,
             float b, float t,

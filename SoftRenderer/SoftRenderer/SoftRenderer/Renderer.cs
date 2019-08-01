@@ -223,8 +223,16 @@ namespace SoftRenderer.SoftRenderer
                         else
                         {
                             var invW = 1 / clipPos.w;
+                            // 这里为何要取负才对呢？因为投影矩阵是网上参考copy过来的
+                            // 发现是因为矩阵的第三行的，第三，第四个参考导致的，因为第三第四个参数都是负数
                             ndcPos.x = clipPos.x * invW;
                             ndcPos.y = clipPos.y * invW;
+                            // ndcPos.z 这里是不是有BUG？因为z应该是-1~1的值，但是结果一直都是小于-1的值
+                            // 影响ndcPos.z 值只有MVP的第3行的3,4列数据，还有第4行的第3列-1，取-clipPos.z值，赋值到clipPos.w
+                            // 而|clipPos.w|一直都比|clipPos.z|小，所以|clipPos.z /= clipPos.w| > 1
+                            // 网上查过好多资料，每个都是这样处理: ndcPos = clipPos/clipPos.w，但是结果都不尽人意
+                            // TODO 先放着吧，实在没有精力去研究这个了，坑了好久了。
+                            // 网络上也了至少上50篇，没有一个可以解决问题的
                             ndcPos.z = clipPos.z * invW;
                             ndcPos.w = clipPos.w;
                             //ndcPos = clipPos / clipPos.w;
@@ -417,7 +425,7 @@ namespace SoftRenderer.SoftRenderer
             }
 
             // debug: show normal line
-            if (State.DebugShowNormal)
+            if (State.DebugShowTBN)
             {
                 var blueColor = new ColorNormalized(0, 0, 1, 1);
                 len = normalLineResult.Count;

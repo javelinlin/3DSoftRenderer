@@ -37,6 +37,9 @@ namespace SoftRenderer.Games
 
                 var tangent = v2 - v1;
                 var bitangent = v3 - v1;
+                // test
+                tangent = -tangent;
+                bitangent = -bitangent;
                 var normal = tangent.Cross(bitangent);
 
                 normal.Normalize();
@@ -221,8 +224,8 @@ namespace SoftRenderer.Games
         public MeshRenderer MR { get; set; }
         [Description("材质对象，后面重构成Component")]
         public Material Material { get; set; }
-        [Description("世界坐标")]
-        public Vector3 WorldPosition { get; private set; }
+        //[Description("世界坐标")]
+        //public Vector3 WorldPosition { get; private set; }
 
         public GameObject(string name = null)
         {
@@ -252,7 +255,7 @@ namespace SoftRenderer.Games
             ModelViewMat = camera.View * ModelMat;
             ModelViewProjMat = camera.Proj * ModelViewMat;
 
-            WorldPosition = ModelMat * Vector4.zeroPos;
+            //WorldPosition = ModelMat * Vector4.zeroPos;
         }
 
         public void Draw()
@@ -271,7 +274,7 @@ namespace SoftRenderer.Games
                 count += Mesh.uv != null ? Mesh.uv.Length * 2 : 0;
                 count += Mesh.colors != null ? Mesh.colors.Length * 4 : 0;
                 count += Mesh.normals != null ? Mesh.normals.Length * 3 : 0;
-                //count += Mesh.tangents != null ? Mesh.tangents.Length * 3 : 0;
+                count += Mesh.tangents != null ? Mesh.tangents.Length * 3 : 0;
 
                 // unit float
                 // 这里我的单位不是byte，而是float
@@ -280,7 +283,7 @@ namespace SoftRenderer.Games
                     + 2     // uv
                     + 4     // color
                     + 3     // normal
-                    //+ 3     // tangent
+                    + 3     // tangent
                     ;
 
                 // 定义顶点格式
@@ -293,7 +296,7 @@ namespace SoftRenderer.Games
                 new VertexDataFormat { type = VertexDataType.UV, location = 0, offset = offset += 3, count = 2 },
                 new VertexDataFormat { type = VertexDataType.Color, location = 0, offset =offset += 2, count = 4 },
                 new VertexDataFormat { type = VertexDataType.Normal, location = 0, offset =offset += 4, count = 3 },
-                //new VertexDataFormat { type = VertexDataType.Tangent, num = 0, offset =offset += 3, count = 3 },
+                new VertexDataFormat { type = VertexDataType.Tangent, location = 0, offset =offset += 3, count = 3 },
                 });
 
                 // 顶点装配索引
@@ -309,12 +312,12 @@ namespace SoftRenderer.Games
                     var uv = Mesh.uv[i];
                     var c = Mesh.colors[i];
                     var n = Mesh.normals[i];
-                    //var t = Mesh.tangents[i];
+                    var t = Mesh.tangents[i];
                     VertexBuffer.Write(v);
                     VertexBuffer.Write(uv);
                     VertexBuffer.Write(c);
                     VertexBuffer.Write(n);
-                    //VertexBuffer.Write(t);
+                    VertexBuffer.Write(t);
                 }
             }
 

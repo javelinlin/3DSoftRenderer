@@ -12,9 +12,18 @@ namespace SoftRenderer.Common.Mathes
         public static ColorNormalized green = new ColorNormalized(0, 1, 0, 1);
         public static ColorNormalized blue = new ColorNormalized(0, 0, 1, 1);
         public static ColorNormalized yellow = new ColorNormalized(1, 1, 0, 1);
-        public static ColorNormalized lightBlue = new ColorNormalized(0, 1, 1, 1);
         public static ColorNormalized pink = new ColorNormalized(1, 0, 1, 1);
         public static ColorNormalized purple = new ColorNormalized(90f/255f, 0, 0.5f, 1);
+        public static ColorNormalized gray = new ColorNormalized(0.5f, 0.5f, 0.5f, 1);
+
+        public static ColorNormalized lightRed = new ColorNormalized(1, 0.5f, 0.5f, 1);
+        public static ColorNormalized lightGreen = new ColorNormalized(0.5f, 1, 0.5f, 1);
+        public static ColorNormalized lightBlue = new ColorNormalized(0, 1, 1, 1);
+
+        public static ColorNormalized darkRed = new ColorNormalized(0.5f, 0, 0, 1);
+        public static ColorNormalized darkGreen = new ColorNormalized(0, 0.5f, 0, 1);
+        public static ColorNormalized darkBlue = new ColorNormalized(0, 0.5f, 0.5f, 1);
+
 
         public static void CopyRGBFrom(ColorNormalized from, ColorNormalized to)
         {

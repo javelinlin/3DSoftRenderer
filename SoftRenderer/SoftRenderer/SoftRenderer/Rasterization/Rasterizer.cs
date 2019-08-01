@@ -696,11 +696,11 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             }
 
             // debug: show normal line
-            if (renderer.State.DebugShowNormal)
+            if (renderer.State.DebugShowTBN)
             {
                 var blueColor = new Color(0, 0, 1, 1);
                 var normalPos0 = t.p0;
-                var normalPos1 = normalPos0 + faceNormal.normalized * renderer.State.DebugNormalLen;
+                var normalPos1 = normalPos0 + faceNormal.normalized * renderer.State.DebugTBNlLen;
                 ToPool(fragsHelper1);
                 GenLineFrag(normalPos0, normalPos1, fragsHelper1);
                 len = fragsHelper1.Count;
@@ -1078,64 +1078,157 @@ namespace SoftRenderer.SoftRenderer.Rasterization
 
             // normal line fragments
             // debug: show normal line
-            if (Renderer.State.DebugShowNormal)
+            if (Renderer.State.DebugShowTBN)
             {
-                var triangleVertices = new FragInfo[] { triangle.f0, triangle.f1, triangle.f2 };
-                var len = triangleVertices.Length;
+                // tangent
+                var from = Color.lightRed;
+                var to = Color.darkRed;
+                CollectTBN(triangle, OutLayout.Tangent, 0, from, to, normalLineResult);
 
-                var blue = Color.blue;
-                var white = Color.white;
+                // bitangent
+                from = Color.lightGreen;
+                to = Color.green;
+                CollectTBN(triangle, OutLayout.Tangent, 1, from, to, normalLineResult);
 
-                for (int i = 0; i < len; i++)
+                //#region bitangent
+                ////CollectTBN(triangle, OutLayout.Tangent, from, to, normalLineResult);
+                //var triangleVertices = new FragInfo[] { triangle.f0, triangle.f1, triangle.f2 };
+                //var len = triangleVertices.Length;
+                //var depthBuff = renderer.Per_Frag.DepthBuff;
+
+                //for (int i = 0; i < len; i++)
+                //{
+                //    var f = triangleVertices[i];
+                //    Vector3? nrlVec = null;
+                //    Vector3? tangentVec = null;
+                //    var jLen = f.UpperStageOutInfos.Length;
+                //    for (int j = 0; j < jLen; j++)
+                //    {
+                //        var info = f.UpperStageOutInfos[j];
+                //        if (info.layout == OutLayout.Normal)
+                //        {
+                //            nrlVec = (Vector3)info.value;
+                //        }
+                //        if (info.layout == OutLayout.Tangent)
+                //        {
+                //            tangentVec = (Vector3)info.value;
+                //        }
+                //    }
+                //    if (nrlVec.HasValue && tangentVec.HasValue)
+                //    {
+                //        var bitangentVec = nrlVec.Value.Cross(tangentVec.Value);
+
+                //        var vecPos = f.p + new Vector4(bitangentVec * renderer.State.DebugNormalLen, 1);
+
+                //        var f0 = FragInfo.GetFragInfo();
+                //        f0.p = f.p;
+                //        var f1 = FragInfo.GetFragInfo();
+                //        f1.p = vecPos;
+
+                //        var srcIdx = normalLineResult.Count;
+                //        GenLineFrag(f0, f1, normalLineResult, false);
+
+                //        var count = normalLineResult.Count;
+                //        var count1 = normalLineResult.Count - srcIdx;
+                //        for (int newI = srcIdx; newI < count; newI++)
+                //        {
+                //            var vecF = normalLineResult[newI];
+                //            if (vecF.p.x < minX || vecF.p.x > maxX || vecF.p.y < minY || vecF.p.y > maxY)
+                //            {
+                //                vecF.discard = true;
+                //                continue;
+                //            }
+                //            var depth = 1 - vecF.p.z * depthInv;
+
+                //            if (!depthBuff.Test(ComparisonFunc.Less, (int)vecF.p.x, (int)vecF.p.y, depth))
+                //            {
+                //                vecF.discard = true;
+                //                continue;
+                //            }
+                //            var t = (float)(newI - srcIdx) / count1;
+                //            vecF.normalLineColor = Mathf.Lerp(from, to, t);
+                //        }
+
+                //        count = normalLineResult.Count;
+                //        for (int fI = 0; fI < count; fI++)
+                //        {
+                //            var vecF = normalLineResult[fI];
+                //            if (vecF.discard || vecF.p.x < minX || vecF.p.x > maxX || vecF.p.y < minY || vecF.p.y > maxY)
+                //            {
+                //                vecF.discard = true;
+                //                continue;
+                //            }
+                //        }
+                //    }
+                //}
+                //#endregion
+
+                // normals
+                from = Color.lightBlue;
+                to = Color.blue;
+                CollectTBN(triangle, OutLayout.Normal, 0, from, to, normalLineResult);
+            }
+        }
+
+        private void CollectTBN(Primitive_Triangle triangle, OutLayout layout, int location, Color from, Color to, List<FragInfo> normalLineResult)
+        {
+            var depthBuff = renderer.Per_Frag.DepthBuff;
+            var depthInv = 1 / (renderer.State.CameraFar + renderer.State.CameraFar * renderer.State.CameraNear);
+
+            var minX = 0;
+            var minY = 0;
+            var maxX = renderer.BackBufferWidth - 1;
+            var maxY = renderer.BackBufferHeight - 1;
+
+            if (Renderer.State.Scissor == Scissor.On)
+            {
+                minX = Renderer.State.ScissorRect.X;
+                minY = Renderer.State.ScissorRect.Y;
+                maxX = Renderer.State.ScissorRect.Right;
+                maxY = Renderer.State.ScissorRect.Bottom;
+            }
+
+            var triangleVertices = new FragInfo[] { triangle.f0, triangle.f1, triangle.f2 };
+            var len = triangleVertices.Length;
+
+            for (int i = 0; i < len; i++)
+            {
+                var f = triangleVertices[i];
+                Vector3? vec = null;
+                var jLen = f.UpperStageOutInfos.Length;
+                for (int j = 0; j < jLen; j++)
                 {
-                    var f = triangleVertices[i];
-                    Vector3? n = null;
-                    var jLen = f.UpperStageOutInfos.Length;
-                    for (int j = 0; j < jLen; j++)
+                    var info = f.UpperStageOutInfos[j];
+                    if (info.layout == layout && info.location == location)
                     {
-                        var info = f.UpperStageOutInfos[j];
-                        if (info.layout == OutLayout.Normal)
-                        {
-                            n = (Vector3)info.value;
-                            break;
-                        }
+                        vec = (Vector3)info.value;
+                        break;
                     }
-                    if (n.HasValue)
+                }
+                if (vec.HasValue)
+                {
+                    var vecPos = f.p + new Vector4(vec.Value * renderer.State.DebugTBNlLen, 1);
+
+                    var f0 = FragInfo.GetFragInfo();
+                    f0.p = f.p;
+                    var f1 = FragInfo.GetFragInfo();
+                    f1.p = vecPos;
+
+                    var srcIdx = normalLineResult.Count;
+                    GenLineFrag(f0, f1, normalLineResult, false);
+
+                    var count = normalLineResult.Count;
+                    var count1 = normalLineResult.Count - srcIdx;
+                    for (int newI = srcIdx; newI < count; newI++)
                     {
-                        var normalPos1 = f.p + new Vector4(n.Value * renderer.State.DebugNormalLen, 1);
-
-                        var n0 = FragInfo.GetFragInfo();
-                        n0.p = f.p;
-                        var n1 = FragInfo.GetFragInfo();
-                        n1.p = normalPos1;
-
-                        var srcIdx = normalLineResult.Count;
-                        GenLineFrag(n0, n1, normalLineResult, false);
-
-                        var count = normalLineResult.Count;
-                        var count1 = normalLineResult.Count - srcIdx;
-                        for (int newI = srcIdx; newI < count; newI++)
+                        var vecF = normalLineResult[newI];
+                        if (vecF.p.x < minX || vecF.p.x > maxX || vecF.p.y < minY || vecF.p.y > maxY)
                         {
-                            var nrlF = normalLineResult[newI];
-                            if (nrlF.p.x < minX || nrlF.p.x > maxX || nrlF.p.y < minY || nrlF.p.y > maxY)
-                            {
-                                nrlF.discard = true;
-                                continue;
-                            }
-                            var t = (float)(newI - srcIdx)/ count1;
-                            nrlF.normalLineColor = Mathf.Lerp(blue, white, t);
+                            vecF.discard = true;
+                            continue;
                         }
-
-                        count = normalLineResult.Count;
-                        for (int fI = 0; fI < count; fI++)
-                        {
-                            var nrlF = normalLineResult[fI];
-                            if (nrlF.discard || nrlF.p.x < minX || nrlF.p.x > maxX || nrlF.p.y < minY || nrlF.p.y > maxY)
-                            {
-                                nrlF.discard = true;
-                                continue;
-                            }
-                        }
+                        var t = (float)(newI - srcIdx) / count1;
+                        vecF.normalLineColor = Mathf.Lerp(from, to, t);
                     }
                 }
             }

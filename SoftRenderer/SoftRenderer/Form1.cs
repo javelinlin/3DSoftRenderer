@@ -178,7 +178,7 @@ namespace SoftRenderer
 
         // 法线描边的偏移值，这个需要好的模型才能测试出来
         // TODO 后面添加支持：加载*.obj模型
-        public float normalOutlineOffset { get; set; } = 1f;
+        public float normalOutlineOffset { get; set; } = -1f; // 法线现在有问题，所以取负数，以后有精力再看，因为现在看了不少于50篇相关内容，没一个可以解决问题的
 
         private GlobalMessageHandler globalMsg = new GlobalMessageHandler();
 
@@ -200,7 +200,7 @@ namespace SoftRenderer
             renderer.State.BlendSrcAlphaFactor = BlendFactor.One;
             renderer.State.BlendDstAlphaFactor = BlendFactor.One;
             // test
-            //renderer.State.Cull = FaceCull.Off;
+            renderer.State.Cull = FaceCull.Off;
 
             this.PictureBox.Width = buff_size;
             this.PictureBox.Height = buff_size;
@@ -212,6 +212,8 @@ namespace SoftRenderer
             var go = new GameObject("Cube");
             /**
                
+
+            bug
                
             (1,1)          (-1,1)
              ----------------
@@ -239,52 +241,124 @@ namespace SoftRenderer
                  ----------------
             (1,-1)[2/5/20]     (-1,-1)[1/10/23]
 
+
+            correct
+
+            (-1,1)          (1,1)
+             ----------------
+             |              |
+             |              |
+             |----(0,0)-----|
+             |              |
+             |              |
+             ----------------
+            (-1,-1)         (1,-1)
+
+
+
+
+      [4/15/16]             [11/12/19]
+            ------------------
+            |\              | \
+            | \(-1,1)[0/7/18]  \ (1,1)[3/8/17]
+            |  \ ----------------
+            |    |          |   |
+            |- - |- - - - - -   |
+   [6/13/22] \   | [9/14/21] \  |
+              \  |            \ |
+               \ |             \|
+                 ----------------
+            (-1,-1)[2/5/20]    (1,-1)[1/10/23]
+
+
+
              * */
             var size = 1f;
             var vertices = new Vector3[]
             {
-//#region test normal
-//                new Vector3(size, size,-size),          // 0
-//                new Vector3(-size,-size,-size),         // 1
-//                new Vector3(size,-size,-size),          // 2
-//                new Vector3(-size, size,-size),         // 3
-//#endregion
-#region front
-                new Vector3(size, size,-size),          // 0
-                new Vector3(-size,-size,-size),         // 1
-                new Vector3(size,-size,-size),          // 2
-                new Vector3(-size, size,-size),         // 3
-#endregion
-#region left
-                new Vector3(size, size,size),           // 4
-                new Vector3(size,-size,-size),          // 5
-                new Vector3(size,-size,size),           // 6
-                new Vector3(size, size,-size),          // 7
-#endregion
-#region right
-                new Vector3(-size, size,-size),         // 8
-                new Vector3(-size,-size,size),          // 9
-                new Vector3(-size,-size,-size),         // 10
-                new Vector3(-size, size,size),          // 11
-#endregion
-#region back
-                new Vector3(-size, size,size),          // 12
-                new Vector3(size,-size,size),           // 13
-                new Vector3(-size,-size,size),          // 14
-                new Vector3(size, size,size),           // 15
-#endregion
-#region top
-                new Vector3(size, size,size),           // 16
-                new Vector3(-size, size,-size),         // 17
-                new Vector3(size, size,-size),          // 18
-                new Vector3(-size, size,size),          // 19
-#endregion
-#region bottom
-                new Vector3(size,-size,-size),          // 20
-                new Vector3(-size,-size,size),          // 21
-                new Vector3(size,-size,size),           // 22
-                new Vector3(-size,-size,-size),         // 23
-#endregion
+                //#region test normal
+                //new Vector3(-size, size,-size),         // 0
+                //new Vector3(size,-size,-size),          // 1
+                //new Vector3(-size,-size,-size),         // 2
+                //new Vector3(size, size,-size),          // 3
+                //#endregion
+
+                // correct position
+                //#region front
+                //new Vector3(-size, size,-size),         // 0
+                //new Vector3(size,-size,-size),          // 1
+                //new Vector3(-size,-size,-size),         // 2
+                //new Vector3(size, size,-size),          // 3
+                //#endregion
+                //#region left
+                //new Vector3(-size, size,size),           // 4
+                //new Vector3(-size,-size,-size),          // 5
+                //new Vector3(-size,-size,size),           // 6
+                //new Vector3(-size, size,-size),          // 7
+                //#endregion
+                //#region right
+                //new Vector3(size, size,-size),         // 8
+                //new Vector3(size,-size,size),          // 9
+                //new Vector3(size,-size,-size),         // 10
+                //new Vector3(size, size,size),          // 11
+                //#endregion
+                //#region back
+                //new Vector3(size, size,size),          // 12
+                //new Vector3(-size,-size,size),           // 13
+                //new Vector3(size,-size,size),          // 14
+                //new Vector3(-size, size,size),           // 15
+                //#endregion
+                //#region top
+                //new Vector3(-size, size,size),           // 16
+                //new Vector3(size, size,-size),         // 17
+                //new Vector3(-size, size,-size),          // 18
+                //new Vector3(size, size,size),          // 19
+                //#endregion
+                //#region bottom
+                //new Vector3(-size,-size,-size),          // 20
+                //new Vector3(size,-size,size),          // 21
+                //new Vector3(-size,-size,size),           // 22
+                //new Vector3(size,-size,-size),         // 23
+                //#endregion
+
+
+                // incorrect position
+                #region front
+                                new Vector3(size, size,-size),          // 0
+                                new Vector3(-size,-size,-size),         // 1
+                                new Vector3(size,-size,-size),          // 2
+                                new Vector3(-size, size,-size),         // 3
+                #endregion
+                #region left
+                                new Vector3(size, size,size),           // 4
+                                new Vector3(size,-size,-size),          // 5
+                                new Vector3(size,-size,size),           // 6
+                                new Vector3(size, size,-size),          // 7
+                #endregion
+                #region right
+                                new Vector3(-size, size,-size),         // 8
+                                new Vector3(-size,-size,size),          // 9
+                                new Vector3(-size,-size,-size),         // 10
+                                new Vector3(-size, size,size),          // 11
+                #endregion
+                #region back
+                                new Vector3(-size, size,size),          // 12
+                                new Vector3(size,-size,size),           // 13
+                                new Vector3(-size,-size,size),          // 14
+                                new Vector3(size, size,size),           // 15
+                #endregion
+                #region top
+                                new Vector3(size, size,size),           // 16
+                                new Vector3(-size, size,-size),         // 17
+                                new Vector3(size, size,-size),          // 18
+                                new Vector3(-size, size,size),          // 19
+                #endregion
+                #region bottom
+                                new Vector3(size,-size,-size),          // 20
+                                new Vector3(-size,-size,size),          // 21
+                                new Vector3(size,-size,size),           // 22
+                                new Vector3(-size,-size,-size),         // 23
+                #endregion
             };
             var indices = new int[vertices.Length / 4 * 6];
             var idx = 0;
@@ -482,18 +556,6 @@ namespace SoftRenderer
             renderer.Clear();
         }
 
-        private void ChangeCullingBtn_Click(object sender, EventArgs e)
-        {
-            if (renderer.State.Cull == FaceCull.Front)
-            {
-                renderer.State.Cull = FaceCull.Back;
-            }
-            else if (renderer.State.Cull == FaceCull.Back)
-            {
-                renderer.State.Cull = FaceCull.Front;
-            }
-        }
-
         private void timer1_Tick(object sender, EventArgs e)
         {
             long nowTick = DateTime.Now.Ticks;
@@ -579,6 +641,10 @@ namespace SoftRenderer
             camera.RotateTo(new Vector3(Rx, Ry, Rz));
             camera.Update(deltaMs);
 
+            if (camera.viewport == Rectangle.Empty)
+            {
+                camera.viewport = new Rectangle(0, 0, buff_size, buff_size);
+            }
             // renderer state update
             renderer.State.CameraFar = camera.far;
             renderer.State.CameraNear = camera.near;
@@ -645,11 +711,6 @@ namespace SoftRenderer
 
         private void UpdateGameObjs(float deltaMs)
         {
-            if (camera.viewport == Rectangle.Empty)
-            {
-                camera.viewport = new Rectangle(0, 0, buff_size, buff_size);
-            }
-
             GameObject target = null;
             var len = gameObjs.Count;
             for (int i = 0; i < len; i++)
