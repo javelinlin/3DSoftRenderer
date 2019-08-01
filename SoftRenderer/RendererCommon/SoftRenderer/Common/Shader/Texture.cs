@@ -110,7 +110,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             Wrap(ref u, ref v);
 
             var x = u * (tex.Width - 1);
-            var y = v * (tex.Height - 1);
+            var y = (1 - v) * (tex.Height - 1);
 
             return Filter(tex, x, y);
         }

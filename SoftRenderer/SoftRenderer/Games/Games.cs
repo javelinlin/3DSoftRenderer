@@ -37,9 +37,6 @@ namespace SoftRenderer.Games
 
                 var tangent = v2 - v1;
                 var bitangent = v3 - v1;
-                // test
-                tangent = -tangent;
-                bitangent = -bitangent;
                 var normal = tangent.Cross(bitangent);
 
                 normal.Normalize();
@@ -112,7 +109,7 @@ namespace SoftRenderer.Games
                                                             // proj-both
         [Category("proj-both")]
         [Description("宽高比")]
-        public float aspect { get; set; } = 800 / 600f;     // 宽高比
+        public float aspect { get; set; } = 1f;     // 宽高比
         [Category("proj-both")]
         [Description("近裁面，必须大于0")]
         public float near { get; set; } = 0.3f;             // 近裁面，必须大于0
@@ -168,6 +165,7 @@ namespace SoftRenderer.Games
             }
             else
             {
+                t = -t;
                 // translate
                 View = Matrix4x4.GenTranslateMat(t.x, t.y, t.z);
                 // rotate
