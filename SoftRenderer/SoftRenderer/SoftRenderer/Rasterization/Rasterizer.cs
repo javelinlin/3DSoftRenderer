@@ -277,43 +277,47 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             var dir = p1 - p0;
             var dir_nrl = dir.normalized;
 
-            // https://www.cnblogs.com/zsb517/p/6181663.html
-            // 插值数据前，先将：
-            // 也就是说三角形属性插值与z倒数的乘积是线性插值。
-            // 所以在光栅化的时候图形处理器先计算1z的线性插值，然后再计算的顶点属性的插值结果
-            // f0.invZ = 1 / f0.p.z;
-            // f1.invZ = 1 / f0.p.z;
-            // newF.invZ = lert(f0.invZ, f1.invZ, t);
-            // newF.uv *= newF.invZ;
-            // newF.color *= newF.invZ;
-            // newF.etc *= newF.invZ;
+            var minX = 0;
+            var minY = 0;
+            var maxX = renderer.BackBufferWidth - 1;
+            var maxY = renderer.BackBufferHeight - 1;
 
+            if (Renderer.State.Scissor == Scissor.On)
+            {
+                minX = Renderer.State.ScissorRect.X;
+                minY = Renderer.State.ScissorRect.Y;
+                maxX = Renderer.State.ScissorRect.Right;
+                maxY = Renderer.State.ScissorRect.Bottom;
+            }
 
-            // 或是：
-            // https://blog.csdn.net/unknowm/article/details/1478394
-            // u / z = (1-t) * (u1 / z1) + t * (u2 / z2)
-            // v / z = (1 - t) * (v1 / z1) + t * (v2 / z2)
-
-            CalculDepth(f0);
-
-            fs.Add(f0);
+            var p = f0.p;
+            if (p.x >= minX && p.x < maxX && p.y >= minY && p.y < maxY)
+            {
+                CalculDepth(f0);
+                fs.Add(f0);
+            }
 
             int count = 0;
-
+            // 如果x步幅大，就用x来遍历
             if (dir_nrl.x != 0 && (Math.Abs(dir_nrl.y) < Math.Abs(dir_nrl.x)))
             {
                 dir_nrl *= Math.Abs(1 / dir_nrl.x);
+                dir_nrl.x = dir_nrl.x > 0 ? 1 : -1;
                 count = (int)Math.Abs(dir.x);
             }
+            // 如果y步幅大，就用y来遍历
             else if (dir_nrl.y != 0)
             {
                 dir_nrl *= Math.Abs(1 / dir_nrl.y);
+                dir_nrl.y = dir_nrl.y > 0 ? 1 : -1;
                 count = (int)Math.Abs(dir.y);
             }
             else if (dir_nrl.z != 0)
             {
-                dir_nrl *= Math.Abs(1 / dir_nrl.z);
-                count = (int)Math.Abs(dir.z);
+                throw new Exception("error");
+                // 这里的分支基本不可能
+                //dir_nrl *= Math.Abs(1 / dir_nrl.z);
+                //count = (int)Math.Abs(dir.z);
             }
             else
             {
@@ -326,10 +330,21 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             var p0InvZ = f0.ClipZ == 0 ? 0 : 1 / f0.ClipZ;
             var p1InvZ = f1.ClipZ == 0 ? 0 : 1 / f1.ClipZ;
 #endif
+            var maxXp1 = maxX + 1;
+            var maxYp1 = maxY + 1;
             for (int i = 0, num = 1; i < count; i++, num++)
             {
-                FragInfo f = FragInfo.GetFragInfo();
                 var newP = p0 + dir_nrl * num;
+                if (dir_nrl.x == 1) // 如果使用x水平方向来遍历，当前生成的点超出最大值，就直接结束即可
+                {
+                    if (newP.x > maxXp1) return;
+                }
+                else if (dir_nrl.y == 1) // 如果使用y垂直方向来遍历，当前生成的点超出最大值，就直接结束即可
+                {
+                    if (newP.y > maxYp1) return;
+                }
+                if (newP.x < minX || newP.y < minY) continue;
+                FragInfo f = FragInfo.GetFragInfo();
                 if (interpolation)
                 {
                     ShaderOut shaderOut = new ShaderOut
@@ -344,9 +359,6 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                     var newZ = 1 / Mathf.Lerp(p0InvZ, p1InvZ, t, tt);
                     newP.z = newZ;
 #endif
-                    // 计算出新的插值z方法 2
-                    //var newZ = newP.w; // 就是用会我们上面的插值向量的z，从而提升性能
-
                     for (int j = 0; j < infoCount; j++)
                     {
                         var f0Info = f0.ShaderOut.upperStageOutInfos[j];
@@ -436,8 +448,13 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 CalculDepth(f);
                 fs.Add(f);
             }
-            CalculDepth(f1);
-            fs.Add(f1);
+            
+            p = f1.p;
+            if (p.x >= minX && p.x < maxX && p.y >= minY && p.y < maxY)
+            {
+                fs.Add(f1);
+                CalculDepth(f1);
+            }
         }
 
         // =============== 顶点数据的插值 start ===============

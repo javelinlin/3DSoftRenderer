@@ -253,7 +253,7 @@ namespace SoftRenderer
             mesh.CaculateNormalAndTangent();
             go.Mesh = mesh;
             // 第二个游戏对象
-            //gameObjs.Add(go);
+            gameObjs.Add(go);
 
             camera = new Camera();
             camera.aspect = 1;

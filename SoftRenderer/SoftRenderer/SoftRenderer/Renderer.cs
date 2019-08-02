@@ -293,6 +293,7 @@ namespace SoftRenderer.SoftRenderer
                     for (int i = 0; i < len; i++)
                     {
                         var t = trianglePrimitiveHelper[i];
+                        //if (t.clip) continue;
                         // 光栅化成片段
                         Rasterizer.GenFragInfo(t, genShadedFragHelper, genWireframeFragHelper, genNormalLineFragHelper);
                         // 处理片段

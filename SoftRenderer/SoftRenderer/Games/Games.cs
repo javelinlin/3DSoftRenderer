@@ -112,7 +112,7 @@ namespace SoftRenderer.Games
         public float aspect { get; set; } = 1f;     // 宽高比
         [Category("proj-both")]
         [Description("近裁面，必须大于0")]
-        public float near { get; set; } = 0.3f;             // 近裁面，必须大于0
+        public float near { get; set; } = 3f;             // 近裁面，必须大于0
         [Category("proj-both")]
         [Description("远裁面")]
         public float far { get; set; } = 1000f;             // 远裁面
