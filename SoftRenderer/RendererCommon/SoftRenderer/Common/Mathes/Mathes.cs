@@ -6,9 +6,15 @@ using System.Runtime.InteropServices;
 
 namespace SoftRenderer.Common.Mathes
 {
+    [Description("可选类型")]
+    public interface IConvert<T>
+    {
+        void ConvertFrom(string str);
+    }
+
     [TypeConverter(typeof(ExpandableObjectConverter))]
     [Description("2D向量")]
-    public struct Vector2 : IEquatable<Vector2>
+    public struct Vector2 : IEquatable<Vector2>, IConvert<Vector2>
     {
         private static readonly Random ran = new Random();
         public static readonly Vector2 zero = new Vector2(0, 0);
@@ -134,11 +140,18 @@ namespace SoftRenderer.Common.Mathes
         {
             return $"x:{x}, y:{y}";
         }
+        
+        public void ConvertFrom(string str)
+        {
+            var arr = str.Split(Utils.convert_spliter);
+            x = Convert.ToSingle(arr[0]);
+            y = Convert.ToSingle(arr[1]);
+        }
     }
 
     [TypeConverter(typeof(ExpandableObjectConverter))]
     [Description("3D向量")]
-    public struct Vector3 : IEquatable<Vector3>
+    public struct Vector3 : IEquatable<Vector3>, IConvert<Vector3>
     {
         public static readonly Vector3 nan          = new Vector3(float.NaN, float.NaN, float.NaN);
         public static readonly Vector3 zero         = new Vector3(0, 0, 0);
@@ -288,11 +301,19 @@ namespace SoftRenderer.Common.Mathes
         {
             return $"x:{x}, y:{y}, z:{z}";
         }
+
+        public void ConvertFrom(string str)
+        {
+            var arr = str.Split(Utils.convert_spliter);
+            x = Convert.ToSingle(arr[0]);
+            y = Convert.ToSingle(arr[1]);
+            z = Convert.ToSingle(arr[2]);
+        }
     }
 
     [TypeConverter(typeof(ExpandableObjectConverter))]
     [Description("4D向量")]
-    public struct Vector4 : IEquatable<Vector4>
+    public struct Vector4 : IEquatable<Vector4>, IConvert<Vector4>
     {
         public static readonly Vector4 one = new Vector4(1, 1, 1, 1);
         public static readonly Vector4 zero = new Vector4(0, 0, 0, 0);
@@ -452,6 +473,20 @@ namespace SoftRenderer.Common.Mathes
         {
             return $"x:{x}, y:{y}, z:{z}, w:{w}";
         }
+
+        public void ConvertFrom(string str)
+        {
+            var arr = str.Split(Utils.convert_spliter);
+            x = Convert.ToSingle(arr[0]);
+            y = Convert.ToSingle(arr[1]);
+            z = Convert.ToSingle(arr[2]);
+            w = Convert.ToSingle(arr[3]);
+        }
+    }
+
+    internal static class Utils
+    {
+        internal static readonly char[] convert_spliter = new char[] { ',' };
     }
 
     [Description("数学库")]

@@ -82,6 +82,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="bin\Debug\Models\Sphere_637003627289014299.m" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
       <LastGenOutput>Settings.Designer.cs</LastGenOutput>
@@ -98,6 +99,7 @@
   <ItemGroup>
     <Content Include="bin\Debug\Images\GitHubIcon.PNG" />
     <Content Include="bin\Debug\Images\heightMap1.jpg" />
+    <Content Include="bin\Debug\Images\my_tex.png" />
     <Content Include="bin\Debug\Images\tex.jpg" />
     <Content Include="bin\Debug\Images\icon.PNG" />
     <Content Include="bin\Debug\Images\texture.png" />

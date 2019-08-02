@@ -269,6 +269,23 @@ namespace SoftRenderer.SoftRenderer
                         var clip = (f0.ShaderOut.clip || f1.ShaderOut.clip || f2.ShaderOut.clip);
                         trianglePrimitiveHelper.Add(new Primitive_Triangle(f0, f1, f2, clip));
                     }
+                    var allPrimitiveClip = true;
+                    len = trianglePrimitiveHelper.Count;
+                    for (int i = 0; i < len; i++)
+                    {
+                        var p = trianglePrimitiveHelper[i];
+                        if (!p.f0.ShaderOut.clip ||
+                            !p.f1.ShaderOut.clip ||
+                            !p.f2.ShaderOut.clip)
+                        {
+                            allPrimitiveClip = false;
+                            break;
+                        }
+                    }
+                    if (allPrimitiveClip)
+                    {
+                        trianglePrimitiveHelper.Clear();
+                    }
                     break;
                 case PolygonMode.Line:
                     throw new Exception($"not implements polygonMode:{State.PolygonMode}");

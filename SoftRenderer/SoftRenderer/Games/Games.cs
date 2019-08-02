@@ -4,6 +4,7 @@ using SoftRenderer.Common.Mathes;
 using SoftRenderer.SoftRenderer;
 using SoftRenderer.SoftRenderer.Primitives;
 using System;
+using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 
@@ -112,7 +113,7 @@ namespace SoftRenderer.Games
         public float aspect { get; set; } = 1f;     // 宽高比
         [Category("proj-both")]
         [Description("近裁面，必须大于0")]
-        public float near { get; set; } = 3f;             // 近裁面，必须大于0
+        public float near { get; set; } = 1f;             // 近裁面，必须大于0
         [Category("proj-both")]
         [Description("远裁面")]
         public float far { get; set; } = 1000f;             // 远裁面
@@ -301,26 +302,53 @@ namespace SoftRenderer.Games
 
                 // unit float
                 // 这里我的单位不是byte，而是float
-                var perVertexCount =
-                    3       // Vector3 
-                    + 2     // uv
-                    + 4     // color
-                    + 3     // normal
-                    + 3     // tangent
-                    ;
-
+                //var perVertexCount =
+                //    3       // Vector3 
+                //    + 2     // uv
+                //    + 4     // color
+                //    + 3     // normal
+                //    + 3     // tangent
+                //    ;
+                var perVertexCount = 0;
+                if (Mesh.vertices != null && Mesh.vertices.Length > 0)
+                    perVertexCount += 3;
+                if (Mesh.uv != null && Mesh.uv.Length > 0)
+                    perVertexCount += 2;
+                if (Mesh.colors != null && Mesh.colors.Length > 0)
+                    perVertexCount += 4;
+                if (Mesh.normals != null && Mesh.normals.Length > 0)
+                    perVertexCount += 3;
+                if (Mesh.tangents != null && Mesh.tangents.Length > 0)
+                    perVertexCount += 3;
                 // 定义顶点格式
                 VertexBuffer = new VertexBuffer(count, perVertexCount);
 
                 var offset = 0;
-                VertexBuffer.SetFormat(new VertexDataFormat[]
-                {
-                new VertexDataFormat { type = VertexDataType.Position, location = 0, offset = offset, count = 3 },
-                new VertexDataFormat { type = VertexDataType.UV, location = 0, offset = offset += 3, count = 2 },
-                new VertexDataFormat { type = VertexDataType.Color, location = 0, offset =offset += 2, count = 4 },
-                new VertexDataFormat { type = VertexDataType.Normal, location = 0, offset =offset += 4, count = 3 },
-                new VertexDataFormat { type = VertexDataType.Tangent, location = 0, offset =offset += 3, count = 3 },
-                });
+
+                //VertexBuffer.SetFormat(new VertexDataFormat[]
+                //{
+                //new VertexDataFormat { type = VertexDataType.Position, location = 0, offset = offset, count = 3 },
+                //new VertexDataFormat { type = VertexDataType.UV, location = 0, offset = offset += 3, count = 2 },
+                //new VertexDataFormat { type = VertexDataType.Color, location = 0, offset =offset += 2, count = 4 },
+                //new VertexDataFormat { type = VertexDataType.Normal, location = 0, offset =offset += 4, count = 3 },
+                //new VertexDataFormat { type = VertexDataType.Tangent, location = 0, offset =offset += 3, count = 3 },
+                //});
+
+                List<VertexDataFormat> dataformList = new List<VertexDataFormat>();
+                var lastCount = 0;
+
+                if (Mesh.vertices != null && Mesh.vertices.Length > 0)
+                    dataformList.Add(new VertexDataFormat { type = VertexDataType.Position, location = 0, offset = offset += lastCount, count = lastCount = 3 });
+                if (Mesh.uv != null && Mesh.uv.Length > 0)
+                    dataformList.Add(new VertexDataFormat { type = VertexDataType.UV, location = 0, offset = offset += lastCount, count = lastCount = 2 });
+                if (Mesh.colors != null && Mesh.colors.Length > 0)
+                    dataformList.Add(new VertexDataFormat { type = VertexDataType.Color, location = 0, offset = offset += lastCount, count = lastCount = 4 });
+                if (Mesh.normals != null && Mesh.normals.Length > 0)
+                    dataformList.Add(new VertexDataFormat { type = VertexDataType.Normal, location = 0, offset = offset += lastCount, count = lastCount = 3 });
+                if (Mesh.tangents != null && Mesh.tangents.Length > 0)
+                    dataformList.Add(new VertexDataFormat { type = VertexDataType.Tangent, location = 0, offset = offset += lastCount, count = lastCount = 3 });
+
+                VertexBuffer.SetFormat(dataformList.ToArray());
 
                 // 顶点装配索引
                 IndexBuffer = new IndexBuffer(Mesh.triangles.Length);
@@ -331,16 +359,16 @@ namespace SoftRenderer.Games
                 var len = Mesh.vertices.Length;
                 for (int i = 0; i < len; i++)
                 {
-                    var v = Mesh.vertices[i];
-                    var uv = Mesh.uv[i];
-                    var c = Mesh.colors[i];
-                    var n = Mesh.normals[i];
-                    var t = Mesh.tangents[i];
-                    VertexBuffer.Write(v);
-                    VertexBuffer.Write(uv);
-                    VertexBuffer.Write(c);
-                    VertexBuffer.Write(n);
-                    VertexBuffer.Write(t);
+                    if (Mesh.vertices != null && Mesh.vertices.Length > 0)
+                        VertexBuffer.Write(Mesh.vertices[i]);
+                    if (Mesh.uv != null && Mesh.uv.Length > 0)
+                        VertexBuffer.Write(Mesh.uv[i]);
+                    if (Mesh.colors != null && Mesh.colors.Length > 0)
+                        VertexBuffer.Write(Mesh.colors[i]);
+                    if (Mesh.normals != null && Mesh.normals.Length > 0)
+                        VertexBuffer.Write(Mesh.normals[i]);
+                    if (Mesh.tangents != null && Mesh.tangents.Length > 0)
+                        VertexBuffer.Write(Mesh.tangents[i]);
                 }
             }
 

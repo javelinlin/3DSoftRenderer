@@ -1,11 +1,17 @@
 ﻿// jave.lin 2019.07.22
+using SoftRenderer.Common.Mathes;
+using SoftRenderer.Games;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Drawing;
+using System.IO;
+using System.Text;
 using System.Windows.Forms;
 
 namespace SoftRenderer.SoftRenderer.Utils
 {
+    [Description("对象池类")]
     public class Pool<T> : IDisposable where T : IDisposable, new()
     {
         private int max;
@@ -64,6 +70,7 @@ namespace SoftRenderer.SoftRenderer.Utils
         }
     }
 
+    [Description("全局消息处理类")]
     public class GlobalMessageHandler : IMessageFilter
     {
         public delegate void OnWheel(bool fromDownToUp);
@@ -165,5 +172,145 @@ namespace SoftRenderer.SoftRenderer.Utils
         }
 
         #endregion
+    }
+
+    [Description("模型读取器")]
+    public static class ModelReader
+    {
+        protected enum DataType
+        {
+            none,
+            vertices,
+            indices,
+            colors,
+            uv,
+            normals,
+            tangent,
+
+
+
+            exit,
+        }
+
+        public static void ReadOut(string file, out Mesh mesh)
+        {
+            mesh = new Mesh();
+            const string label = "#";
+            const string vertices = "vertices";
+            const string indices = "indices";
+            const string colors = "colors";
+            const string uv = "uv"; // uv_n, 这里我们只支持一个uv
+            const string normals = "normals";
+            const string tangents = "tangents";
+
+            var label_spliter = new char[] { ':' };
+
+            using (var txtReader = new StreamReader(file, Encoding.UTF8))
+            {
+                var type = DataType.none;
+                var count = 0;
+
+                while (!txtReader.EndOfStream)
+                {
+                    if (type == DataType.none)
+                    {
+                        var line = txtReader.ReadLine();
+                        if (line.StartsWith(label))
+                        {
+                            var str = line.Substring(1);
+                            var arr = str.Split(label_spliter);
+                            var labelName = arr[0];
+                            count = System.Convert.ToInt32(arr[1]);
+                            if (labelName == vertices) type = DataType.vertices;
+                            else if (labelName == indices) type = DataType.indices;
+                            else if (labelName == colors) type = DataType.colors;
+                            else if (labelName == uv) type = DataType.uv;
+                            else if (labelName == normals) type = DataType.normals;
+                            else if (labelName == tangents) type = DataType.tangent;
+                            continue;
+                        }
+                    }
+                    else if (type == DataType.vertices)
+                    {
+                        mesh.vertices = ReadDatType<Vector3>(count, txtReader);
+                        type = DataType.none;
+                    }
+                    else if (type == DataType.indices)
+                    {
+                        // indices沒有基础IConvert<T>所以手写在这
+                        // 也可以写另一个类将它int[]包起来，再实现IConvert<T>即可
+                        var result = new int[count];
+                        var spliter = new char[] { ',' };
+                        for (int i = 0; i < count; i += 3)
+                        {
+                            var line = txtReader.ReadLine();
+                            var arr = line.Split(spliter);
+                            for (int j = 0; j < 3; j++)
+                            {
+                                result[i + j] = System.Convert.ToInt32(arr[j]);
+                            }
+                        }
+                        mesh.triangles = result;
+                        type = DataType.none;
+                    }
+                    else if (type == DataType.colors)
+                    {
+                        mesh.colors = ReadDatType<ColorNormalized>(count, txtReader);
+                        type = DataType.none;
+                    }
+                    else if (type == DataType.uv)
+                    {
+                        mesh.uv = ReadDatType<Vector2>(count, txtReader);
+                        type = DataType.none;
+                    }
+                    else if (type == DataType.normals)
+                    {
+                        mesh.normals = ReadDatType<Vector3>(count, txtReader);
+                        type = DataType.none;
+                    }
+                    else if (type == DataType.tangent)
+                    {
+                        mesh.tangents = ReadDatType<Vector3>(count, txtReader);
+                        type = DataType.none;
+                    }
+                    else
+                    {
+                        throw new Exception($"not implements:{type}");
+                    }
+
+                    if (type == DataType.exit) break;
+                }
+
+                txtReader.Close();
+            }
+
+            var len = mesh.normals.Length;
+            for (int i = 0; i < len; i++)
+            {
+                mesh.normals[i].Normalize();
+            }
+            len = mesh.tangents.Length;
+            for (int i = 0; i < len; i++)
+            {
+                mesh.tangents[i].Normalize();
+            }
+        }
+
+        public static T[] ReadDatType<T>(int count, StreamReader txtReader) where T : IConvert<T>
+        {
+            var result = new T[count];
+            for (int i = 0; i < count; i++)
+            {
+                result[i] = Convert<T>(txtReader.ReadLine());
+            }
+            return result;
+        }
+
+        public static T Convert<T>(string str) where T : IConvert<T>
+        {
+            T result = default(T);
+            result.ConvertFrom(str);
+            return result;
+        }
     }
 }

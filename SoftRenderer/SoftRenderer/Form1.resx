@@ -126,11 +126,15 @@
   <data name="richTextBox1.Text" xml:space="preserve">
     <value>当PictureBox控件有焦点是你可以控制:
  - 鼠标滚轮控制镜头远近
+ - 鼠标左右按下移动，控制相对相机坐标方向来水平、垂直的位移 - 这个功能会比较实用
+ - 鼠标中键控制镜头的水平、垂直位移，相对世界坐标方向来水平、垂直的位移
  - 按住鼠标右键不放的同时再用W,S,A,D控制镜头的移动
  - 鼠标中键控制镜头的水平、垂直位移
 
 When the PictureBox control has focus you can control:
 - mouse wheel controls the distance of the lens
+- Press the mouse left and right to move, control the relative camera coordinate direction to horizontal and vertical displacement - this function will be more practical
+- the middle mouse button controls the horizontal and vertical displacement of the lens, and the horizontal and vertical displacement relative to the world coordinate direction
 - while holding the right mouse button down, use W,S,A,D to control the lens movement
 - the middle mouse button controls the horizontal and vertical displacement of the lens</value>
   </data>

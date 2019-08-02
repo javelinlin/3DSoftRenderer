@@ -1,9 +1,10 @@
 ﻿// jave.lin 2019.07.15
+using System;
 using System.Drawing;
 
 namespace SoftRenderer.Common.Mathes
 {
-    public struct ColorNormalized
+    public struct ColorNormalized : IConvert<ColorNormalized>
     {
         public static ColorNormalized zero = new ColorNormalized(0, 0, 0, 0);
         public static ColorNormalized black = new ColorNormalized(0, 0, 0, 1);
@@ -107,6 +108,22 @@ namespace SoftRenderer.Common.Mathes
         {
             return new ColorNormalized(a.r + rgba, a.g + rgba, a.b + rgba, a.a + rgba);
         }
+        public static ColorNormalized operator +(Vector4 v, ColorNormalized a)
+        {
+            return new ColorNormalized(a.r + v.x, a.g + v.y, a.b + v.z, a.a + v.w);
+        }
+        public static ColorNormalized operator +(ColorNormalized a, Vector4 v)
+        {
+            return new ColorNormalized(a.r + v.x, a.g + v.y, a.b + v.z, a.a + v.w);
+        }
+        public static ColorNormalized operator +(Vector3 v, ColorNormalized a)
+        {
+            return new ColorNormalized(a.r + v.x, a.g + v.y, a.b + v.z, a.a);
+        }
+        public static ColorNormalized operator +(ColorNormalized a, Vector3 v)
+        {
+            return new ColorNormalized(a.r + v.x, a.g + v.y, a.b + v.z, a.a);
+        }
         public static ColorNormalized operator *(ColorNormalized a, ColorNormalized b)
         {
             return new ColorNormalized(a.r * b.r, a.g * b.g, a.b * b.b, a.a * b.a);
@@ -118,6 +135,22 @@ namespace SoftRenderer.Common.Mathes
         public static ColorNormalized operator *(float rgba, ColorNormalized a)
         {
             return new ColorNormalized(a.r * rgba, a.g * rgba, a.b * rgba, a.a * rgba);
+        }
+        public static ColorNormalized operator *(Vector4 v, ColorNormalized a)
+        {
+            return new ColorNormalized(a.r * v.x, a.g * v.y, a.b * v.z, a.a * v.w);
+        }
+        public static ColorNormalized operator *(ColorNormalized a, Vector4 v)
+        {
+            return new ColorNormalized(a.r * v.x, a.g * v.y, a.b * v.z, a.a * v.w);
+        }
+        public static ColorNormalized operator *(Vector3 v, ColorNormalized a)
+        {
+            return new ColorNormalized(a.r * v.x, a.g * v.y, a.b * v.z, a.a);
+        }
+        public static ColorNormalized operator *(ColorNormalized a, Vector3 v)
+        {
+            return new ColorNormalized(a.r * v.x, a.g * v.y, a.b * v.z, a.a);
         }
         public static ColorNormalized operator /(ColorNormalized a, ColorNormalized b)
         {
@@ -142,6 +175,15 @@ namespace SoftRenderer.Common.Mathes
         public override string ToString()
         {
             return $"r:{r.ToString("0.000")}, g:{g.ToString("0.000")}, b:{b.ToString("0.000")}, a:{a.ToString("0.000")}";
+        }
+
+        public void ConvertFrom(string str)
+        {
+            var arr = str.Split(Utils.convert_spliter);
+            r = Convert.ToSingle(arr[0]);
+            g = Convert.ToSingle(arr[1]);
+            b = Convert.ToSingle(arr[2]);
+            a = Convert.ToSingle(arr[3]);
         }
     }
 

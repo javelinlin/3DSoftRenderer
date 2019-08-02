@@ -76,7 +76,7 @@ namespace SoftRenderer
         {
             InitializeComponent();
 
-            PictureBox.Click += PictureBox_Click;
+            PictureBox.MouseDown += PictureBox_MouseDown;
             globalMsg.OnWheelEvent += GlobalMsg_OnWheelEvent;
             Application.AddMessageFilter(globalMsg);
             this.FormClosed += (s, e) => Application.RemoveMessageFilter(globalMsg);
@@ -256,6 +256,14 @@ namespace SoftRenderer
             // 第二个游戏对象
             gameObjs.Add(go);
 
+            go = new GameObject("Sphere");
+            ModelReader.ReadOut("Models/Sphere_637003627289014299.m", out Mesh sphere);
+            go.Mesh = sphere;
+            go.LocalPosition = new Vector3(3, 0, -1);
+            go.LocalScale = 3;
+            // 第三个是球体
+            gameObjs.Add(go);
+
             camera = new Camera();
             camera.aspect = 1;
             camera.TranslateTo(new Vector3(0, 0, 8));
@@ -282,20 +290,34 @@ namespace SoftRenderer
             var fs_shaderName = "MyTestFSShader";
             var fs_shaderHash = fs_shaderName.GetHashCode();
 
+            var sphere_vs_shaderName = "SphereVertexShader";
+            var sphere_vs_shaderHash = sphere_vs_shaderName.GetHashCode();
+
+            var sphere_fs_shaderName = "SphereFragmentShader";
+            var sphere_fs_shaderHash = sphere_fs_shaderName.GetHashCode();
+
             var vsShader = renderer.ShaderMgr.CreateShader(vs_shaderHash);
             var fsShader = renderer.ShaderMgr.CreateShader(fs_shaderHash);
+            var sphere_vsShader = renderer.ShaderMgr.CreateShader(sphere_vs_shaderHash);
+            var sphere_fsShader = renderer.ShaderMgr.CreateShader(sphere_fs_shaderHash);
+            List<ShaderBase> shaders = new List<ShaderBase>(
+                new ShaderBase[] {
+                    vsShader,fsShader,
+                    vsShader,fsShader,
+                    sphere_vsShader,sphere_fsShader });
 
             //var tex_bmp = new Bitmap("Images/texture.png");
             var tex_bmp = new Bitmap("Images/GitHubIcon.PNG");
+            var sp_tex_bmp = new Bitmap("Images/my_tex.png");
             //var tex_bmp = new Bitmap("Images/heightMap1.jpg");
             //var tex_bmp = new Bitmap("Images/tex.jpg");
             //var tex_bmp = new Bitmap("Images/icon.PNG");
-            var tex = new Texture2D(tex_bmp);
-            fsShader.ShaderProperties.SetUniform("mainTex", tex);
+            fsShader.ShaderProperties.SetUniform("mainTex", new Texture2D(tex_bmp));
+            sphere_fsShader.ShaderProperties.SetUniform("mainTex", new Texture2D(sp_tex_bmp));
 
-            foreach (var go1 in gameObjs)
+            for (int i = 0; i < gameObjs.Count; i++)
             {
-                go1.Material = new Material(vsShader, fsShader);
+                gameObjs[i].Material = new Material(shaders[i * 2 + 0], shaders[i * 2 + 1]);
             }
 #endif
         }
@@ -303,7 +325,7 @@ namespace SoftRenderer
         private void GlobalMsg_OnWheelEvent(bool fromDownToUp)
         {
             if (!PictureBox.Focused) return;
-            if (fromDownToUp)
+            if (fromDownToUp) // 鼠标滚轮控制镜头远近
             {
                 camera.Translate += camera.Forward;
             }
@@ -326,7 +348,27 @@ namespace SoftRenderer
                         this.globalMsg.delta_ms_pos = Point.Empty;
                     }
                 }
-                if (this.globalMsg.MS_RBTN)
+                if (this.globalMsg.MS_LBTN) // 鼠标左右按下移动，控制相对相机坐标方向来水平、垂直的位移 - 这个功能会比较实用
+                {
+                    if (this.globalMsg.delta_ms_pos.IsEmpty == false)
+                    {
+                        const float scale = 0.1f;
+                        camera.Translate -= this.globalMsg.delta_ms_pos.X * scale * camera.Right;
+                        camera.Translate += this.globalMsg.delta_ms_pos.Y * scale * camera.Up;
+                        this.globalMsg.delta_ms_pos = Point.Empty;
+                    }
+                }
+                if (this.globalMsg.MS_MBTN) // 鼠标中键控制镜头的水平、垂直位移，相对世界坐标方向来水平、垂直的位移
+                {
+                    if (this.globalMsg.delta_ms_pos.IsEmpty == false)
+                    {
+                        const float scale = 0.1f;
+                        camera.Translate -= this.globalMsg.delta_ms_pos.X * scale * Vector3.right;
+                        camera.Translate -= this.globalMsg.delta_ms_pos.Y * scale * Vector3.up;
+                        this.globalMsg.delta_ms_pos = Point.Empty;
+                    }
+                }
+                if (this.globalMsg.MS_RBTN) // 按住鼠标右键不放的同时再用W,S,A,D控制镜头的移动
                 {
                     if (this.globalMsg.delta_ms_pos.IsEmpty == false)
                     {
@@ -339,16 +381,6 @@ namespace SoftRenderer
                     if (this.globalMsg.GetKeyDown(Keys.S)) camera.Translate -= scale * camera.Forward;
                     if (this.globalMsg.GetKeyDown(Keys.A)) camera.Translate -= scale * camera.Right;
                     if (this.globalMsg.GetKeyDown(Keys.D)) camera.Translate += scale * camera.Right;
-                }
-                else if (this.globalMsg.MS_MBTN)
-                {
-                    if (this.globalMsg.delta_ms_pos.IsEmpty == false)
-                    {
-                        const float scale = 0.1f;
-                        camera.Translate += this.globalMsg.delta_ms_pos.X * scale * camera.Right;
-                        camera.Translate -= this.globalMsg.delta_ms_pos.Y * scale * camera.Up;
-                        this.globalMsg.delta_ms_pos = Point.Empty;
-                    }
                 }
             }
         }
@@ -373,11 +405,11 @@ namespace SoftRenderer
 
 #if PROGRAMMABLE_PIPELINE
             // shader uniform block update
-            shaderData.Ambient = new ColorNormalized(0.3f, 0.2f, 0.1f, 0.6f);
+            shaderData.Ambient = ambient;// new ColorNormalized(0.3f, 0.2f, 0.1f, 0.6f);
             // directional light
             shaderData.LightPos[0].xyz = new Vector3(-1, 0, 1).normalized;
             shaderData.LightPos[0].w = 0;// directional light
-            shaderData.LightColor[0] = new ColorNormalized(1, 0.5f, 0.5f, 1f);
+            shaderData.LightColor[0] = lightColor;// new ColorNormalized(1, 0.5f, 0.5f, 1f);
             shaderData.LightItensity[0] = Vector4.one;
             shaderData.LightParams1[0] = Vector4.one;
             shaderData.CameraPos = camera.Translate;
@@ -396,6 +428,9 @@ namespace SoftRenderer
             renderer.State.CamZ = camera.Translate.z;
 #endif
         }
+
+        public Color ambient { get; set; } = new ColorNormalized(0.3f, 0.2f, 0.1f, 0.6f);
+        public Color lightColor { get; set; } = new ColorNormalized(1, 0.5f, 0.5f, 1f);
 
         private void Draw()
         {
@@ -611,7 +646,7 @@ namespace SoftRenderer
             UpdateCameraTR();
         }
 
-        private void PictureBox_Click(object sender, EventArgs e)
+        private void PictureBox_MouseDown(object sender, EventArgs e)
         {
             PictureBox.Focus();
         }
