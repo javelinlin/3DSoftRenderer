@@ -324,7 +324,9 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 throw new Exception("error");
             }
 
-            var infoCount = f0.ShaderOut.upperStageOutInfos != null ? f0.ShaderOut.upperStageOutInfos.Length : 0;
+            var infoCount = 0;
+            if (interpolation && f0.ShaderOut != null && f0.ShaderOut.upperStageOutInfos != null)
+                infoCount = f0.ShaderOut.upperStageOutInfos.Length;
 
 #if PERSPECTIVE_CORRECT
             var p0InvZ = f0.ClipZ == 0 ? 0 : 1 / f0.ClipZ;
@@ -854,9 +856,14 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                             //if ((int)(leftFrags[leftI].p.y) == iy)
                             if (leftFrags[leftI].p.y >= iy)
                             {
-                                if ((int)leftFrags[leftI].p.y > iy)
+                                //if ((int)leftFrags[leftI].p.y > iy)
+                                //{
+                                //    //throw new Exception("error");
+                                //}
+                                if (leftI < count - 1)
                                 {
-                                    //throw new Exception("error");
+                                    // 如果下一个坐标也是一样的，那么继续跳过，取下一个
+                                    if ((int)leftFrags[leftI + 1].p.y == iy) continue;
                                 }
                                 leftF = leftFrags[leftI];
                                 break;
@@ -869,9 +876,14 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                             //if ((int)(rightFrags[rightI].p.y) == iy)
                             if (rightFrags[rightI].p.y >= iy)
                             {
-                                if ((int)rightFrags[rightI].p.y > iy)
+                                //if ((int)rightFrags[rightI].p.y > iy)
+                                //{
+                                //    //throw new Exception("error");
+                                //}
+                                if (rightI < count - 1)
                                 {
-                                    //throw new Exception("error");
+                                    // 如果下一个坐标也是一样的，那么继续跳过，取下一个
+                                    if ((int)rightFrags[rightI + 1].p.y == iy) continue;
                                 }
                                 rightF = rightFrags[rightI];
                                 break;

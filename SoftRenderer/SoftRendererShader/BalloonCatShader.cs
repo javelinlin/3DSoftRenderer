@@ -29,7 +29,6 @@ namespace SoftRendererShader
         [In] [Position] public vec4 inPos;
 
         [In] [Out] [Texcoord] public vec2 ioUV;
-        [In] [Out] [Color] public color ioColor;
         [In] [Out] [Normal] public vec3 ioNormal;
         [In] [Out] [Tangent] public vec3 ioTangent;
 
@@ -45,7 +44,6 @@ namespace SoftRendererShader
         [Main]
         public override void Main()
         {
-            ioColor = color.yellow;
             inPos.xyz += ioNormal * outlineOffset;
             outPos = MVP * inPos;
             outWorldPos = M * inPos;
@@ -70,7 +68,6 @@ namespace SoftRendererShader
         [In] [SV_Position] public vec4 inPos;
         [In] [Position] public vec4 inWorldPos;
         [In] [Texcoord] public vec2 inUV;
-        [In] [Color] public color inColor;
         [In] [Normal] public vec3 inNormal;
         [In] [Tangent] public vec3 inTangent;
         [In] [Tangent(1)] public vec3 inBitangent;
@@ -96,7 +93,6 @@ namespace SoftRendererShader
         [Main]
         public override void Main()
         {
-            outColor = tex2D(sampler, mainTex, inUV); return;
             //outColor.rgb = inNormal;return;
             //var v = inUV.y * 100;
             //var times = (int)(v / 10);
@@ -119,14 +115,13 @@ namespace SoftRendererShader
             else
                 throw new Exception($"not implements lightType:{lightType}");
             var LdotN = dot(lightDir, inNormal);// * 0.5f + 0.5f;
-            var diffuse = (tex2D(sampler, mainTex, inUV)) * 2 * (LdotN * 0.5f + 0.5f) * inColor;
-            diffuse *= inNormal * 2;
+            var diffuse = (tex2D(sampler, mainTex, inUV)) * 2 * (LdotN);
             // specular
             var viewDir = (shaderData.CameraPos.xyz - inWorldPos.xyz);
             viewDir.Normalize();
             var specular = color.black;
 
-            //if (LdotN > 0)
+            if (LdotN > 0)
             {
                 // specular 1 - blinn-phong
                 // 高光也可以使用：光源角与视角的半角来算

@@ -440,7 +440,7 @@ namespace SoftRenderer
 #endif
         }
 
-        public Color ambient { get; set; } = new ColorNormalized(0.3f, 0.2f, 0.1f, 0.6f);
+        public Color ambient { get; set; } = new ColorNormalized(0.3f, 0.2f, 0.1f, 0.2f);
         public Color lightColor { get; set; } = new ColorNormalized(1, 0.5f, 0.5f, 1f);
 
         private void Draw()
