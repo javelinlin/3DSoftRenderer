@@ -18,109 +18,6 @@ using System.Windows.Forms;
 
 namespace SoftRenderer
 {
-    public class GlobalMessageHandler : IMessageFilter
-    {
-        public delegate void OnWheel(bool fromDownToUp);
-        /* =======message start======= */
-        public const int WM_KEYDOWN = 0x100;
-        public const int WM_KEYUP = 0x101;
-        public const int WM_SYSKEYDOWN = 0x104;
-        public const int WM_SYSKEYUP = 0x105;
-
-        //https://docs.microsoft.com/zh-cn/dotnet/api/system.windows.forms.message.msg?view=netframework-4.8
-        public const int WM_ACTIVATEAPP = 0x001C;
-
-        // https://docs.microsoft.com/zh-cn/previous-versions/windows/desktop/inputmsg/wm-parentnotify
-        // CREATE WIN, DESTROY WIN, MS_LBTN, MS_RBTN, MS_MBTN, ETC.
-        public const int WM_LBUTTONDOWN = 0x0201;
-        public const int WM_LBUTTONUP = 0x0202;
-        public const int WM_MBUTTONDOWN = 0x0207;
-        public const int WM_MBUTTONUP = 0x0208;
-        public const int WM_RBUTTONDOWN = 0x0204;
-        public const int WM_RBUTTONUP = 0x0205;
-        public const int WM_MOUSEWHEEL = 0x020A;
-        // https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-ncmousemove
-        //https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-mousemove
-        // MS_MOVE
-        //private const int WM_NCMOUSEMOVE = 0x00A0;
-        public const int WM_MOUSEMOVE = 0x0200;
-
-        public bool appActive { get; set; }
-        public Point last_ms_pos { get; private set; } = new Point(-1, -1);
-        public Point delta_ms_pos { get; set; }
-        public bool MS_LBTN { get; private set; }
-        public bool MS_RBTN { get; private set; }
-        public bool MS_MBTN { get; private set; }
-
-        private Dictionary<Keys, bool> keysDownStatus = new Dictionary<Keys, bool>();
-
-        public event OnWheel OnWheelEvent;
-
-        public void SetKeyDown(Keys k, bool isDown)
-        {
-            if ((k & Keys.Control) != 0)
-                k = k ^ Keys.Control;
-            keysDownStatus[k] = isDown;
-        }
-        public bool GetKeyDown(Keys k)
-        {
-            keysDownStatus.TryGetValue(k, out bool down);
-            return down;
-        }
-
-        /* =======message end======= */
-
-        #region IMessageFilter Members
-
-        public bool PreFilterMessage(ref Message m)
-        {
-            switch (m.Msg)
-            {
-                case WM_LBUTTONDOWN:
-                    MS_LBTN = true;
-                    break;
-                case WM_LBUTTONUP:
-                    MS_LBTN = false;
-                    break;
-                case WM_MBUTTONDOWN:
-                    MS_MBTN = true;
-                    break;
-                case WM_MBUTTONUP:
-                    MS_MBTN = false;
-                    break;
-                case WM_RBUTTONDOWN:
-                    MS_RBTN = true;
-                    break;
-                case WM_RBUTTONUP:
-                    MS_RBTN = false;
-                    break;
-                case WM_MOUSEWHEEL:
-                    OnWheelEvent.Invoke((int)m.WParam > 0);
-                    break;
-                case WM_MOUSEMOVE:
-                    var nowPos = Cursor.Position;
-                    if (last_ms_pos.X == -1 || last_ms_pos.Y == -1)
-                        last_ms_pos = nowPos;
-                    delta_ms_pos = new Point(nowPos.X - last_ms_pos.X, nowPos.Y - last_ms_pos.Y);
-                    last_ms_pos = nowPos;
-                    //Console.WriteLine($"mx,y:{nowPos}, deltax,y:{delta_ms_pos}");
-                    break;
-                case WM_ACTIVATEAPP:
-                    appActive = m.WParam != IntPtr.Zero;
-                    //Console.WriteLine($"win actived:{appActive}");
-                    break;
-                case WM_KEYUP:
-                    SetKeyDown((Keys)m.WParam, false);
-                    //Console.WriteLine($"Key{(Keys)m.WParam} up:true");
-                    break;
-            }
-            // Always allow message to continue to the next filter control
-            return false;
-        }
-
-        #endregion
-    }
-
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public partial class MainForm : Form
     {
@@ -138,6 +35,8 @@ namespace SoftRenderer
                 focusedControl = Control.FromChildHandle(focusedHandle);
             return focusedControl;
         }
+
+        private Control lastFocusControl;
 
         private static readonly int outlineOffsetHash = "outlineOffset".GetHashCode();
         private static readonly int specularPowHash = "specularPow".GetHashCode();
@@ -164,18 +63,6 @@ namespace SoftRenderer
         private ShaderData shaderData;
 
         private bool autoRotate = true;
-
-        public float Tx { get; set; }
-        public float Ty { get; set; }
-#if PROGRAMMABLE_PIPELINE
-        // 可编程管线太卡，所以我拉远一些镜头，让片段少一些
-        public float Tz { get; set; } = 8;
-#else
-        public float Tz { get; set; } = 7;
-#endif
-        public float Rx { get; set; }
-        public float Ry { get; set; }
-        public float Rz { get; set; }
 
         // 法线描边的偏移值，这个需要好的模型才能测试出来
         // TODO 后面添加支持：加载*.obj模型
@@ -380,7 +267,7 @@ namespace SoftRenderer
             }
             else
             {
-                camera.TranslateTo(new Vector3(0, 0, Tz));
+                camera.TranslateTo(new Vector3(0, 0, 8));
             }
 
 #if PROGRAMMABLE_PIPELINE
@@ -417,11 +304,11 @@ namespace SoftRenderer
             if (!PictureBox.Focused) return;
             if (fromDownToUp)
             {
-                camera.Translate += (camera.Euler + Vector3.forward).normalized;
+                camera.Translate += camera.Forward;
             }
             else
             {
-                camera.Translate -= (camera.Euler + Vector3.forward).normalized;
+                camera.Translate -= camera.Forward;
             }
         }
 
@@ -529,6 +416,14 @@ namespace SoftRenderer
             var curCtrl = GetFocusedControl();
             focusCtrlLabel.Text = curCtrl != null ? $"Focus:{curCtrl.Name}" : "";
             PictureBox.BorderStyle = PictureBox.Focused ? BorderStyle.Fixed3D : BorderStyle.None;
+            if (lastFocusControl != curCtrl)
+            {
+                lastFocusControl = curCtrl;
+                if (curCtrl == PictureBox)
+                    this.Cursor = Cursors.SizeAll;
+                else
+                    this.Cursor = Cursors.Default;
+            }
 
             UpdateCameraTR();
         }
@@ -547,8 +442,8 @@ namespace SoftRenderer
                     Console.WriteLine($"dx,y:{this.globalMsg.delta_ms_pos}");
                     if (this.globalMsg.delta_ms_pos.IsEmpty == false)
                     {
-                        Ry += this.globalMsg.delta_ms_pos.X;
-                        Rx -= this.globalMsg.delta_ms_pos.Y;
+                        this.camera.RotateY(this.globalMsg.delta_ms_pos.X);
+                        this.camera.RotateX(-this.globalMsg.delta_ms_pos.Y);
                         this.globalMsg.delta_ms_pos = Point.Empty;
                     }
                 }
@@ -556,14 +451,15 @@ namespace SoftRenderer
                 {
                     if (this.globalMsg.delta_ms_pos.IsEmpty == false)
                     {
-                        Ry += this.globalMsg.delta_ms_pos.X;
-                        Rx -= this.globalMsg.delta_ms_pos.Y;
+                        this.camera.RotateY(this.globalMsg.delta_ms_pos.X);
+                        this.camera.RotateX(-this.globalMsg.delta_ms_pos.Y);
                         this.globalMsg.delta_ms_pos = Point.Empty;
                     }
-                    //if (this.globalMsg.GetKeyDown(Keys.W)) camera.Translate -= camera.forward;
-                    //if (this.globalMsg.GetKeyDown(Keys.S)) camera.Translate += camera.forward;
-                    //if (this.globalMsg.GetKeyDown(Keys.A)) camera.Translate -= camera.forward;
-                    //if (this.globalMsg.GetKeyDown(Keys.D)) camera.Translate += camera.forward;
+                    const float scale = 0.5f;
+                    if (this.globalMsg.GetKeyDown(Keys.W)) camera.Translate += scale * camera.Forward;
+                    if (this.globalMsg.GetKeyDown(Keys.S)) camera.Translate -= scale * camera.Forward;
+                    if (this.globalMsg.GetKeyDown(Keys.A)) camera.Translate -= scale * camera.Right;
+                    if (this.globalMsg.GetKeyDown(Keys.D)) camera.Translate += scale * camera.Right;
                 }
             }
         }
@@ -572,8 +468,8 @@ namespace SoftRenderer
         {
             // camera update
             // 后面封装承Component
-            camera.TranslateTo(new Vector3(Tx, Ty, Tz));
-            camera.RotateTo(new Vector3(Rx, Ry, Rz));
+            //camera.TranslateTo(new Vector3(Tx, Ty, Tz));
+            //camera.RotateTo(new Vector3(Rx, Ry, Rz));
             camera.Update(deltaMs);
 
             if (camera.viewport == Rectangle.Empty)
@@ -674,7 +570,7 @@ namespace SoftRenderer
                 var go = gameObjs[i];
                 if (autoRotate)
                 {
-                    go.LocalRotation += new Vector3(0.1f + i * 0.01f, 0.015f + i * 0.02f, 0.016f + i * 0.03f) * deltaMs;
+                    go.LocalRotation += new Vector3(0.1f + i * 0.01f, 0.055f + i * 0.02f, 0.016f + i * 0.03f) * deltaMs;
                 }
 #if !PROGRAMMABLE_PIPELINE
                 if (go.Mesh != null)
@@ -772,5 +668,127 @@ namespace SoftRenderer
         {
             TimeScaleValueLabel.Text = TimeScaleSlider.Value.ToString();
         }
+
+        private void ResetCamera_Click(object sender, EventArgs e)
+        {
+            Vector3 pos = Vector3.zero;
+            if (gameObjs.Count > 0)
+            {
+                pos = gameObjs[0].WorldPosition;
+                pos.z += 8;
+            }
+            else
+            {
+                pos.x = 0;
+                pos.y = 0;
+                pos.z = 8;
+            }
+
+            camera.RotateTo(Vector3.zero);
+            camera.TranslateTo(pos);
+        }
+    }
+
+    public class GlobalMessageHandler : IMessageFilter
+    {
+        public delegate void OnWheel(bool fromDownToUp);
+        /* =======message start======= */
+        public const int WM_KEYDOWN = 0x100;
+        public const int WM_KEYUP = 0x101;
+        public const int WM_SYSKEYDOWN = 0x104;
+        public const int WM_SYSKEYUP = 0x105;
+
+        //https://docs.microsoft.com/zh-cn/dotnet/api/system.windows.forms.message.msg?view=netframework-4.8
+        public const int WM_ACTIVATEAPP = 0x001C;
+
+        // https://docs.microsoft.com/zh-cn/previous-versions/windows/desktop/inputmsg/wm-parentnotify
+        // CREATE WIN, DESTROY WIN, MS_LBTN, MS_RBTN, MS_MBTN, ETC.
+        public const int WM_LBUTTONDOWN = 0x0201;
+        public const int WM_LBUTTONUP = 0x0202;
+        public const int WM_MBUTTONDOWN = 0x0207;
+        public const int WM_MBUTTONUP = 0x0208;
+        public const int WM_RBUTTONDOWN = 0x0204;
+        public const int WM_RBUTTONUP = 0x0205;
+        public const int WM_MOUSEWHEEL = 0x020A;
+        // https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-ncmousemove
+        //https://docs.microsoft.com/en-us/windows/win32/inputdev/wm-mousemove
+        // MS_MOVE
+        //private const int WM_NCMOUSEMOVE = 0x00A0;
+        public const int WM_MOUSEMOVE = 0x0200;
+
+        public bool appActive { get; set; }
+        public Point last_ms_pos { get; private set; } = new Point(-1, -1);
+        public Point delta_ms_pos { get; set; }
+        public bool MS_LBTN { get; private set; }
+        public bool MS_RBTN { get; private set; }
+        public bool MS_MBTN { get; private set; }
+
+        private Dictionary<Keys, bool> keysDownStatus = new Dictionary<Keys, bool>();
+
+        public event OnWheel OnWheelEvent;
+
+        public void SetKeyDown(Keys k, bool isDown)
+        {
+            if ((k & Keys.Control) != 0)
+                k = k ^ Keys.Control;
+            keysDownStatus[k] = isDown;
+        }
+        public bool GetKeyDown(Keys k)
+        {
+            keysDownStatus.TryGetValue(k, out bool down);
+            return down;
+        }
+
+        /* =======message end======= */
+
+        #region IMessageFilter Members
+
+        public bool PreFilterMessage(ref Message m)
+        {
+            switch (m.Msg)
+            {
+                case WM_LBUTTONDOWN:
+                    MS_LBTN = true;
+                    break;
+                case WM_LBUTTONUP:
+                    MS_LBTN = false;
+                    break;
+                case WM_MBUTTONDOWN:
+                    MS_MBTN = true;
+                    break;
+                case WM_MBUTTONUP:
+                    MS_MBTN = false;
+                    break;
+                case WM_RBUTTONDOWN:
+                    MS_RBTN = true;
+                    break;
+                case WM_RBUTTONUP:
+                    MS_RBTN = false;
+                    break;
+                case WM_MOUSEWHEEL:
+                    OnWheelEvent.Invoke((int)m.WParam > 0);
+                    break;
+                case WM_MOUSEMOVE:
+                    var nowPos = Cursor.Position;
+                    if (last_ms_pos.X == -1 || last_ms_pos.Y == -1)
+                        last_ms_pos = nowPos;
+                    delta_ms_pos = new Point(nowPos.X - last_ms_pos.X, nowPos.Y - last_ms_pos.Y);
+                    last_ms_pos = nowPos;
+                    //Console.WriteLine($"mx,y:{nowPos}, deltax,y:{delta_ms_pos}");
+                    break;
+                case WM_ACTIVATEAPP:
+                    appActive = m.WParam != IntPtr.Zero;
+                    //Console.WriteLine($"win actived:{appActive}");
+                    break;
+                case WM_KEYUP:
+                    SetKeyDown((Keys)m.WParam, false);
+                    //Console.WriteLine($"Key{(Keys)m.WParam} up:true");
+                    break;
+            }
+            // Always allow message to continue to the next filter control
+            return false;
+        }
+
+        #endregion
     }
 }

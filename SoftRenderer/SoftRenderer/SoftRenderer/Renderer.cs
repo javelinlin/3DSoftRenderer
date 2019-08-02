@@ -26,7 +26,7 @@ namespace SoftRenderer.SoftRenderer
         private PixelFormat pixelFormat;
         internal ColorBuffer frontBuffer;
         internal ColorBuffer backBuffer;
-        private List<OutInfo[]> vertexOutput = new List<OutInfo[]>();
+        private List<ShaderOut> vertexshaderOutput = new List<ShaderOut>();
         private List<Primitive_Triangle> trianglePrimitiveHelper = new List<Primitive_Triangle>();
         private List<Primitive_Line> linePrimitiveHelper = new List<Primitive_Line>();
         private List<Primitive_Point> pointPrimitiveHelper = new List<Primitive_Point>();
@@ -126,7 +126,7 @@ namespace SoftRenderer.SoftRenderer
         {
             var buffer = CurVertexBuffer;
             var floatBuff = buffer.buff;
-            vertexOutput.Clear();
+            vertexshaderOutput.Clear();
             for (int i = 0; i < floatBuff.Length; i += buffer.floatNumPerVertice)
             {
                 foreach (var format in buffer.Formats)
@@ -182,13 +182,13 @@ namespace SoftRenderer.SoftRenderer
                 vs.Main();
 
                 var outs = vs.ShaderProperties.GetOuts();
-                vertexOutput.Add(outs);
+                vertexshaderOutput.Add(new ShaderOut {  upperStageOutInfos = outs });
             }
         }
 
         private void VertexShader_PostProcessing()
         {
-            var len = vertexOutput.Count;
+            var len = vertexshaderOutput.Count;
             var cx = State.CameraViewport.X;
             var cy = State.CameraViewport.Y;
             var cw = State.CameraViewport.Width;
@@ -198,7 +198,8 @@ namespace SoftRenderer.SoftRenderer
             var isOrtho = State.IsOrtho;
             for (int i = 0; i < len; i++)
             {
-                var outInfos = vertexOutput[i];
+                var shaderOut = vertexshaderOutput[i];
+                var outInfos = shaderOut.upperStageOutInfos;
                 var jLen = outInfos.Length;
                 for (int j = 0; j < jLen; j++)
                 {
@@ -245,6 +246,7 @@ namespace SoftRenderer.SoftRenderer
                         var wposZ = (f - n) * 0.5f * ndcPos.z + (f + n) * 0.5f;
                         var winPos = new Vector4(wposX, wposY, wposZ, ndcPos.w);
                         outInfos[j].value = winPos;
+                        shaderOut.clip = ShoudClip(ndcPos);
                         break;
                     }
                 }
@@ -261,12 +263,11 @@ namespace SoftRenderer.SoftRenderer
                     trianglePrimitiveHelper.Clear();
                     for (int i = 0; i < len; i += 3)
                     {
-                        trianglePrimitiveHelper.Add(
-                            new Primitive_Triangle(
-                                FragInfo.GetFragInfo(vertexOutput[buff[i + 0]]),
-                                FragInfo.GetFragInfo(vertexOutput[buff[i + 1]]),
-                                FragInfo.GetFragInfo(vertexOutput[buff[i + 2]])
-                                ));
+                        var f0 = FragInfo.GetFragInfo(vertexshaderOutput[buff[i + 0]]);
+                        var f1 = FragInfo.GetFragInfo(vertexshaderOutput[buff[i + 1]]);
+                        var f2 = FragInfo.GetFragInfo(vertexshaderOutput[buff[i + 2]]);
+                        var clip = (f0.ShaderOut.clip || f1.ShaderOut.clip || f2.ShaderOut.clip);
+                        trianglePrimitiveHelper.Add(new Primitive_Triangle(f0, f1, f2, clip));
                     }
                     break;
                 case PolygonMode.Line:
@@ -276,6 +277,11 @@ namespace SoftRenderer.SoftRenderer
                 default:
                     throw new Exception($"not implements polygonMode:{State.PolygonMode}");
             }
+        }
+
+        private bool ShoudClip(Vector4 pos)
+        {
+            return pos.x < -1 || pos.x > 1 || pos.y < -1 || pos.y > 1 || pos.z < -1 || pos.z > 1;
         }
 
         private void RasterizeAndFragmentShader(FSBase fs)
@@ -361,10 +367,10 @@ namespace SoftRenderer.SoftRenderer
                 if (depthbuff.Test(State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
                 {
                     // 执行fragment shader
-                    var jLen = f.UpperStageOutInfos.Length;
+                    var jLen = f.ShaderOut.upperStageOutInfos.Length;
                     for (int j = 0; j < jLen; j++)
                     {
-                        var info = f.UpperStageOutInfos[j];
+                        var info = f.ShaderOut.upperStageOutInfos[j];
                         fs.ShaderProperties.SetInWithOut(info.layout, info.value, info.location);
                     }
                     fs.f = f;
@@ -510,8 +516,9 @@ namespace SoftRenderer.SoftRenderer
                 frontBuffer = t;
             }
             return frontBuffer;
-#endif
+#else
             return backBuffer;
+#endif
         }
 
         public void Dispose()

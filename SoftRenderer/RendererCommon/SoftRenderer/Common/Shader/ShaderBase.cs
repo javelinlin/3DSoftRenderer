@@ -174,7 +174,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             if (layout == OutLayout.SV_Target)
                 return;
             InLayout inlayout = InLayout.SV_Position;
-            if (layout == OutLayout.SV_Position)/* noops */;
+            if (layout == OutLayout.SV_Position) /* noops */;
             else if (layout == OutLayout.Position)
                 inlayout = InLayout.Position;
             else if (layout == OutLayout.Color)
@@ -272,7 +272,6 @@ namespace RendererCommon.SoftRenderer.Common.Shader
     }
 
     [Description("着色器的输出数据")]
-    [TypeConverter(typeof(ExpandableObjectConverter))]
     public struct OutInfo
     {
         public OutLayout layout;
@@ -286,12 +285,20 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         }
     }
 
+    [Description("着色器的输出数据容器")]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ShaderOut
+    {
+        public bool clip;
+        public OutInfo[] upperStageOutInfos;
+    }
+
     [Description("新版-片段数据")]
     public class FragInfo : IDisposable
     {
-        public static FragInfo GetFragInfo(OutInfo[] upperStageOutInfos = null)
+        public static FragInfo GetFragInfo(ShaderOut shaderOut = null)
         {
-            return new FragInfo(upperStageOutInfos);
+            return new FragInfo(shaderOut);
         }
 
         public float depth;
@@ -301,20 +308,22 @@ namespace RendererCommon.SoftRenderer.Common.Shader
 
         public Vector4 p;
 
-        public int PosIdx { get; private set; }
-        public OutInfo[] UpperStageOutInfos { get; private set; }
+        public float ClipZ { get => p.w; }
 
-        public FragInfo(OutInfo[] upperStageOutInfos = null)
+        public int PosIdx { get; private set; }
+        public ShaderOut ShaderOut { get; private set; }
+
+        public FragInfo(ShaderOut shaderOut = null)
         {
-            if (upperStageOutInfos != null)
+            if (shaderOut != null)
             {
-                Set(upperStageOutInfos);
+                Set(shaderOut);
             }
         }
 
-        public void Set(OutInfo[] upperStageOutInfos)
+        public void Set(ShaderOut shaderOut)
         {
-            UpperStageOutInfos = upperStageOutInfos;
+            var upperStageOutInfos = shaderOut.upperStageOutInfos;
             var len = upperStageOutInfos.Length;
             for (int i = 0; i < len; i++)
             {
@@ -327,18 +336,13 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             }
             if (PosIdx == -1)
                 throw new Exception("error");
-        }
-
-        public void WriteBackInfos()
-        {
-            UpperStageOutInfos[PosIdx].value = p;
+            ShaderOut = shaderOut;
         }
 
         public void Dispose()
         {
             GC.SuppressFinalize(this);
 
-            UpperStageOutInfos = null;
         }
     }
 

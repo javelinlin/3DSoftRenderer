@@ -213,11 +213,14 @@ namespace SoftRenderer.SoftRenderer.Primitives
         public FragInfo f1;
         public FragInfo f2;
 
-        public Primitive_Triangle(FragInfo f0, FragInfo f1, FragInfo f2)
+        public bool clip;
+
+        public Primitive_Triangle(FragInfo f0, FragInfo f1, FragInfo f2, bool clip = false)
         {
             this.f0 = f0;
             this.f1 = f1;
             this.f2 = f2;
+            this.clip = clip;
         }
 
         public bool Validated() // 验证三角形是否有效，在光栅时，或是剔除渲染时使用

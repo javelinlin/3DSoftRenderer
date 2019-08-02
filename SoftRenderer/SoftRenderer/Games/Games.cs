@@ -120,6 +120,11 @@ namespace SoftRenderer.Games
         [Description("是否使用正交投影")]
         public bool isOrtho { get; set; } = false;          // 是否使用正交投影
 
+        private Vector3 forward = -Vector3.forward;
+        private Vector3 right = Vector3.right;
+        public Vector3 Forward { get; private set; }
+        public Vector3 Right { get; private set; }
+
         public Camera()
         {
             View = Matrix4x4.Get();
@@ -131,6 +136,18 @@ namespace SoftRenderer.Games
         public void TranslateTo(Vector3 t)
         {
             Translate = t;
+        }
+        public void RotateX(float v)
+        {
+            Euler += new Vector3(v, 0, 0);
+        }
+        public void RotateY(float v)
+        {
+            Euler += new Vector3(0, v, 0);
+        }
+        public void RotateZ(float v)
+        {
+            Euler += new Vector3(0, 0, v);
         }
         public void Rotate(Vector3 e)
         {
@@ -171,6 +188,9 @@ namespace SoftRenderer.Games
                 // rotate
                 View = Matrix4x4.GenEulerMat(Euler.x, Euler.y, Euler.z).MulMat(View);
             }
+            var mat = Matrix4x4.GenEulerMat(-Euler.x, -Euler.y, Euler.z);
+            Forward = mat * forward;
+            Right = mat * right;
             // proj
             if (isOrtho)
             {
@@ -222,8 +242,8 @@ namespace SoftRenderer.Games
         public MeshRenderer MR { get; set; }
         [Description("材质对象，后面重构成Component")]
         public Material Material { get; set; }
-        //[Description("世界坐标")]
-        //public Vector3 WorldPosition { get; private set; }
+        [Description("世界坐标")]
+        public Vector3 WorldPosition { get; private set; }
 
         public GameObject(string name = null)
         {
@@ -253,7 +273,7 @@ namespace SoftRenderer.Games
             ModelViewMat = camera.View * ModelMat;
             ModelViewProjMat = camera.Proj * ModelViewMat;
 
-            //WorldPosition = ModelMat * Vector4.zeroPos;
+            WorldPosition = ModelMat * Vector4.zeroPos;
         }
 
         public void Draw()

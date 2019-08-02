@@ -320,11 +320,11 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 throw new Exception("error");
             }
 
-            var infoCount = f0.UpperStageOutInfos != null ? f0.UpperStageOutInfos.Length : 0;
+            var infoCount = f0.ShaderOut.upperStageOutInfos != null ? f0.ShaderOut.upperStageOutInfos.Length : 0;
 
 #if PERSPECTIVE_CORRECT
-            var p0InvZ = f0.p.z == 0 ? 0 : 1 / f0.p.z;
-            var p1InvZ = f1.p.z == 0 ? 0 : 1 / f1.p.z;
+            var p0InvZ = f0.ClipZ == 0 ? 0 : 1 / f0.ClipZ;
+            var p1InvZ = f1.ClipZ == 0 ? 0 : 1 / f1.ClipZ;
 #endif
             for (int i = 0, num = 1; i < count; i++, num++)
             {
@@ -332,7 +332,11 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 var newP = p0 + dir_nrl * num;
                 if (interpolation)
                 {
-                    OutInfo[] infos = new OutInfo[infoCount];
+                    ShaderOut shaderOut = new ShaderOut
+                    {
+                        upperStageOutInfos = new OutInfo[infoCount]
+                    };
+                    OutInfo[] infos = shaderOut.upperStageOutInfos;
                     var t = (float)i / count;
                     var tt = 1 - t;
 #if PERSPECTIVE_CORRECT
@@ -345,8 +349,8 @@ namespace SoftRenderer.SoftRenderer.Rasterization
 
                     for (int j = 0; j < infoCount; j++)
                     {
-                        var f0Info = f0.UpperStageOutInfos[j];
-                        var f1Info = f1.UpperStageOutInfos[j];
+                        var f0Info = f0.ShaderOut.upperStageOutInfos[j];
+                        var f1Info = f1.ShaderOut.upperStageOutInfos[j];
                         object v = null;
                         if (f0Info.nointerpolation)
                         {
@@ -426,7 +430,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                             value = v
                         };
                     }
-                    f.Set(infos);
+                    f.Set(shaderOut);
                 }
                 f.p = newP;
                 CalculDepth(f);
@@ -780,7 +784,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             }
 
             // shaded fragments
-            if ((renderer.State.ShadingMode & ShadingMode.Shaded) != 0)
+            if (!triangle.clip && (renderer.State.ShadingMode & ShadingMode.Shaded) != 0)
             {
                 Vector2 t2m = tv - mv;
                 Vector2 t2b = tv - bv;
@@ -874,14 +878,14 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                         dir *= 1 / dir.x;
                         // 确保不需要上、下分量移动
                         dir.y = 0;
-                        var infoCount = leftF.UpperStageOutInfos.Length;
+                        var infoCount = leftF.ShaderOut.upperStageOutInfos.Length;
 
 #if PERSPECTIVE_CORRECT
                         // 因为透视投影中点的z与投影近平面的交点的x,y不是线性关系的
                         // 但与透视投影中点的1/z与投影近平面的交点的x,y是线性关系的
                         // 所以我们先将左右两边的1/z先求出来，用于插值使用
-                        var p0InvZ = leftF.p.z == 0 ? 0 : 1 / leftF.p.z;
-                        var p1InvZ = rightF.p.z == 0 ? 0 : 1 / rightF.p.z;
+                        var p0InvZ = leftF.ClipZ == 0 ? 0 : 1 / leftF.ClipZ;
+                        var p1InvZ = rightF.ClipZ == 0 ? 0 : 1 / rightF.ClipZ;
 #endif
                         var p1top0 = (triangle.f1.p - triangle.f0.p).xyz;
                         var p2top0 = (triangle.f2.p - triangle.f0.p).xyz;
@@ -895,8 +899,11 @@ namespace SoftRenderer.SoftRenderer.Rasterization
 
                             var f = FragInfo.GetFragInfo();
                             f.p = newP;
-
-                            OutInfo[] infos = new OutInfo[infoCount];
+                            ShaderOut shaderOut = new ShaderOut
+                            {
+                                upperStageOutInfos = new OutInfo[infoCount]
+                            };
+                            OutInfo[] infos = shaderOut.upperStageOutInfos;
                             var t = (float)i / dx;
                             var tt = 1 - t;
 
@@ -907,8 +914,8 @@ namespace SoftRenderer.SoftRenderer.Rasterization
 #endif
                             for (int j = 0; j < infoCount; j++)
                             {
-                                var f0Info = leftF.UpperStageOutInfos[j];
-                                var f1Info = rightF.UpperStageOutInfos[j];
+                                var f0Info = leftF.ShaderOut.upperStageOutInfos[j];
+                                var f1Info = rightF.ShaderOut.upperStageOutInfos[j];
                                 object v = null;
                                 if (f0Info.nointerpolation)
                                 {
@@ -987,7 +994,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                                     value = v
                                 };
                             }
-                            f.Set(infos);
+                            f.Set(shaderOut);
                             f.p = newP;
                             if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY)
                             {
@@ -1019,7 +1026,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             }
             
             // wireframe fragments
-            if ((renderer.State.ShadingMode & ShadingMode.Wireframe) != 0)
+            if (triangle.clip || (renderer.State.ShadingMode & ShadingMode.Wireframe) != 0)
             {
                 var len = fragInfosHelper1.Count;
                 for (int i = 0; i < len; i++)
@@ -1085,10 +1092,10 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             {
                 var f = triangleVertices[i];
                 Vector3? vec = null;
-                var jLen = f.UpperStageOutInfos.Length;
+                var jLen = f.ShaderOut.upperStageOutInfos.Length;
                 for (int j = 0; j < jLen; j++)
                 {
-                    var info = f.UpperStageOutInfos[j];
+                    var info = f.ShaderOut.upperStageOutInfos[j];
                     if (info.layout == layout && info.location == location)
                     {
                         vec = (Vector3)info.value;

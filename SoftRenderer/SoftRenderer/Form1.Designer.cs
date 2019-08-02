@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             this.components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(MainForm));
             this.PictureBox = new System.Windows.Forms.PictureBox();
             this.PropertyGrid = new System.Windows.Forms.PropertyGrid();
             this.timer1 = new System.Windows.Forms.Timer(this.components);
@@ -40,11 +41,13 @@
             this.button1 = new System.Windows.Forms.Button();
             this.statusStrip1 = new System.Windows.Forms.StatusStrip();
             this.statusLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.focusCtrlLabel = new System.Windows.Forms.ToolStripStatusLabel();
             this.resetTRS = new System.Windows.Forms.Button();
             this.TimeScaleLabel = new System.Windows.Forms.Label();
             this.TimeScaleSlider = new System.Windows.Forms.TrackBar();
             this.TimeScaleValueLabel = new System.Windows.Forms.Label();
-            this.focusCtrlLabel = new System.Windows.Forms.ToolStripStatusLabel();
+            this.richTextBox1 = new System.Windows.Forms.RichTextBox();
+            this.ResetCamera = new System.Windows.Forms.Button();
             ((System.ComponentModel.ISupportInitialize)(this.PictureBox)).BeginInit();
             this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.TimeScaleSlider)).BeginInit();
@@ -67,7 +70,7 @@
             | System.Windows.Forms.AnchorStyles.Right)));
             this.PropertyGrid.Location = new System.Drawing.Point(377, 12);
             this.PropertyGrid.Name = "PropertyGrid";
-            this.PropertyGrid.Size = new System.Drawing.Size(239, 461);
+            this.PropertyGrid.Size = new System.Drawing.Size(270, 550);
             this.PropertyGrid.TabIndex = 5;
             // 
             // timer1
@@ -81,7 +84,7 @@
             this.FpsLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.FpsLabel1.AutoSize = true;
             this.FpsLabel1.BackColor = System.Drawing.Color.Transparent;
-            this.FpsLabel1.Location = new System.Drawing.Point(12, 427);
+            this.FpsLabel1.Location = new System.Drawing.Point(12, 516);
             this.FpsLabel1.Name = "FpsLabel1";
             this.FpsLabel1.Size = new System.Drawing.Size(31, 15);
             this.FpsLabel1.TabIndex = 7;
@@ -90,7 +93,7 @@
             // PauseBtn
             // 
             this.PauseBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.PauseBtn.Location = new System.Drawing.Point(12, 445);
+            this.PauseBtn.Location = new System.Drawing.Point(12, 534);
             this.PauseBtn.Name = "PauseBtn";
             this.PauseBtn.Size = new System.Drawing.Size(88, 27);
             this.PauseBtn.TabIndex = 8;
@@ -101,7 +104,7 @@
             // SelectCameraBtn
             // 
             this.SelectCameraBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectCameraBtn.Location = new System.Drawing.Point(106, 445);
+            this.SelectCameraBtn.Location = new System.Drawing.Point(106, 534);
             this.SelectCameraBtn.Name = "SelectCameraBtn";
             this.SelectCameraBtn.Size = new System.Drawing.Size(118, 27);
             this.SelectCameraBtn.TabIndex = 9;
@@ -112,7 +115,7 @@
             // SelectRendererBtn
             // 
             this.SelectRendererBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectRendererBtn.Location = new System.Drawing.Point(230, 445);
+            this.SelectRendererBtn.Location = new System.Drawing.Point(230, 534);
             this.SelectRendererBtn.Name = "SelectRendererBtn";
             this.SelectRendererBtn.Size = new System.Drawing.Size(141, 27);
             this.SelectRendererBtn.TabIndex = 10;
@@ -123,7 +126,7 @@
             // SelectFormBtn
             // 
             this.SelectFormBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectFormBtn.Location = new System.Drawing.Point(230, 412);
+            this.SelectFormBtn.Location = new System.Drawing.Point(230, 501);
             this.SelectFormBtn.Name = "SelectFormBtn";
             this.SelectFormBtn.Size = new System.Drawing.Size(141, 27);
             this.SelectFormBtn.TabIndex = 11;
@@ -134,7 +137,7 @@
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.button1.Location = new System.Drawing.Point(106, 412);
+            this.button1.Location = new System.Drawing.Point(106, 501);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(118, 27);
             this.button1.TabIndex = 12;
@@ -148,9 +151,9 @@
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.statusLabel,
             this.focusCtrlLabel});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 473);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 562);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(628, 25);
+            this.statusStrip1.Size = new System.Drawing.Size(659, 25);
             this.statusStrip1.TabIndex = 13;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -160,21 +163,27 @@
             this.statusLabel.Size = new System.Drawing.Size(31, 20);
             this.statusLabel.Text = "OK";
             // 
+            // focusCtrlLabel
+            // 
+            this.focusCtrlLabel.Name = "focusCtrlLabel";
+            this.focusCtrlLabel.Size = new System.Drawing.Size(0, 20);
+            // 
             // resetTRS
             // 
             this.resetTRS.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.resetTRS.Location = new System.Drawing.Point(283, 379);
+            this.resetTRS.Location = new System.Drawing.Point(263, 468);
             this.resetTRS.Name = "resetTRS";
-            this.resetTRS.Size = new System.Drawing.Size(88, 27);
+            this.resetTRS.Size = new System.Drawing.Size(108, 27);
             this.resetTRS.TabIndex = 14;
-            this.resetTRS.Text = "ResetTRS";
+            this.resetTRS.Text = "ResetObjTRS";
             this.resetTRS.UseVisualStyleBackColor = true;
             this.resetTRS.Click += new System.EventHandler(this.resetTRS_Click);
             // 
             // TimeScaleLabel
             // 
+            this.TimeScaleLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.TimeScaleLabel.AutoSize = true;
-            this.TimeScaleLabel.Location = new System.Drawing.Point(12, 319);
+            this.TimeScaleLabel.Location = new System.Drawing.Point(12, 408);
             this.TimeScaleLabel.Name = "TimeScaleLabel";
             this.TimeScaleLabel.Size = new System.Drawing.Size(151, 15);
             this.TimeScaleLabel.TabIndex = 15;
@@ -182,7 +191,8 @@
             // 
             // TimeScaleSlider
             // 
-            this.TimeScaleSlider.Location = new System.Drawing.Point(161, 318);
+            this.TimeScaleSlider.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.TimeScaleSlider.Location = new System.Drawing.Point(161, 407);
             this.TimeScaleSlider.Maximum = 1000;
             this.TimeScaleSlider.Name = "TimeScaleSlider";
             this.TimeScaleSlider.Size = new System.Drawing.Size(151, 56);
@@ -193,23 +203,43 @@
             // 
             // TimeScaleValueLabel
             // 
+            this.TimeScaleValueLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.TimeScaleValueLabel.AutoSize = true;
-            this.TimeScaleValueLabel.Location = new System.Drawing.Point(318, 319);
+            this.TimeScaleValueLabel.Location = new System.Drawing.Point(318, 408);
             this.TimeScaleValueLabel.Name = "TimeScaleValueLabel";
             this.TimeScaleValueLabel.Size = new System.Drawing.Size(31, 15);
             this.TimeScaleValueLabel.TabIndex = 17;
             this.TimeScaleValueLabel.Text = "500";
             // 
-            // focusCtrlLabel
+            // richTextBox1
             // 
-            this.focusCtrlLabel.Name = "focusCtrlLabel";
-            this.focusCtrlLabel.Size = new System.Drawing.Size(0, 20);
+            this.richTextBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.richTextBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
+            this.richTextBox1.Location = new System.Drawing.Point(12, 318);
+            this.richTextBox1.Name = "richTextBox1";
+            this.richTextBox1.ReadOnly = true;
+            this.richTextBox1.Size = new System.Drawing.Size(359, 87);
+            this.richTextBox1.TabIndex = 20;
+            this.richTextBox1.Text = resources.GetString("richTextBox1.Text");
+            // 
+            // ResetCamera
+            // 
+            this.ResetCamera.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.ResetCamera.Location = new System.Drawing.Point(149, 469);
+            this.ResetCamera.Name = "ResetCamera";
+            this.ResetCamera.Size = new System.Drawing.Size(108, 27);
+            this.ResetCamera.TabIndex = 21;
+            this.ResetCamera.Text = "ResetCamera";
+            this.ResetCamera.UseVisualStyleBackColor = true;
+            this.ResetCamera.Click += new System.EventHandler(this.ResetCamera_Click);
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(628, 498);
+            this.ClientSize = new System.Drawing.Size(659, 587);
+            this.Controls.Add(this.ResetCamera);
+            this.Controls.Add(this.richTextBox1);
             this.Controls.Add(this.TimeScaleValueLabel);
             this.Controls.Add(this.TimeScaleSlider);
             this.Controls.Add(this.TimeScaleLabel);
@@ -253,6 +283,8 @@
         private System.Windows.Forms.TrackBar TimeScaleSlider;
         private System.Windows.Forms.Label TimeScaleValueLabel;
         private System.Windows.Forms.ToolStripStatusLabel focusCtrlLabel;
+        private System.Windows.Forms.RichTextBox richTextBox1;
+        private System.Windows.Forms.Button ResetCamera;
     }
 }
 
