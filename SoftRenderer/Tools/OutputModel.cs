@@ -1,7 +1,6 @@
 ﻿// jave.lin 2019.08.02
 using System;
 using System.IO;
-using System.Reflection;
 using System.Text;
 using UnityEngine;
 
@@ -20,7 +19,11 @@ public class OutputModel : MonoBehaviour
             if (mf != null)
             {
                 var m = mf.sharedMesh;
-                //return;
+                if (!m.isReadable)
+                {
+                    Debug.LogError($"only Exporting which the 'Mesh.isReable' is true .");
+                    return;
+                }
 
                 if (m.vertices.Length == 0)
                 {
