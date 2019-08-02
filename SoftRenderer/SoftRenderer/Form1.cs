@@ -11,7 +11,6 @@ using SoftRenderer.SoftRenderer.Utils;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
-using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Runtime.InteropServices;
@@ -267,7 +266,7 @@ namespace SoftRenderer
             go = new GameObject("Ballooncat");
             ModelReader.ReadOut("Models/BalloonStupidCat_637003750150312129.m", out Mesh ballooncat);
             go.Mesh = ballooncat;
-            go.LocalPosition = new Vector3(4, 0, -1);
+            go.LocalPosition = new Vector3(6, 0, -1);
             go.LocalScale = 3;
             // 第四个是气球猫
             //gameObjs.Add(go);
@@ -311,8 +310,8 @@ namespace SoftRenderer
                 new ShaderBase[] {
                     vsShader,fsShader,
                     vsShader,fsShader,
-                    //sphere_vsShader,sphere_fsShader,
-                    //ballooncat_vsShader,ballooncat_fsShader,
+                    sphere_vsShader,sphere_fsShader,
+                    ballooncat_vsShader,ballooncat_fsShader,
                 });
 
             //var tex_bmp = new Bitmap("Images/texture.png");

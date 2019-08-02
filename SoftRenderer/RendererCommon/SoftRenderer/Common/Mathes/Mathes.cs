@@ -2,11 +2,10 @@
 
 using System;
 using System.ComponentModel;
-using System.Runtime.InteropServices;
 
 namespace SoftRenderer.Common.Mathes
 {
-    [Description("可选类型")]
+    [Description("可转换类型")]
     public interface IConvert<T>
     {
         void ConvertFrom(string str);
@@ -1077,40 +1076,18 @@ namespace SoftRenderer.Common.Mathes
         }
         public void CopyTo(float[] m)
         {
-            //var len = m.Length;
-            //for (int i = 0; i < len; i++)
-            //{
-            //    m[i] = this.m[i];
-            //}
             Array.Copy(this.m, m, this.m.Length);
         }
         public void CopyTo(Matrix4x4 mat)
         {
-            //var m = mat.m;
-            //var len = m.Length;
-            //for (int i = 0; i < len; i++)
-            //{
-            //    m[i] = this.m[i];
-            //}
             Array.Copy(this.m, mat.m, m.Length);
         }
         public void CopyFrom(float[] m)
         {
-            //var len = m.Length;
-            //for (int i = 0; i < len; i++)
-            //{
-            //    this.m[i] = m[i];
-            //}
             Array.Copy(m, this.m, m.Length);
         }
         public void CopyFrom(Matrix4x4 mat)
         {
-            //var m = mat.m;
-            //var len = m.Length;
-            //for (int i = 0; i < len; i++)
-            //{
-            //    this.m[i] = m[i];
-            //}
             Array.Copy(mat.m, m, m.Length);
         }
         public Vector4 GetCol(int idx)
@@ -1126,7 +1103,6 @@ namespace SoftRenderer.Common.Mathes
         }
         public void SetCol(int idx, Vector4 col)
         {
-            //if (idx < 0 || idx > 3) return;
             idx = idx * 4;
 
             m[idx    ] = col.x;
@@ -1145,8 +1121,6 @@ namespace SoftRenderer.Common.Mathes
         }
         public void SetRow(int idx, Vector4 row)
         {
-            //if (idx < 0 || idx > 3) return;
-
             m[idx]      = row.x;
             m[idx + 4]  = row.y;
             m[idx + 8]  = row.z;

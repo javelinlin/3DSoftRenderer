@@ -26,50 +26,9 @@ namespace SoftRenderer.SoftRenderer.Rasterization
 
         private Vector3[] usingTiranglePosHehlper = new Vector3[3];
         private Vector3[] allTrianglePosHelper = new Vector3[3];
-        private List<FragData> fragList = new List<FragData>();
-        private List<FragData> fragsHelper1 = new List<FragData>();
-        private List<FragData> fragsHelper2 = new List<FragData>();
-        private Pool<FragData> fragPool = new Pool<FragData>(0);//100000);
 
         private List<FragInfo> fragInfosHelper1 = new List<FragInfo>();
         private List<FragInfo> fragInfosHelper2 = new List<FragInfo>();
-
-        /* 辅助函数 */
-        private FragData GetFrag()
-        {
-            return fragPool.Get() as FragData;
-        }
-        private void ToPool(FragData f)
-        {
-            /*
-            不知为何，这里的f.datas为null，只有dispose过才能为null
-            dispose过的我是不会给外部使用的，所以回收的时候也就不会有dispose过的元素
-            有可能DotNet的List<T>.Clear()之后，相同类型对象应用密集时，底层有处理缓存对象的复用
-            本想减少GC卡顿的（不过我的手提上可能性能好一些，没发现有卡顿）
-            现在我也不想去验证这块，所以这里注释掉下面的代码
-            */
-            //f.datas.Clear();
-            //f.discard = false;
-            //f.depth = 0;
-            //fragPool.To(f);
-        }
-        private void ToPool(List<FragData> fs, bool autoClear = true)
-        {
-            //var len = fs.Count;
-            //for (int i = 0; i < len; i++)
-            //{
-            //    ToPool(fs[i]);
-            //}
-            if (autoClear) fs.Clear();
-        }
-        private void ToPool(FragData[] fs)
-        {
-            //var len = fs.Length;
-            //for (int i = 0; i < len; i++)
-            //{
-            //    ToPool(fs[i]);
-            //}
-        }
 
         public Rasterizer(Renderer renderer)
         {
@@ -224,50 +183,6 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             out bool topSameAsMiddle, out bool bottomSameAsMiddle)
         {
             GetPos(t.f0.p, t.f1.p, t.f2.p, out tv, out mv, out bv, out topSameAsMiddle, out bottomSameAsMiddle);
-        }
-        // 根据两点生成之间的片段：旧版管线
-        private void GenLineFrag(Vector3 p0, Vector3 p1, List<FragData> fs)
-        {
-            var dir = p1 - p0;
-            var dir_nrl = dir.normalized;
-
-            var f = GetFrag();
-            f.p = p0;
-
-            fs.Add(f);
-
-            int count = 0;
-
-            if (dir_nrl.x != 0 && (Math.Abs(dir_nrl.y) < Math.Abs(dir_nrl.x)))
-            {
-                dir_nrl *= Math.Abs(1 / dir_nrl.x);
-                count = (int)Math.Abs(dir.x);
-            }
-            else if (dir_nrl.y != 0)
-            {
-                dir_nrl *= Math.Abs(1 / dir_nrl.y);
-                count = (int)Math.Abs(dir.y);
-            }
-            else if (dir_nrl.z != 0)
-            {
-                dir_nrl *= Math.Abs(1 / dir_nrl.z);
-                count = (int)Math.Abs(dir.z);
-            }
-            else
-            {
-                throw new Exception("error");
-            }
-
-            for (int i = 0, num = 1; i < count; i++, num++)
-            {
-                f = GetFrag();
-                f.p = p0 + dir_nrl * num;
-                fs.Add(f);
-            }
-
-            f = GetFrag();
-            f.p = p1;
-            fs.Add(f);
         }
         // 根据两点生成之间的片段：新版管线
         private void GenLineFrag(FragInfo f0, FragInfo f1, List<FragInfo> fs, bool interpolation = true)
@@ -490,266 +405,6 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             f.depth = 1 - 1 / f.p.z;
         }
 
-        // 绘制三角形：旧版管线中的绘制三角
-        public void DrawTriangle(Triangle t, Color triangleColor, Color wireFrameColor)
-        {
-            var validated = (t.Validated() && !CullingTriangle(t));
-            if (!validated) return;
-
-            GetPos(t, out Vector3 tv, out Vector3 mv, out Vector3 bv, out bool topSameAsMiddle, out bool bottomSameAsMiddle);
-
-            ToPool(fragsHelper1);
-            GenLineFrag(tv, mv, fragsHelper1);
-            GenLineFrag(mv, bv, fragsHelper1);
-
-            ToPool(fragsHelper2);
-            GenLineFrag(tv, bv, fragsHelper2);
-
-            var minX = 0;
-            var minY = 0;
-            var maxX = renderer.BackBufferWidth - 1;
-            var maxY = renderer.BackBufferHeight - 1;
-
-            if (Renderer.State.Scissor == Scissor.On)
-            {
-                minX = Renderer.State.ScissorRect.X;
-                minY = Renderer.State.ScissorRect.Y;
-                maxX = Renderer.State.ScissorRect.Right;
-                maxY = Renderer.State.ScissorRect.Bottom;
-            }
-
-            ToPool(fragList);
-            // Generate fragments
-            if ((renderer.State.ShadingMode & ShadingMode.Shaded) != 0)
-            {
-                Vector2 t2m = tv - mv;
-                Vector2 t2b = tv - bv;
-
-                List<FragData> leftFrags;
-                List<FragData> rightFrags;
-
-                if (t2b.Cross(t2m) < 0) // t2m正在t2b左手边
-                {
-                    leftFrags = fragsHelper2;
-                    rightFrags = fragsHelper1;
-                }
-                else if (t2b.Cross(t2m) > 0) // t2m正在t2b右手边
-                {
-                    leftFrags = fragsHelper1;
-                    rightFrags = fragsHelper2;
-                }
-                else
-                {
-                    // 三点相对屏幕空间共线了，该三角形没有意义，不需要花
-                    throw new Exception("三点相对屏幕空间共线了，该三角形没有意义，不需要花");
-                }
-
-                var ty = (int)(tv.y);
-                var by = (int)(bv.y);
-
-                var goingon = true;
-                if ((by < minY || ty > maxY)) goingon = false;
-                if (goingon)
-                {
-                    var leftI = 0;
-                    var rightI = 0;
-                    for (int iy = ty; iy < by; iy++)
-                    {
-                        FragData leftF = null;
-                        FragData rightF = null;
-                        if ((iy < minY || iy > maxY)) continue;
-
-                        var count = leftFrags.Count;
-                        for (; leftI < count; leftI++)
-                        {
-                            //if ((int)(leftFrags[leftI].p.y) == iy)
-                            if (leftFrags[leftI].p.y >= iy)
-                            {
-                                leftF = leftFrags[leftI];
-                                break;
-                            }
-                        }
-
-                        count = rightFrags.Count;
-                        for (; rightI < count; rightI++)
-                        {
-                            //if ((int)(rightFrags[rightI].p.y) == iy)
-                            if (rightFrags[rightI].p.y >= iy)
-                            {
-                                rightF = rightFrags[rightI];
-                                break;
-                            }
-                        }
-
-                        if (leftF == null || rightF == null)
-                        {
-                            Console.WriteLine("error!!");
-                            break;
-                            //throw new Exception("error");
-                        }
-
-                        var dx = (int)Math.Ceiling((Math.Abs(leftF.p.x - rightF.p.x)));
-                        if (dx == 0)
-                        { // leftF与rightF共栅格点了，直接添加其中一个就可以了
-                            fragList.Add(leftF);
-                            continue;
-                        }
-                        var dir = rightF.p - leftF.p;
-                        dir = dir.normalized;
-                        dir *= 1 / dir.x;
-                        dir.y = 0;
-                        for (int i = 0; i < dx; i++)
-                        {
-                            var newP = leftF.p + dir * i;
-                            if (newP.x < minX || newP.x > maxX) continue;
-                            var f = GetFrag();
-                            f.p = newP;
-                            fragList.Add(f);
-
-                        }
-                    }
-                }
-            }
-
-            var depthbuff = renderer.Per_Frag.DepthBuff;
-            var depthwrite = renderer.State.DepthWrite;
-            var maxZ = renderer.State.CameraFar;
-            maxZ += renderer.State.CameraFar * renderer.State.CameraNear;
-            var depthInv = 1 / maxZ;
-            // depth offset
-            var offsetDepth = 0.0f;
-            //if (renderer.State.DepthOffset == DepthOffset.On) // 这里需要优化,法线应该顶点数据中传进来的
-            //{
-                // https://blog.csdn.net/linjf520/article/details/94596764
-                var faceNormal = (t.p1 - t.p0).Cross(t.p2 - t.p0).normalized; // 这里需要优化,法线应该顶点数据中传进来的
-                // 掠射角
-                var faceNormalDotForward = 1 - Math.Abs(faceNormal.Dot(Vector3.forward));
-                // 我之前翻译的文章：https://blog.csdn.net/linjf520/article/details/94596764
-                // 我的理解是上面的这个算法
-                offsetDepth = faceNormalDotForward * renderer.State.DepthOffsetFactor
-                    + depthInv * renderer.State.DepthOffsetUnit;
-            //}
-            var depthOffset = renderer.State.DepthOffset;
-
-            fragList.AddRange(fragsHelper1);
-            fragList.AddRange(fragsHelper2);
-            // lambert
-            var normal = faceNormal;
-            var lightDir = renderer.State.DebugDirectionalLight.normalized;
-            var lightDotNormal = lightDir.Dot(normal);
-            if (renderer.State.DebugHalfLambertLighting)
-                lightDotNormal = lightDotNormal * 0.5f + 0.5f;
-            lightDotNormal *= renderer.State.DebugLItensity;
-#if SPECULAR
-            // specular
-            var camPos = new Vector3(
-                renderer.State.CamX, 
-                renderer.State.CamY, 
-                renderer.State.CamZ);
-            var enabledSpecular = renderer.State.DebugSpecular;
-            var specularColor = renderer.State.DebugSpecularColor;
-            var specularItensity = 100 - renderer.State.DebugSpecularItensity;
-            var inLightDir = -lightDir;
-#endif
-            // shaded
-            var len = fragList.Count;
-            var bmd = renderer.Begin(); // begin
-            var finalColor = new Color();
-            for (int i = 0; i < len; i++)
-            {
-                var f = fragList[i];
-                if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
-                f.depth = 1 - f.p.z * depthInv;
-                var testDepth = f.depth;
-                if (depthOffset == DepthOffset.On)
-                    testDepth += offsetDepth;
-                if (depthbuff.Test(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
-                {
-                    // 是否开启深度写入
-                    if (depthwrite == DepthWrite.On)
-                    {
-                        depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
-                    }
-                    finalColor = triangleColor * lightDotNormal;
-#if SPECULAR
-                    if (enabledSpecular)
-                    {
-                        var viewDir = (camPos - f.p).normalized;
-                        var reflectDir = Vector3.Reflect(inLightDir, normal);
-                        var reflectNotView = Mathf.Max(0, Vector3.Dot(reflectDir, viewDir));
-                        var specular = specularColor * (float)Math.Pow(reflectNotView, specularItensity);
-                        finalColor += specular;
-                    }
-#endif
-                    renderer.BeginSetPixel(bmd.Scan0, f.p, finalColor);
-                }
-            }
-
-            // wireframe
-            if ((renderer.State.ShadingMode & ShadingMode.Wireframe) != 0)
-            {
-                var count = fragsHelper1.Count;
-                offsetDepth = faceNormalDotForward * (renderer.State.DepthOffsetFactor)
-                + depthInv * (renderer.State.DepthOffsetUnit - 0.01f);
-                for (int i = 0; i < count; i++)
-                {
-                    var f = fragsHelper1[i];
-                    if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
-                    f.depth = 1 - f.p.z * depthInv;
-                    var testDepth = f.depth + offsetDepth;
-                    if (depthbuff.Test(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
-                    {
-                        // 是否开启深度写入
-                        if (depthwrite == DepthWrite.On)
-                        {
-                            depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
-                        }
-                        renderer.BeginSetPixel(bmd.Scan0, f.p, wireFrameColor);
-                    }
-                }
-                count = fragsHelper2.Count;
-                for (int i = 0; i < count; i++)
-                {
-                    var f = fragsHelper2[i];
-                    if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
-                    f.depth = 1 - f.p.z * depthInv + offsetDepth;
-                    var testDepth = f.depth + offsetDepth;
-                    if (depthbuff.Test(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
-                    {
-                        // 是否开启深度写入
-                        if (depthwrite == DepthWrite.On)
-                        {
-                            depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
-                        }
-                        renderer.BeginSetPixel(bmd.Scan0, f.p, wireFrameColor);
-                    }
-                }
-            }
-
-            // debug: show normal line
-            if (renderer.State.DebugShowTBN)
-            {
-                var blueColor = new Color(0, 0, 1, 1);
-                var normalPos0 = t.p0;
-                var normalPos1 = normalPos0 + faceNormal.normalized * renderer.State.DebugTBNlLen;
-                ToPool(fragsHelper1);
-                GenLineFrag(normalPos0, normalPos1, fragsHelper1);
-                len = fragsHelper1.Count;
-                for (int i = 0; i < len; i++)
-                {
-                    var f = fragsHelper1[i];
-                    if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
-                    renderer.BeginSetPixel(bmd.Scan0, f.p, blueColor);
-                }
-            }
-
-            renderer.End(bmd); // end
-
-            ToPool(fragsHelper1);
-            ToPool(fragsHelper2);
-            ToPool(fragList);
-        }
-        
         // 生成片段
         public void GenFragInfo(
             Primitive_Triangle triangle, 
@@ -1191,6 +846,351 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             renderer = null;
 
         }
+
+        // =============== 旧版 start===============
+        private List<FragData> fragList = new List<FragData>();
+        private List<FragData> fragsHelper1 = new List<FragData>();
+        private List<FragData> fragsHelper2 = new List<FragData>();
+        private Pool<FragData> fragPool = new Pool<FragData>(0);//100000);
+        private void ToPool(FragData f)
+        {
+            /*
+            不知为何，这里的f.datas为null，只有dispose过才能为null
+            dispose过的我是不会给外部使用的，所以回收的时候也就不会有dispose过的元素
+            有可能DotNet的List<T>.Clear()之后，相同类型对象应用密集时，底层有处理缓存对象的复用
+            本想减少GC卡顿的（不过我的手提上可能性能好一些，没发现有卡顿）
+            现在我也不想去验证这块，所以这里注释掉下面的代码
+            */
+            //f.datas.Clear();
+            //f.discard = false;
+            //f.depth = 0;
+            //fragPool.To(f);
+        }
+        private void ToPool(List<FragData> fs, bool autoClear = true)
+        {
+            //var len = fs.Count;
+            //for (int i = 0; i < len; i++)
+            //{
+            //    ToPool(fs[i]);
+            //}
+            if (autoClear) fs.Clear();
+        }
+        private void ToPool(FragData[] fs)
+        {
+            //var len = fs.Length;
+            //for (int i = 0; i < len; i++)
+            //{
+            //    ToPool(fs[i]);
+            //}
+        }
+        private FragData GetFrag()
+        {
+            return fragPool.Get() as FragData;
+        }
+        // 根据两点生成之间的片段：旧版管线
+        private void GenLineFrag(Vector3 p0, Vector3 p1, List<FragData> fs)
+        {
+            var dir = p1 - p0;
+            var dir_nrl = dir.normalized;
+
+            var f = GetFrag();
+            f.p = p0;
+
+            fs.Add(f);
+
+            int count = 0;
+
+            if (dir_nrl.x != 0 && (Math.Abs(dir_nrl.y) < Math.Abs(dir_nrl.x)))
+            {
+                dir_nrl *= Math.Abs(1 / dir_nrl.x);
+                count = (int)Math.Abs(dir.x);
+            }
+            else if (dir_nrl.y != 0)
+            {
+                dir_nrl *= Math.Abs(1 / dir_nrl.y);
+                count = (int)Math.Abs(dir.y);
+            }
+            else if (dir_nrl.z != 0)
+            {
+                dir_nrl *= Math.Abs(1 / dir_nrl.z);
+                count = (int)Math.Abs(dir.z);
+            }
+            else
+            {
+                throw new Exception("error");
+            }
+
+            for (int i = 0, num = 1; i < count; i++, num++)
+            {
+                f = GetFrag();
+                f.p = p0 + dir_nrl * num;
+                fs.Add(f);
+            }
+
+            f = GetFrag();
+            f.p = p1;
+            fs.Add(f);
+        }
+        // 绘制三角形：旧版管线中的绘制三角
+        public void DrawTriangle(Triangle t, Color triangleColor, Color wireFrameColor)
+        {
+            var validated = (t.Validated() && !CullingTriangle(t));
+            if (!validated) return;
+
+            GetPos(t, out Vector3 tv, out Vector3 mv, out Vector3 bv, out bool topSameAsMiddle, out bool bottomSameAsMiddle);
+
+            ToPool(fragsHelper1);
+            GenLineFrag(tv, mv, fragsHelper1);
+            GenLineFrag(mv, bv, fragsHelper1);
+
+            ToPool(fragsHelper2);
+            GenLineFrag(tv, bv, fragsHelper2);
+
+            var minX = 0;
+            var minY = 0;
+            var maxX = renderer.BackBufferWidth - 1;
+            var maxY = renderer.BackBufferHeight - 1;
+
+            if (Renderer.State.Scissor == Scissor.On)
+            {
+                minX = Renderer.State.ScissorRect.X;
+                minY = Renderer.State.ScissorRect.Y;
+                maxX = Renderer.State.ScissorRect.Right;
+                maxY = Renderer.State.ScissorRect.Bottom;
+            }
+
+            ToPool(fragList);
+            // Generate fragments
+            if ((renderer.State.ShadingMode & ShadingMode.Shaded) != 0)
+            {
+                Vector2 t2m = tv - mv;
+                Vector2 t2b = tv - bv;
+
+                List<FragData> leftFrags;
+                List<FragData> rightFrags;
+
+                if (t2b.Cross(t2m) < 0) // t2m正在t2b左手边
+                {
+                    leftFrags = fragsHelper2;
+                    rightFrags = fragsHelper1;
+                }
+                else if (t2b.Cross(t2m) > 0) // t2m正在t2b右手边
+                {
+                    leftFrags = fragsHelper1;
+                    rightFrags = fragsHelper2;
+                }
+                else
+                {
+                    // 三点相对屏幕空间共线了，该三角形没有意义，不需要花
+                    throw new Exception("三点相对屏幕空间共线了，该三角形没有意义，不需要花");
+                }
+
+                var ty = (int)(tv.y);
+                var by = (int)(bv.y);
+
+                var goingon = true;
+                if ((by < minY || ty > maxY)) goingon = false;
+                if (goingon)
+                {
+                    var leftI = 0;
+                    var rightI = 0;
+                    for (int iy = ty; iy < by; iy++)
+                    {
+                        FragData leftF = null;
+                        FragData rightF = null;
+                        if ((iy < minY || iy > maxY)) continue;
+
+                        var count = leftFrags.Count;
+                        for (; leftI < count; leftI++)
+                        {
+                            //if ((int)(leftFrags[leftI].p.y) == iy)
+                            if (leftFrags[leftI].p.y >= iy)
+                            {
+                                leftF = leftFrags[leftI];
+                                break;
+                            }
+                        }
+
+                        count = rightFrags.Count;
+                        for (; rightI < count; rightI++)
+                        {
+                            //if ((int)(rightFrags[rightI].p.y) == iy)
+                            if (rightFrags[rightI].p.y >= iy)
+                            {
+                                rightF = rightFrags[rightI];
+                                break;
+                            }
+                        }
+
+                        if (leftF == null || rightF == null)
+                        {
+                            Console.WriteLine("error!!");
+                            break;
+                            //throw new Exception("error");
+                        }
+
+                        var dx = (int)Math.Ceiling((Math.Abs(leftF.p.x - rightF.p.x)));
+                        if (dx == 0)
+                        { // leftF与rightF共栅格点了，直接添加其中一个就可以了
+                            fragList.Add(leftF);
+                            continue;
+                        }
+                        var dir = rightF.p - leftF.p;
+                        dir = dir.normalized;
+                        dir *= 1 / dir.x;
+                        dir.y = 0;
+                        for (int i = 0; i < dx; i++)
+                        {
+                            var newP = leftF.p + dir * i;
+                            if (newP.x < minX || newP.x > maxX) continue;
+                            var f = GetFrag();
+                            f.p = newP;
+                            fragList.Add(f);
+
+                        }
+                    }
+                }
+            }
+
+            var depthbuff = renderer.Per_Frag.DepthBuff;
+            var depthwrite = renderer.State.DepthWrite;
+            var maxZ = renderer.State.CameraFar;
+            maxZ += renderer.State.CameraFar * renderer.State.CameraNear;
+            var depthInv = 1 / maxZ;
+            // depth offset
+            var offsetDepth = 0.0f;
+            //if (renderer.State.DepthOffset == DepthOffset.On) // 这里需要优化,法线应该顶点数据中传进来的
+            //{
+            // https://blog.csdn.net/linjf520/article/details/94596764
+            var faceNormal = (t.p1 - t.p0).Cross(t.p2 - t.p0).normalized; // 这里需要优化,法线应该顶点数据中传进来的
+                                                                          // 掠射角
+            var faceNormalDotForward = 1 - Math.Abs(faceNormal.Dot(Vector3.forward));
+            // 我之前翻译的文章：https://blog.csdn.net/linjf520/article/details/94596764
+            // 我的理解是上面的这个算法
+            offsetDepth = faceNormalDotForward * renderer.State.DepthOffsetFactor
+                + depthInv * renderer.State.DepthOffsetUnit;
+            //}
+            var depthOffset = renderer.State.DepthOffset;
+
+            fragList.AddRange(fragsHelper1);
+            fragList.AddRange(fragsHelper2);
+            // lambert
+            var normal = faceNormal;
+            var lightDir = renderer.State.DebugDirectionalLight.normalized;
+            var lightDotNormal = lightDir.Dot(normal);
+            if (renderer.State.DebugHalfLambertLighting)
+                lightDotNormal = lightDotNormal * 0.5f + 0.5f;
+            lightDotNormal *= renderer.State.DebugLItensity;
+#if SPECULAR
+            // specular
+            var camPos = new Vector3(
+                renderer.State.CamX, 
+                renderer.State.CamY, 
+                renderer.State.CamZ);
+            var enabledSpecular = renderer.State.DebugSpecular;
+            var specularColor = renderer.State.DebugSpecularColor;
+            var specularItensity = 100 - renderer.State.DebugSpecularItensity;
+            var inLightDir = -lightDir;
+#endif
+            // shaded
+            var len = fragList.Count;
+            var bmd = renderer.Begin(); // begin
+            var finalColor = new Color();
+            for (int i = 0; i < len; i++)
+            {
+                var f = fragList[i];
+                if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
+                f.depth = 1 - f.p.z * depthInv;
+                var testDepth = f.depth;
+                if (depthOffset == DepthOffset.On)
+                    testDepth += offsetDepth;
+                if (depthbuff.Test(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                {
+                    // 是否开启深度写入
+                    if (depthwrite == DepthWrite.On)
+                    {
+                        depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
+                    }
+                    finalColor = triangleColor * lightDotNormal;
+#if SPECULAR
+                    if (enabledSpecular)
+                    {
+                        var viewDir = (camPos - f.p).normalized;
+                        var reflectDir = Vector3.Reflect(inLightDir, normal);
+                        var reflectNotView = Mathf.Max(0, Vector3.Dot(reflectDir, viewDir));
+                        var specular = specularColor * (float)Math.Pow(reflectNotView, specularItensity);
+                        finalColor += specular;
+                    }
+#endif
+                    renderer.BeginSetPixel(bmd.Scan0, f.p, finalColor);
+                }
+            }
+
+            // wireframe
+            if ((renderer.State.ShadingMode & ShadingMode.Wireframe) != 0)
+            {
+                var count = fragsHelper1.Count;
+                offsetDepth = faceNormalDotForward * (renderer.State.DepthOffsetFactor)
+                + depthInv * (renderer.State.DepthOffsetUnit - 0.01f);
+                for (int i = 0; i < count; i++)
+                {
+                    var f = fragsHelper1[i];
+                    if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
+                    f.depth = 1 - f.p.z * depthInv;
+                    var testDepth = f.depth + offsetDepth;
+                    if (depthbuff.Test(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                    {
+                        // 是否开启深度写入
+                        if (depthwrite == DepthWrite.On)
+                        {
+                            depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
+                        }
+                        renderer.BeginSetPixel(bmd.Scan0, f.p, wireFrameColor);
+                    }
+                }
+                count = fragsHelper2.Count;
+                for (int i = 0; i < count; i++)
+                {
+                    var f = fragsHelper2[i];
+                    if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
+                    f.depth = 1 - f.p.z * depthInv + offsetDepth;
+                    var testDepth = f.depth + offsetDepth;
+                    if (depthbuff.Test(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                    {
+                        // 是否开启深度写入
+                        if (depthwrite == DepthWrite.On)
+                        {
+                            depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
+                        }
+                        renderer.BeginSetPixel(bmd.Scan0, f.p, wireFrameColor);
+                    }
+                }
+            }
+
+            // debug: show normal line
+            if (renderer.State.DebugShowTBN)
+            {
+                var blueColor = new Color(0, 0, 1, 1);
+                var normalPos0 = t.p0;
+                var normalPos1 = normalPos0 + faceNormal.normalized * renderer.State.DebugTBNlLen;
+                ToPool(fragsHelper1);
+                GenLineFrag(normalPos0, normalPos1, fragsHelper1);
+                len = fragsHelper1.Count;
+                for (int i = 0; i < len; i++)
+                {
+                    var f = fragsHelper1[i];
+                    if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
+                    renderer.BeginSetPixel(bmd.Scan0, f.p, blueColor);
+                }
+            }
+
+            renderer.End(bmd); // end
+
+            ToPool(fragsHelper1);
+            ToPool(fragsHelper2);
+            ToPool(fragList);
+        }
+        // =============== 旧版 end===============
 
 #if UNUSE // 暂时使用不上的
         // 填充线框

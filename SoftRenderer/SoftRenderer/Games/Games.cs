@@ -286,29 +286,6 @@ namespace SoftRenderer.Games
         {
             if (VertexBuffer == null)
             {
-                // Vector3 position;        // 3
-
-                // Vector3 normal;          // 3
-                // Vertex3 tangent;         // 3
-                // Vector2 uv;              // 2
-                // ColorNormalized color;   // 4
-                // 
-
-                var count = Mesh.vertices != null ? Mesh.vertices.Length * 3 : 0;
-                count += Mesh.uv != null ? Mesh.uv.Length * 2 : 0;
-                count += Mesh.colors != null ? Mesh.colors.Length * 4 : 0;
-                count += Mesh.normals != null ? Mesh.normals.Length * 3 : 0;
-                count += Mesh.tangents != null ? Mesh.tangents.Length * 3 : 0;
-
-                // unit float
-                // 这里我的单位不是byte，而是float
-                //var perVertexCount =
-                //    3       // Vector3 
-                //    + 2     // uv
-                //    + 4     // color
-                //    + 3     // normal
-                //    + 3     // tangent
-                //    ;
                 var perVertexCount = 0;
                 if (Mesh.vertices != null && Mesh.vertices.Length > 0)
                     perVertexCount += 3;
@@ -320,19 +297,13 @@ namespace SoftRenderer.Games
                     perVertexCount += 3;
                 if (Mesh.tangents != null && Mesh.tangents.Length > 0)
                     perVertexCount += 3;
+
+                var count = perVertexCount * Mesh.vertices.Length;
+
                 // 定义顶点格式
                 VertexBuffer = new VertexBuffer(count, perVertexCount);
 
                 var offset = 0;
-
-                //VertexBuffer.SetFormat(new VertexDataFormat[]
-                //{
-                //new VertexDataFormat { type = VertexDataType.Position, location = 0, offset = offset, count = 3 },
-                //new VertexDataFormat { type = VertexDataType.UV, location = 0, offset = offset += 3, count = 2 },
-                //new VertexDataFormat { type = VertexDataType.Color, location = 0, offset =offset += 2, count = 4 },
-                //new VertexDataFormat { type = VertexDataType.Normal, location = 0, offset =offset += 4, count = 3 },
-                //new VertexDataFormat { type = VertexDataType.Tangent, location = 0, offset =offset += 3, count = 3 },
-                //});
 
                 List<VertexDataFormat> dataformList = new List<VertexDataFormat>();
                 var lastCount = 0;
