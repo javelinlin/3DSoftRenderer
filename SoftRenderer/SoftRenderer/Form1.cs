@@ -230,7 +230,7 @@ namespace SoftRenderer
             mesh.CaculateNormalAndTangent();
             go.Mesh = mesh;
             // 第一个游戏对象
-            //gameObjs.Add(go);
+            gameObjs.Add(go);
 
             colors = new ColorNormalized[vertices.Length];
             for (int i = 0; i < colors.Length; i += 4)
@@ -254,7 +254,7 @@ namespace SoftRenderer
             mesh.CaculateNormalAndTangent();
             go.Mesh = mesh;
             // 第二个游戏对象
-            //gameObjs.Add(go);
+            gameObjs.Add(go);
 
             go = new GameObject("Sphere");
             ModelReader.ReadOut("Models/Sphere_637003627289014299.m", out Mesh sphere);
@@ -270,7 +270,7 @@ namespace SoftRenderer
             go.LocalPosition = new Vector3(4, 0, -1);
             go.LocalScale = 3;
             // 第四个是气球猫
-            gameObjs.Add(go);
+            //gameObjs.Add(go);
 
             camera = new Camera();
             camera.aspect = 1;
@@ -309,10 +309,10 @@ namespace SoftRenderer
             var ballooncat_fsShader = renderer.ShaderMgr.CreateShader(ballooncat_fs_shaderName);
             List<ShaderBase> shaders = new List<ShaderBase>(
                 new ShaderBase[] {
-                    //vsShader,fsShader,
-                    //vsShader,fsShader,
+                    vsShader,fsShader,
+                    vsShader,fsShader,
                     //sphere_vsShader,sphere_fsShader,
-                    ballooncat_vsShader,ballooncat_fsShader,
+                    //ballooncat_vsShader,ballooncat_fsShader,
                 });
 
             //var tex_bmp = new Bitmap("Images/texture.png");
