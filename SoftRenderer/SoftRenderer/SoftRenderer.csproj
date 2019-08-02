@@ -82,6 +82,7 @@
       <DependentUpon>Resources.resx</DependentUpon>
       <DesignTime>True</DesignTime>
     </Compile>
+    <None Include="bin\Debug\Models\BalloonStupidCat_637003750150312129.m" />
     <None Include="bin\Debug\Models\Sphere_637003627289014299.m" />
     <None Include="Properties\Settings.settings">
       <Generator>SettingsSingleFileGenerator</Generator>
@@ -97,6 +98,7 @@
     <None Include="App.config" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="bin\Debug\Images\balloonstupidcat_sg.png" />
     <Content Include="bin\Debug\Images\GitHubIcon.PNG" />
     <Content Include="bin\Debug\Images\heightMap1.jpg" />
     <Content Include="bin\Debug\Images\my_tex.png" />

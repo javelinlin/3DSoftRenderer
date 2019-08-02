@@ -230,7 +230,7 @@ namespace SoftRenderer
             mesh.CaculateNormalAndTangent();
             go.Mesh = mesh;
             // 第一个游戏对象
-            gameObjs.Add(go);
+            //gameObjs.Add(go);
 
             colors = new ColorNormalized[vertices.Length];
             for (int i = 0; i < colors.Length; i += 4)
@@ -254,7 +254,7 @@ namespace SoftRenderer
             mesh.CaculateNormalAndTangent();
             go.Mesh = mesh;
             // 第二个游戏对象
-            gameObjs.Add(go);
+            //gameObjs.Add(go);
 
             go = new GameObject("Sphere");
             ModelReader.ReadOut("Models/Sphere_637003627289014299.m", out Mesh sphere);
@@ -262,6 +262,14 @@ namespace SoftRenderer
             go.LocalPosition = new Vector3(3, 0, -1);
             go.LocalScale = 3;
             // 第三个是球体
+            //gameObjs.Add(go);
+
+            go = new GameObject("Ballooncat");
+            ModelReader.ReadOut("Models/BalloonStupidCat_637003750150312129.m", out Mesh ballooncat);
+            go.Mesh = ballooncat;
+            go.LocalPosition = new Vector3(4, 0, -1);
+            go.LocalScale = 3;
+            // 第四个是气球猫
             gameObjs.Add(go);
 
             camera = new Camera();
@@ -285,35 +293,38 @@ namespace SoftRenderer
             renderer.ShaderMgr.Load("Shaders/SoftRendererShader.dll");
 
             var vs_shaderName = "MyTestVSShader";
-            var vs_shaderHash = vs_shaderName.GetHashCode();
-
             var fs_shaderName = "MyTestFSShader";
-            var fs_shaderHash = fs_shaderName.GetHashCode();
 
             var sphere_vs_shaderName = "SphereVertexShader";
-            var sphere_vs_shaderHash = sphere_vs_shaderName.GetHashCode();
-
             var sphere_fs_shaderName = "SphereFragmentShader";
-            var sphere_fs_shaderHash = sphere_fs_shaderName.GetHashCode();
 
-            var vsShader = renderer.ShaderMgr.CreateShader(vs_shaderHash);
-            var fsShader = renderer.ShaderMgr.CreateShader(fs_shaderHash);
-            var sphere_vsShader = renderer.ShaderMgr.CreateShader(sphere_vs_shaderHash);
-            var sphere_fsShader = renderer.ShaderMgr.CreateShader(sphere_fs_shaderHash);
+            var ballooncat_vs_shaderName = "BallooncatVertexShader";
+            var ballooncat_fs_shaderName = "BallooncatFragmentShader";
+
+            var vsShader = renderer.ShaderMgr.CreateShader(vs_shaderName);
+            var fsShader = renderer.ShaderMgr.CreateShader(fs_shaderName);
+            var sphere_vsShader = renderer.ShaderMgr.CreateShader(sphere_vs_shaderName);
+            var sphere_fsShader = renderer.ShaderMgr.CreateShader(sphere_fs_shaderName);
+            var ballooncat_vsShader = renderer.ShaderMgr.CreateShader(ballooncat_vs_shaderName);
+            var ballooncat_fsShader = renderer.ShaderMgr.CreateShader(ballooncat_fs_shaderName);
             List<ShaderBase> shaders = new List<ShaderBase>(
                 new ShaderBase[] {
-                    vsShader,fsShader,
-                    vsShader,fsShader,
-                    sphere_vsShader,sphere_fsShader });
+                    //vsShader,fsShader,
+                    //vsShader,fsShader,
+                    //sphere_vsShader,sphere_fsShader,
+                    ballooncat_vsShader,ballooncat_fsShader,
+                });
 
             //var tex_bmp = new Bitmap("Images/texture.png");
             var tex_bmp = new Bitmap("Images/GitHubIcon.PNG");
             var sp_tex_bmp = new Bitmap("Images/my_tex.png");
+            var ballooncat_tex_bmp = new Bitmap("Images/balloonstupidcat_sg.png");
             //var tex_bmp = new Bitmap("Images/heightMap1.jpg");
             //var tex_bmp = new Bitmap("Images/tex.jpg");
             //var tex_bmp = new Bitmap("Images/icon.PNG");
             fsShader.ShaderProperties.SetUniform("mainTex", new Texture2D(tex_bmp));
             sphere_fsShader.ShaderProperties.SetUniform("mainTex", new Texture2D(sp_tex_bmp));
+            ballooncat_fsShader.ShaderProperties.SetUniform("mainTex", new Texture2D(ballooncat_tex_bmp));
 
             for (int i = 0; i < gameObjs.Count; i++)
             {
