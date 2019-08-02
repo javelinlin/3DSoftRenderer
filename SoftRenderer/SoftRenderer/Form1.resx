@@ -127,9 +127,11 @@
     <value>当PictureBox控件有焦点是你可以控制:
  - 鼠标滚轮控制镜头远近
  - 按住鼠标右键不放的同时再用W,S,A,D控制镜头的移动
+ - 鼠标中键控制镜头的水平、垂直位移
 
 When the PictureBox control has focus you can control:
 - mouse wheel controls the distance of the lens
-- while holding the right mouse button down, use W,S,A,D to control the lens movement</value>
+- while holding the right mouse button down, use W,S,A,D to control the lens movement
+- the middle mouse button controls the horizontal and vertical displacement of the lens</value>
   </data>
 </root>

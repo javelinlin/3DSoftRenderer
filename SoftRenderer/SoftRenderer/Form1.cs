@@ -312,134 +312,12 @@ namespace SoftRenderer
             }
         }
 
-        protected override bool ProcessCmdKey(ref Message m, Keys keyData)
-        {
-            if ((m.Msg == GlobalMessageHandler.WM_KEYDOWN) || (m.Msg == GlobalMessageHandler.WM_SYSKEYDOWN) || (m.Msg == GlobalMessageHandler.WM_KEYUP))
-            {
-                var down = (m.Msg == GlobalMessageHandler.WM_KEYDOWN || m.Msg == GlobalMessageHandler.WM_SYSKEYDOWN);
-                if (m.Msg == GlobalMessageHandler.WM_KEYUP) down = false;
-
-                this.globalMsg.SetKeyDown(keyData, down);
-                //Console.WriteLine($"SetKey:{keyData}, down:{down}");
-
-                //switch (keyData)
-                //{
-                //    case Keys.Down:
-                //        Debug.WriteLine("Down Arrow Captured");
-                //        break;
-
-                //    case Keys.Up:
-                //        Debug.WriteLine("Up Arrow Captured");
-                //        break;
-
-                //    case Keys.Tab:
-                //        Debug.WriteLine("Tab Key Captured");
-                //        break;
-
-                //    case Keys.Control | Keys.M:
-                //        Debug.WriteLine("<CTRL> + M Captured");
-                //        break;
-
-                //    case Keys.Alt | Keys.Z:
-                //        Debug.WriteLine("<ALT> + Z Captured");
-                //        break;
-                //    default:
-                //        Debug.WriteLine($"Unhandle {keyData} Captured");
-                //        break;
-                //}
-            }
-
-            return base.ProcessCmdKey(ref m, keyData);
-        }
-
-        protected override void WndProc(ref Message m)
-        {
-            if (m.Msg == GlobalMessageHandler.WM_ACTIVATEAPP)
-            {
-                this.globalMsg.appActive = (((int)m.WParam != 0));
-                //Console.WriteLine($"Win actived:{this.globalMsg.appActive}");
-                return;
-            }
-            base.WndProc(ref m);
-        }
-
-        private void PictureBox_Click(object sender, EventArgs e)
-        {
-            PictureBox.Focus();
-        }
-
-        private void RenderBtn_Click(object sender, EventArgs e)
-        {
-            Draw();
-        }
-
-        private void ClearBtn_Click(object sender, EventArgs e)
-        {
-            renderer.Clear();
-        }
-
-        private void timer1_Tick(object sender, EventArgs e)
-        {
-            long nowTick = DateTime.Now.Ticks;
-
-            float dt = nowTick - lastTick;
-            dt /= 10000f; // to ms
-            if (lastTick == -1) dt = timer1.Interval;
-
-            if (!paused)
-            {
-                var usingDt = dt * TimeScaleSlider.Value / 500f;
-                Update(usingDt);
-                UpdateGameObjs(usingDt);
-                Draw();
-                PictureBox.Image = renderer.SwapBuffer();
-
-                if (fpsShowType == FpsShowType.Immediately)
-                {
-                    var fps = timer1.Interval / (float)dt * 60;
-                    FpsLabel1.Text = $"FPS:{fps.ToString("0.00")}";
-                }
-                else
-                {
-                    elapsedTime += dt;
-                    fpsCounter++;
-                    if (elapsedTime >= 1000)
-                    {
-                        FpsLabel1.Text = $"FPS:{fpsCounter}";
-                        elapsedTime %= 1000;
-                        fpsCounter = 0;
-                    }
-                }
-            }
-            lastTick = nowTick;
-
-            var curCtrl = GetFocusedControl();
-            focusCtrlLabel.Text = curCtrl != null ? $"Focus:{curCtrl.Name}" : "";
-            PictureBox.BorderStyle = PictureBox.Focused ? BorderStyle.Fixed3D : BorderStyle.None;
-            if (lastFocusControl != curCtrl)
-            {
-                lastFocusControl = curCtrl;
-                if (curCtrl == PictureBox)
-                    this.Cursor = Cursors.SizeAll;
-                else
-                    this.Cursor = Cursors.Default;
-            }
-
-            UpdateCameraTR();
-        }
-
-        private Vector2 RanVec()
-        {
-            return Vector2.Ran(ran.Next(1, 5));
-        }
-
         private void UpdateCameraTR()
         {
             if (PictureBox.Focused)
             {
                 if (this.globalMsg.GetKeyDown(Keys.ControlKey) && this.globalMsg.MS_LBTN)
                 {
-                    Console.WriteLine($"dx,y:{this.globalMsg.delta_ms_pos}");
                     if (this.globalMsg.delta_ms_pos.IsEmpty == false)
                     {
                         this.camera.RotateY(this.globalMsg.delta_ms_pos.X);
@@ -460,6 +338,16 @@ namespace SoftRenderer
                     if (this.globalMsg.GetKeyDown(Keys.S)) camera.Translate -= scale * camera.Forward;
                     if (this.globalMsg.GetKeyDown(Keys.A)) camera.Translate -= scale * camera.Right;
                     if (this.globalMsg.GetKeyDown(Keys.D)) camera.Translate += scale * camera.Right;
+                }
+                else if (this.globalMsg.MS_MBTN)
+                {
+                    if (this.globalMsg.delta_ms_pos.IsEmpty == false)
+                    {
+                        const float scale = 0.1f;
+                        camera.Translate += this.globalMsg.delta_ms_pos.X * scale * camera.Right;
+                        camera.Translate -= this.globalMsg.delta_ms_pos.Y * scale * camera.Up;
+                        this.globalMsg.delta_ms_pos = Point.Empty;
+                    }
                 }
             }
         }
@@ -619,6 +507,122 @@ namespace SoftRenderer
                 }
 #endif
             }
+        }
+
+        protected override bool ProcessCmdKey(ref Message m, Keys keyData)
+        {
+            if ((m.Msg == GlobalMessageHandler.WM_KEYDOWN) || (m.Msg == GlobalMessageHandler.WM_SYSKEYDOWN) || (m.Msg == GlobalMessageHandler.WM_KEYUP))
+            {
+                var down = (m.Msg == GlobalMessageHandler.WM_KEYDOWN || m.Msg == GlobalMessageHandler.WM_SYSKEYDOWN);
+                if (m.Msg == GlobalMessageHandler.WM_KEYUP) down = false;
+
+                this.globalMsg.SetKeyDown(keyData, down);
+                //Console.WriteLine($"SetKey:{keyData}, down:{down}");
+
+                //switch (keyData)
+                //{
+                //    case Keys.Down:
+                //        Debug.WriteLine("Down Arrow Captured");
+                //        break;
+
+                //    case Keys.Up:
+                //        Debug.WriteLine("Up Arrow Captured");
+                //        break;
+
+                //    case Keys.Tab:
+                //        Debug.WriteLine("Tab Key Captured");
+                //        break;
+
+                //    case Keys.Control | Keys.M:
+                //        Debug.WriteLine("<CTRL> + M Captured");
+                //        break;
+
+                //    case Keys.Alt | Keys.Z:
+                //        Debug.WriteLine("<ALT> + Z Captured");
+                //        break;
+                //    default:
+                //        Debug.WriteLine($"Unhandle {keyData} Captured");
+                //        break;
+                //}
+            }
+
+            return base.ProcessCmdKey(ref m, keyData);
+        }
+
+        protected override void WndProc(ref Message m)
+        {
+            if (m.Msg == GlobalMessageHandler.WM_ACTIVATEAPP)
+            {
+                this.globalMsg.appActive = (((int)m.WParam != 0));
+                //Console.WriteLine($"Win actived:{this.globalMsg.appActive}");
+                return;
+            }
+            base.WndProc(ref m);
+        }
+
+        private void timer1_Tick(object sender, EventArgs e)
+        {
+            long nowTick = DateTime.Now.Ticks;
+
+            float dt = nowTick - lastTick;
+            dt /= 10000f; // to ms
+            if (lastTick == -1) dt = timer1.Interval;
+
+            if (!paused)
+            {
+                var usingDt = dt * TimeScaleSlider.Value / 500f;
+                Update(usingDt);
+                UpdateGameObjs(usingDt);
+                Draw();
+                PictureBox.Image = renderer.SwapBuffer();
+
+                if (fpsShowType == FpsShowType.Immediately)
+                {
+                    var fps = timer1.Interval / (float)dt * 60;
+                    FpsLabel1.Text = $"FPS:{fps.ToString("0.00")}";
+                }
+                else
+                {
+                    elapsedTime += dt;
+                    fpsCounter++;
+                    if (elapsedTime >= 1000)
+                    {
+                        FpsLabel1.Text = $"FPS:{fpsCounter}";
+                        elapsedTime %= 1000;
+                        fpsCounter = 0;
+                    }
+                }
+            }
+            lastTick = nowTick;
+
+            var curCtrl = GetFocusedControl();
+            focusCtrlLabel.Text = curCtrl != null ? $"Focus:{curCtrl.Name}" : "";
+            PictureBox.BorderStyle = PictureBox.Focused ? BorderStyle.Fixed3D : BorderStyle.None;
+            if (lastFocusControl != curCtrl)
+            {
+                lastFocusControl = curCtrl;
+                if (curCtrl == PictureBox)
+                    this.Cursor = Cursors.SizeAll;
+                else
+                    this.Cursor = Cursors.Default;
+            }
+
+            UpdateCameraTR();
+        }
+
+        private void PictureBox_Click(object sender, EventArgs e)
+        {
+            PictureBox.Focus();
+        }
+
+        private void RenderBtn_Click(object sender, EventArgs e)
+        {
+            Draw();
+        }
+
+        private void ClearBtn_Click(object sender, EventArgs e)
+        {
+            renderer.Clear();
         }
 
         private void PauseBtn_Click(object sender, EventArgs e)

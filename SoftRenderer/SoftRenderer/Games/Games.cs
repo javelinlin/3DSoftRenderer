@@ -122,8 +122,12 @@ namespace SoftRenderer.Games
 
         private Vector3 forward = -Vector3.forward;
         private Vector3 right = Vector3.right;
+        [Description("相机当前的正前方")]
         public Vector3 Forward { get; private set; }
+        [Description("相机当前的右方")]
         public Vector3 Right { get; private set; }
+        [Description("相机当前的上方")]
+        public Vector3 Up { get; private set; }
 
         public Camera()
         {
@@ -191,6 +195,7 @@ namespace SoftRenderer.Games
             var mat = Matrix4x4.GenEulerMat(-Euler.x, -Euler.y, Euler.z);
             Forward = mat * forward;
             Right = mat * right;
+            Up = Forward.Cross(Right);
             // proj
             if (isOrtho)
             {
