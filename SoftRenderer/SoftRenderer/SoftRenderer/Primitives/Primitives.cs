@@ -1,5 +1,6 @@
 ﻿// jave.lin 2019.07.14
 
+using RendererCommon.SoftRenderer.Common.Shader;
 using SoftRenderer.Common.Mathes;
 using System.Collections.Generic;
 using System.ComponentModel;

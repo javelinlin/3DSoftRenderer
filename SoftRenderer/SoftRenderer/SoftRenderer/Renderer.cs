@@ -105,11 +105,11 @@ namespace SoftRenderer.SoftRenderer
             // vertex shader post-processing
             VertexShader_PostProcessing();
 
-            // tessellation(control/evaluate) shader - not implements
-            // geometry shader - not implements
-
             // primitive assembly
             PrimitiveAssembly();
+
+            // tessellation(control/evaluate) shader - not implements
+            // geometry shader - not implements
 
             // rasterizer & fragment shader
             // 为了节省内存，我就将每个图元Rasterizer光栅出来的片段就马上处理shader了
@@ -311,9 +311,9 @@ namespace SoftRenderer.SoftRenderer
             /* ======depth start====== */
             var depthbuff = Per_Frag.DepthBuff;
             var depthwrite = State.DepthWrite;
-            var maxZ = State.CameraFar;
-            maxZ += State.CameraFar * State.CameraNear;
-            var depthInv = 1 / maxZ;
+            //var maxZ = State.CameraFar;
+            //maxZ += State.CameraFar * State.CameraNear;
+            //var depthInv = 1 / maxZ;
             // depth offset
             var offsetDepth = 0.0f;
             //if (renderer.State.DepthOffset == DepthOffset.On) // 这里需要优化,法线应该顶点数据中传进来的
@@ -324,9 +324,9 @@ namespace SoftRenderer.SoftRenderer
             //var faceNormalDotForward = 1 - Math.Abs(faceNormal.Dot(Vector3.forward));
             // 我之前翻译的文章：https://blog.csdn.net/linjf520/article/details/94596764
             // 我的理解是上面的这个算法
-            offsetDepth = 
-                //faceNormalDotForward * renderer.State.DepthOffsetFactor + 
-                depthInv * State.DepthOffsetUnit;
+            //offsetDepth = 
+            //    //faceNormalDotForward * renderer.State.DepthOffsetFactor + 
+            //    depthInv * State.DepthOffsetUnit;
             //}
             var depthOffset = State.DepthOffset;
             /* ======depth end====== */
@@ -353,7 +353,6 @@ namespace SoftRenderer.SoftRenderer
             for (int i = 0; i < len; i++)
             {
                 var f = shadedResult[i];
-                f.depth = 1 - f.p.z * depthInv;
                 var testDepth = f.depth;
                 if (depthOffset == DepthOffset.On)
                     testDepth += offsetDepth;
@@ -368,6 +367,7 @@ namespace SoftRenderer.SoftRenderer
                         var info = f.UpperStageOutInfos[j];
                         fs.ShaderProperties.SetInWithOut(info.layout, info.value, info.location);
                     }
+                    fs.f = f;
                     fs.Reset();
                     fs.Main();
                     // 丢弃片段
@@ -403,14 +403,13 @@ namespace SoftRenderer.SoftRenderer
 
             // wireframe
             len = wireframeResult.Count;
-            offsetDepth = 
-                //faceNormalDotForward * (renderer.State.DepthOffsetFactor) +
-                depthInv * (State.DepthOffsetUnit - 0.01f);
+            //offsetDepth = 
+            //    //faceNormalDotForward * (renderer.State.DepthOffsetFactor) +
+            //    depthInv * (State.DepthOffsetUnit - 0.01f);
             var wireframeColor = State.WireframeColor;
             for (int i = 0; i < len; i++)
             {
                 var f = wireframeResult[i];
-                f.depth = 1 - f.p.z * depthInv;
                 var testDepth = f.depth + offsetDepth;
                 var c = wireframeColor;
                 if (depthbuff.Test(State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))

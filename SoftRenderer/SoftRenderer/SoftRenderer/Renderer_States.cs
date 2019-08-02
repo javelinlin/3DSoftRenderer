@@ -96,7 +96,7 @@ namespace SoftRenderer.SoftRenderer
 
         [Category("Debug")]
         [Description("调试用：显示TBN切线、副切线、法线")]
-        public bool DebugShowTBN { get; set; } = true;
+        public bool DebugShowTBN { get; set; } = false;
         [Category("Debug")]
         [Description("调试用：显示TBN切线、副切线、法线的长度")]
         public float DebugTBNlLen { get; set; } = 30;

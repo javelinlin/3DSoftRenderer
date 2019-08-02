@@ -1,15 +1,13 @@
 ﻿// jave.lin 2019.07.21
 using RendererCommon.SoftRenderer.Common.Attributes;
 using RendererCommon.SoftRenderer.Common.Shader;
-using SoftRenderer.Common.Mathes;
+using System;
 using System.ComponentModel;
-
 using color = SoftRenderer.Common.Mathes.ColorNormalized;
+using mat4 = SoftRenderer.Common.Mathes.Matrix4x4;
 using vec2 = SoftRenderer.Common.Mathes.Vector2;
 using vec3 = SoftRenderer.Common.Mathes.Vector3;
 using vec4 = SoftRenderer.Common.Mathes.Vector4;
-using mat4 = SoftRenderer.Common.Mathes.Matrix4x4;
-using System;
 
 namespace SoftRendererShader
 {
@@ -64,6 +62,8 @@ namespace SoftRendererShader
         [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
 
         [Uniform] public Texture2D mainTex;
+        [Uniform] public float specularPow = 1;
+
         private Sampler2D sampler = default(Sampler2D);
 
         [In] [SV_Position] public vec4 inPos;
@@ -95,42 +95,14 @@ namespace SoftRendererShader
         [Main]
         public override void Main()
         {
-            //outColor = inColor; return;
-            //outColor.rgb = inNormal; return;
-            //1
-            var shaderData = Data as ShaderData;
-            //
-            //Vector3 lightDir = shaderData.LightPos[0];
-            //float LdotN = Vector3.Dot(lightDir, inNormal);
-            //// tex2D(tex, uv)
-            //
-            //outColor = inColor * LdotN;
-
-            //2
-            //outColor = inColor;
-            //3
-            //if (inUV.x >= 0 && inUV.x <= 0.25f) outColor = color.red;
-            //else if (inUV.x > 0.25f && inUV.x <= 0.5f) outColor = ColorNormalized.green;
-            //else if (inUV.x > 0.5f && inUV.x <= 0.75f) outColor = ColorNormalized.blue;
-            //else outColor = ColorNormalized.yellow;
-            // 4
             //var v = inUV.y * 100;
-            //var times = (int)(v / 5);
+            //var times = (int)(v / 10);
             //if (times % 2 == 0) outColor = color.red;
             //else outColor = color.green;
             //return;
-            // 5
-            //outColor = new color(inUV.x, inUV.y, 0, 1);
-            // 6
-            //outColor = sampler.Sample(mainTex, inUV);
-            // 7
-            //outColor = tex2D(sampler, mainTex, inUV);
-            // 8 alpha test in here
-            //var c = new color(inUV.x, inUV.y, 0, 1);
-            //outColor = tex2D(sampler, mainTex, inUV) + c; // * c;
-            //var b = outColor.r + outColor.g + outColor.b;
-            //b *= 0.3f;
-            //if (b < 0.9f) discard = true;
+            //outColor = f.depth;return;
+            //outColor = inColor; return;
+            var shaderData = Data as ShaderData;
 
             // diffuse
             var lightPos = shaderData.LightPos[0];
@@ -152,38 +124,25 @@ namespace SoftRendererShader
 
             if (LdotN > 0)
             {
-                // specular 1
+                // specular 1 - blinn-phong
                 // 高光也可以使用：光源角与视角的半角来算
                 //var halfAngleDir = (lightDir + viewDir);
                 //halfAngleDir.Normalize();
                 //var HdotN = max(0, dot(halfAngleDir, inNormal));
-                //HdotN = pow(HdotN, 90f);
+                //HdotN = pow(HdotN, specularPow);
                 //specular.rgb = (shaderData.LightColor[0] * HdotN).rgb * shaderData.LightColor[0].a;
-                // specular 2
+                // specular 2 - phong
                 var reflectDir = reflect(-lightDir, inNormal);
                 var RnotV = max(0, dot(reflectDir, viewDir));
+                RnotV = pow(RnotV, specularPow);
                 specular.rgb = (shaderData.LightColor[0] * RnotV).rgb * shaderData.LightColor[0].a;
             }
-
 
             // ambient
             var ambient = shaderData.Ambient;
             ambient.rgb *= ambient.a;
-            //ambient.rgb = 0; // test
 
             outColor = diffuse + specular + ambient;
-            //outColor.rgb = LdotN;
-            //outColor.rgb = inNormal + specular.rgb;
-            //outColor.rgb = inNormal;
-
-            // test
-            //outColor.rgb = inNormal * 0.5f + 0.5f;
-            //var reflectDir = reflect(-lightDir, inNormal);
-            //var RnotV = max(0, dot(reflectDir, viewDir));
-            //outColor.rgb = lightDir; return;
-            //outColor.rgb = new Vector3(1, -0.5f, 1).normalized; return;
-
-            //outColor.rgb = reflectDir;
         }
     }
 }

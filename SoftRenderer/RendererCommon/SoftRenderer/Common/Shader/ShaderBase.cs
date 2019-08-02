@@ -286,6 +286,62 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         }
     }
 
+    [Description("新版-片段数据")]
+    public class FragInfo : IDisposable
+    {
+        public static FragInfo GetFragInfo(OutInfo[] upperStageOutInfos = null)
+        {
+            return new FragInfo(upperStageOutInfos);
+        }
+
+        public float depth;
+        public bool discard;
+
+        public ColorNormalized normalLineColor; // 调试用
+
+        public Vector4 p;
+
+        public int PosIdx { get; private set; }
+        public OutInfo[] UpperStageOutInfos { get; private set; }
+
+        public FragInfo(OutInfo[] upperStageOutInfos = null)
+        {
+            if (upperStageOutInfos != null)
+            {
+                Set(upperStageOutInfos);
+            }
+        }
+
+        public void Set(OutInfo[] upperStageOutInfos)
+        {
+            UpperStageOutInfos = upperStageOutInfos;
+            var len = upperStageOutInfos.Length;
+            for (int i = 0; i < len; i++)
+            {
+                if (upperStageOutInfos[i].layout == OutLayout.SV_Position)
+                {
+                    PosIdx = i;
+                    p = upperStageOutInfos[i].Get<Vector4>();
+                    break;
+                }
+            }
+            if (PosIdx == -1)
+                throw new Exception("error");
+        }
+
+        public void WriteBackInfos()
+        {
+            UpperStageOutInfos[PosIdx].value = p;
+        }
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+
+            UpperStageOutInfos = null;
+        }
+    }
+
     [Description("Shader基类")]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ShaderBase : IDisposable
@@ -359,6 +415,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class FSBase : ShaderBase
     {
+        public FragInfo f;
         public bool discard;    // 是否丢弃片段, default: false
         public bool front;      // 是否正面, default: true
 

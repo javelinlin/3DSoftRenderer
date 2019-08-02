@@ -2,7 +2,7 @@
 
 #define TEMP_FRAG_FILTER // 临时的片段过滤，如果添加了：剪切功能，就不需要这个临时片段剔除了
 //#define SPECULAR // 后面再加，因为需要重构DrawTriangle，该接口不该暴露
-//#define PERSPECTIVE_CORRECT // 透视校正，但是效果失败了
+//#define PERSPECTIVE_CORRECT
 
 using RendererCommon.SoftRenderer.Common.Shader;
 using SoftRenderer.Common.Mathes;
@@ -294,6 +294,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             // u / z = (1-t) * (u1 / z1) + t * (u2 / z2)
             // v / z = (1 - t) * (v1 / z1) + t * (v2 / z2)
 
+            CalculDepth(f0);
 
             fs.Add(f0);
 
@@ -322,8 +323,8 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             var infoCount = f0.UpperStageOutInfos != null ? f0.UpperStageOutInfos.Length : 0;
 
 #if PERSPECTIVE_CORRECT
-            var p0InvZ = 1 / (p0.z == 0 ? 1 : p0.z);
-            var p1InvZ = 1 / (p1.z == 0 ? 1 : p1.z);
+            var p0InvZ = f0.p.z == 0 ? 0 : 1 / f0.p.z;
+            var p1InvZ = f1.p.z == 0 ? 0 : 1 / f1.p.z;
 #endif
             for (int i = 0, num = 1; i < count; i++, num++)
             {
@@ -344,93 +345,94 @@ namespace SoftRenderer.SoftRenderer.Rasterization
 
                     for (int j = 0; j < infoCount; j++)
                     {
-                        var refV = f0.UpperStageOutInfos[j];
+                        var f0Info = f0.UpperStageOutInfos[j];
+                        var f1Info = f1.UpperStageOutInfos[j];
                         object v = null;
-                        if (refV.nointerpolation)
+                        if (f0Info.nointerpolation)
                         {
-                            v = refV.value;
+                            v = f0Info.value;
                         }
                         else
                         {
-                            if (refV.layout == OutLayout.SV_Position)
+                            if (f0Info.layout == OutLayout.SV_Position)
                             {
                                 v = newP;
                             }
-                            else if (refV.layout == OutLayout.Position)
+                            else if (f0Info.layout == OutLayout.Position)
                             {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
-                                (Vector4)refV.value,
-                                (Vector4)f1.UpperStageOutInfos[j].value,
+                                (Vector4)f0Info.value,
+                                (Vector4)f1Info.value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                v = Mathf.Lerp((Vector4)refV.value, (Vector4)f1.UpperStageOutInfos[j].value, t, tt);
+                                v = Mathf.Lerp((Vector4)f0Info.value, (Vector4)f1Info.value, t, tt);
 #endif
                             }
-                            else if (refV.layout == OutLayout.Color)
+                            else if (f0Info.layout == OutLayout.Color)
                             {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
-                                (Color)refV.value,
-                                (Color)f1.UpperStageOutInfos[j].value,
+                                (Color)f0Info.value,
+                                (Color)f1Info.value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                v = Mathf.Lerp((Color)refV.value, (Color)f1.UpperStageOutInfos[j].value, t, tt);
+                                v = Mathf.Lerp((Color)f0Info.value, (Color)f1Info.value, t, tt);
 #endif
 
                             }
-                            else if (refV.layout == OutLayout.Normal)
+                            else if (f0Info.layout == OutLayout.Normal)
                             {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
-                                (Vector3)refV.value,
-                                (Vector3)f1.UpperStageOutInfos[j].value,
+                                (Vector3)f0Info.value,
+                                (Vector3)f1Info.value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                v = Mathf.Lerp((Vector3)refV.value, (Vector3)f1.UpperStageOutInfos[j].value, t, tt);
+                                v = Mathf.Lerp((Vector3)f0Info.value, (Vector3)f1Info.value, t, tt);
 #endif
                             }
-                            else if (refV.layout == OutLayout.Texcoord)
+                            else if (f0Info.layout == OutLayout.Texcoord)
                             {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
-                                (Vector2)refV.value,
-                                (Vector2)f1.UpperStageOutInfos[j].value,
+                                (Vector2)f0Info.value,
+                                (Vector2)f1Info.value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                v = Mathf.Lerp((Vector2)refV.value, (Vector2)f1.UpperStageOutInfos[j].value, t, tt);
+                                v = Mathf.Lerp((Vector2)f0Info.value, (Vector2)f1Info.value, t, tt);
 #endif
                             }
-                            else if (refV.layout == OutLayout.Tangent)
+                            else if (f0Info.layout == OutLayout.Tangent)
                             {
 #if PERSPECTIVE_CORRECT
                             v = PerspectiveInterpolation(
-                                (Vector3)refV.value,
-                                (Vector3)f1.UpperStageOutInfos[j].value,
+                                (Vector3)f0Info.value,
+                                (Vector3)f1Info.value,
                                 newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                v = Mathf.Lerp((Vector3)refV.value, (Vector3)f1.UpperStageOutInfos[j].value, t, tt);
+                                v = Mathf.Lerp((Vector3)f0Info.value, (Vector3)f1Info.value, t, tt);
 #endif
                             }
                             else
                             {
-                                throw new Exception($"new layout data : {refV.layout} handle, not implements");
+                                throw new Exception($"new layout data : {f0Info.layout} handle, not implements");
                             }
                         }
                         infos[j] = new OutInfo
                         {
-                            layout = refV.layout,
-                            location = refV.location,
+                            layout = f0Info.layout,
+                            location = f0Info.location,
                             value = v
                         };
                     }
                     f.Set(infos);
                 }
                 f.p = newP;
-                //if (interpolation) f.WriteBackInfos();
+                CalculDepth(f);
                 fs.Add(f);
             }
-
+            CalculDepth(f1);
             fs.Add(f1);
         }
 
@@ -458,6 +460,12 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             return newZ * Mathf.Lerp(v1 * invZ0, v2 * invZ1, t, tt);
         }
         // =============== 顶点数据的插值 end===============
+
+        // 计算深度
+        private void CalculDepth(FragInfo f)
+        {
+            f.depth = 1 - 1 / f.p.z;
+        }
 
         // 绘制三角形：旧版管线中的绘制三角
         public void DrawTriangle(Triangle t, Color triangleColor, Color wireFrameColor)
@@ -771,8 +779,6 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 maxY = Renderer.State.ScissorRect.Bottom;
             }
 
-            var depthInv = 1 / (renderer.State.CameraFar + renderer.State.CameraFar * renderer.State.CameraNear);
-
             // shaded fragments
             if ((renderer.State.ShadingMode & ShadingMode.Shaded) != 0)
             {
@@ -859,12 +865,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                         }
 
                         var dx = (int)Math.Ceiling((Math.Abs(leftF.p.x - rightF.p.x)));
-                        if (dx == 0)
-                        { // leftF与rightF共栅格点了，直接添加其中一个就可以了
-                            if (leftF.p.x < minX || leftF.p.x > maxX || leftF.p.y < minY || leftF.p.y > maxY) continue;
-                            shadedResult.Add(leftF);
-                            continue;
-                        }
+                        if (dx == 0) continue;
                         // 求出从左往右点的方向
                         var dir = rightF.p - leftF.p;
                         // 方向单位化
@@ -879,22 +880,21 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                         // 因为透视投影中点的z与投影近平面的交点的x,y不是线性关系的
                         // 但与透视投影中点的1/z与投影近平面的交点的x,y是线性关系的
                         // 所以我们先将左右两边的1/z先求出来，用于插值使用
-                        var p0InvZ = 1 / (leftF.p.z == 0 ? 1 : leftF.p.z);
-                        var p1InvZ = 1 / (rightF.p.z == 0 ? 1 : rightF.p.z);
+                        var p0InvZ = leftF.p.z == 0 ? 0 : 1 / leftF.p.z;
+                        var p1InvZ = rightF.p.z == 0 ? 0 : 1 / rightF.p.z;
 #endif
                         var p1top0 = (triangle.f1.p - triangle.f0.p).xyz;
                         var p2top0 = (triangle.f2.p - triangle.f0.p).xyz;
                         var n = p1top0.Cross(p2top0).normalized;
 
-                        for (int i = 0; i < dx; i++)
+                        for (int i = 1; i < dx; i++)
                         {
                             var newP = leftF.p + dir * i;
-                            newP.y = iy;
                             if (newP.x < minX || newP.x > maxX || newP.y < minY || newP.y > maxY) continue;
+                            newP.y = iy;
 
                             var f = FragInfo.GetFragInfo();
                             f.p = newP;
-                            f.depth = 1 - f.p.z * depthInv;
 
                             OutInfo[] infos = new OutInfo[infoCount];
                             var t = (float)i / dx;
@@ -904,92 +904,86 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                             // 计算出新的插值z方法 1
                             var newZ = 1 / Mathf.Lerp(p0InvZ, p1InvZ, t, tt);
                             newP.z = newZ; // 这里其实与newZ 赋值前，其实与newP.z值是一样的，因为我们的newP.xyz也是之前插值向量算出来的
-                                           //f.depth = 1 - newP.z * depthInv;
 #endif
-
-                            // 计算出新的插值z方法 2
-                            //var newZ = newP.z; // 就是用会我们上面的插值向量的z，从而提升性能
-
                             for (int j = 0; j < infoCount; j++)
                             {
-                                var refV = leftF.UpperStageOutInfos[j];
+                                var f0Info = leftF.UpperStageOutInfos[j];
+                                var f1Info = rightF.UpperStageOutInfos[j];
                                 object v = null;
-                                if (refV.nointerpolation)
+                                if (f0Info.nointerpolation)
                                 {
-                                    v = refV.value;
+                                    v = f0Info.value;
                                 }
                                 else
                                 {
-                                    if (refV.layout == OutLayout.SV_Position)
+                                    if (f0Info.layout == OutLayout.SV_Position)
                                     {
                                         v = newP;
                                     }
-                                    else if (refV.layout == OutLayout.Position)
+                                    else if (f0Info.layout == OutLayout.Position)
                                     {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
-                                        (Vector4)refV.value,
-                                        (Vector4)rightF.UpperStageOutInfos[j].value,
+                                        (Vector4)f0Info.value,
+                                        (Vector4)f1Info.value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                        v = Mathf.Lerp((Vector4)refV.value, (Vector4)rightF.UpperStageOutInfos[j].value, t, tt);
+                                        v = Mathf.Lerp((Vector4)f0Info.value, (Vector4)f1Info.value, t, tt);
 #endif
                                     }
-                                    else if (refV.layout == OutLayout.Color)
+                                    else if (f0Info.layout == OutLayout.Color)
                                     {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
-                                        (Color)refV.value,
-                                        (Color)rightF.UpperStageOutInfos[j].value,
+                                        (Color)f0Info.value,
+                                        (Color)f1Info.value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                        v = Mathf.Lerp((Color)refV.value, (Color)rightF.UpperStageOutInfos[j].value, t, tt);
+                                        v = Mathf.Lerp((Color)f0Info.value, (Color)f1Info.value, t, tt);
 #endif
                                     }
-                                    else if (refV.layout == OutLayout.Normal)
+                                    else if (f0Info.layout == OutLayout.Normal)
                                     {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
-                                        (Vector3)refV.value,
-                                        (Vector3)rightF.UpperStageOutInfos[j].value,
+                                        (Vector3)f0Info.value,
+                                        (Vector3)f1Info.value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                        v = Mathf.Lerp((Vector3)refV.value, (Vector3)rightF.UpperStageOutInfos[j].value, t, tt);
-#endif
-                                        // 暂时测试用
-                                        //v = n;
-                                    }
-                                    else if (refV.layout == OutLayout.Texcoord)
-                                    {
-#if PERSPECTIVE_CORRECT
-                                    v = PerspectiveInterpolation(
-                                        (Vector2)refV.value,
-                                        (Vector2)rightF.UpperStageOutInfos[j].value,
-                                        newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                        v = Mathf.Lerp((Vector2)refV.value, (Vector2)rightF.UpperStageOutInfos[j].value, t, tt);
+                                        v = Mathf.Lerp((Vector3)f0Info.value, (Vector3)f1Info.value, t, tt);
 #endif
                                     }
-                                    else if (refV.layout == OutLayout.Tangent)
+                                    else if (f0Info.layout == OutLayout.Texcoord)
                                     {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
-                                        (Vector3)refV.value,
-                                        (Vector3)rightF.UpperStageOutInfos[j].value,
+                                        (Vector2)f0Info.value,
+                                        (Vector2)f1Info.value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
-                                        v = Mathf.Lerp((Vector3)refV.value, (Vector3)rightF.UpperStageOutInfos[j].value, t, tt);
+                                        v = Mathf.Lerp((Vector2)f0Info.value, (Vector2)f1Info.value, t, tt);
+#endif
+                                    }
+                                    else if (f0Info.layout == OutLayout.Tangent)
+                                    {
+#if PERSPECTIVE_CORRECT
+                                    v = PerspectiveInterpolation(
+                                        (Vector3)f0Info.value,
+                                        (Vector3)f1Info.value,
+                                        newZ, p0InvZ, p1InvZ, t, tt);
+#else
+                                        v = Mathf.Lerp((Vector3)f0Info.value, (Vector3)f1Info.value, t, tt);
 #endif
                                     }
                                     else
                                     {
-                                        throw new Exception($"new layout data : {refV.layout} handle, not implements");
+                                        throw new Exception($"new layout data : {f0Info.layout} handle, not implements");
                                     }
                                 }
                                 infos[j] = new OutInfo
                                 {
-                                    layout = refV.layout,
-                                    location = refV.location,
+                                    layout = f0Info.layout,
+                                    location = f0Info.location,
                                     value = v
                                 };
                             }
@@ -999,31 +993,19 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                             {
                                 throw new Exception("error");
                             }
-                            //f.WriteBackInfos();
+                            CalculDepth(f);
                             shadedResult.Add(f);
                         }
                     }
                 }
 
+                // 添加回外框线条
                 var len = fragInfosHelper1.Count;
                 for (int i = 0; i < len; i++)
                 {
                     var f = fragInfosHelper1[i];
                     var p = f.p;
                     if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) continue;
-                    //var found = false;
-                    //for (int j = 0; j < shadedResult.Count; j++)
-                    //{
-                    //    if ((int)shadedResult[j].p.x == (int)p.x && (int)shadedResult[j].p.y == (int)p.y)
-                    //    {
-                    //        found = true;
-                    //        break;
-                    //    }
-                    //}
-                    //if (!found)
-                    //{
-                    //    shadedResult.Add(f);
-                    //}
                     shadedResult.Add(f);
                 }
                 len = fragInfosHelper2.Count;
@@ -1032,23 +1014,8 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                     var f = fragInfosHelper2[i];
                     var p = f.p;
                     if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) continue;
-                    //var found = false;
-                    //for (int j = 0; j < shadedResult.Count; j++)
-                    //{
-                    //    if ((int)shadedResult[j].p.x == (int)p.x && (int)shadedResult[j].p.y == (int)p.y)
-                    //    {
-                    //        found = true;
-                    //        break;
-                    //    }
-                    //}
-                    //if (!found)
-                    //{
-                    //    shadedResult.Add(f);
-                    //}
                     shadedResult.Add(f);
                 }
-                //shadedResult.AddRange(fragInfosHelper1);
-                //shadedResult.AddRange(fragInfosHelper2);
             }
             
             // wireframe fragments
@@ -1060,7 +1027,6 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                     var f = fragInfosHelper1[i];
                     var p = f.p;
                     if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) continue;
-                    f.depth = 1 - f.p.z * depthInv;
                     wireframeResult.Add(f);
                 }
                 len = fragInfosHelper2.Count;
@@ -1069,15 +1035,11 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                     var f = fragInfosHelper2[i];
                     var p = f.p;
                     if (p.x < minX || p.x > maxX || p.y < minY || p.y > maxY) continue;
-                    f.depth = 1 - f.p.z * depthInv;
                     wireframeResult.Add(f);
                 }
-                //wireframeResult.AddRange(fragInfosHelper1);
-                //wireframeResult.AddRange(fragInfosHelper2);
             }
 
-            // normal line fragments
-            // debug: show normal line
+            // debug: show TBN
             if (Renderer.State.DebugShowTBN)
             {
                 // tangent
@@ -1090,79 +1052,6 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 to = Color.green;
                 CollectTBN(triangle, OutLayout.Tangent, 1, from, to, normalLineResult);
 
-                //#region bitangent
-                ////CollectTBN(triangle, OutLayout.Tangent, from, to, normalLineResult);
-                //var triangleVertices = new FragInfo[] { triangle.f0, triangle.f1, triangle.f2 };
-                //var len = triangleVertices.Length;
-                //var depthBuff = renderer.Per_Frag.DepthBuff;
-
-                //for (int i = 0; i < len; i++)
-                //{
-                //    var f = triangleVertices[i];
-                //    Vector3? nrlVec = null;
-                //    Vector3? tangentVec = null;
-                //    var jLen = f.UpperStageOutInfos.Length;
-                //    for (int j = 0; j < jLen; j++)
-                //    {
-                //        var info = f.UpperStageOutInfos[j];
-                //        if (info.layout == OutLayout.Normal)
-                //        {
-                //            nrlVec = (Vector3)info.value;
-                //        }
-                //        if (info.layout == OutLayout.Tangent)
-                //        {
-                //            tangentVec = (Vector3)info.value;
-                //        }
-                //    }
-                //    if (nrlVec.HasValue && tangentVec.HasValue)
-                //    {
-                //        var bitangentVec = nrlVec.Value.Cross(tangentVec.Value);
-
-                //        var vecPos = f.p + new Vector4(bitangentVec * renderer.State.DebugNormalLen, 1);
-
-                //        var f0 = FragInfo.GetFragInfo();
-                //        f0.p = f.p;
-                //        var f1 = FragInfo.GetFragInfo();
-                //        f1.p = vecPos;
-
-                //        var srcIdx = normalLineResult.Count;
-                //        GenLineFrag(f0, f1, normalLineResult, false);
-
-                //        var count = normalLineResult.Count;
-                //        var count1 = normalLineResult.Count - srcIdx;
-                //        for (int newI = srcIdx; newI < count; newI++)
-                //        {
-                //            var vecF = normalLineResult[newI];
-                //            if (vecF.p.x < minX || vecF.p.x > maxX || vecF.p.y < minY || vecF.p.y > maxY)
-                //            {
-                //                vecF.discard = true;
-                //                continue;
-                //            }
-                //            var depth = 1 - vecF.p.z * depthInv;
-
-                //            if (!depthBuff.Test(ComparisonFunc.Less, (int)vecF.p.x, (int)vecF.p.y, depth))
-                //            {
-                //                vecF.discard = true;
-                //                continue;
-                //            }
-                //            var t = (float)(newI - srcIdx) / count1;
-                //            vecF.normalLineColor = Mathf.Lerp(from, to, t);
-                //        }
-
-                //        count = normalLineResult.Count;
-                //        for (int fI = 0; fI < count; fI++)
-                //        {
-                //            var vecF = normalLineResult[fI];
-                //            if (vecF.discard || vecF.p.x < minX || vecF.p.x > maxX || vecF.p.y < minY || vecF.p.y > maxY)
-                //            {
-                //                vecF.discard = true;
-                //                continue;
-                //            }
-                //        }
-                //    }
-                //}
-                //#endregion
-
                 // normals
                 from = Color.lightBlue;
                 to = Color.blue;
@@ -1170,6 +1059,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             }
         }
 
+        // 收集TBN线条的片段
         private void CollectTBN(Primitive_Triangle triangle, OutLayout layout, int location, Color from, Color to, List<FragInfo> normalLineResult)
         {
             var depthBuff = renderer.Per_Frag.DepthBuff;
