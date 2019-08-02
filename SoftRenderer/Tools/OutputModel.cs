@@ -21,7 +21,7 @@ public class OutputModel : MonoBehaviour
         if (mf != null)
         {
             var m = mf.sharedMesh;
-            if (!m.isReadable)
+            if (!m.isReadable && m.vertices.Length == 0)
             {
                 Debug.LogError($"only Exporting which the 'Mesh.isReable' is true .");
                 return;
