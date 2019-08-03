@@ -223,7 +223,6 @@ namespace SoftRenderer.Games
     {
         private static readonly int MVP_Hash = "MVP".GetHashCode();
         private static readonly int M_Hash = "M".GetHashCode();
-        private static readonly int MV_Hash = "MV".GetHashCode();
         private static readonly int M_IT_Hash = "M_IT".GetHashCode();
 
         public VertexBuffer VertexBuffer { get; private set; }
@@ -352,7 +351,6 @@ namespace SoftRenderer.Games
             
             Material.VS.ShaderProperties.SetUniform(MVP_Hash, ModelViewProjMat);
             Material.VS.ShaderProperties.SetUniform(M_Hash, ModelMat);
-            Material.VS.ShaderProperties.SetUniform(MV_Hash, ModelViewMat);
             Material.VS.ShaderProperties.SetUniform(M_IT_Hash, ModelITMat);
 
             MR.Renderer.ShaderProgram.SetShader(ShaderType.VertexShader, Material.VS);

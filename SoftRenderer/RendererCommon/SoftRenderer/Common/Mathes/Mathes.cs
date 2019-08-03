@@ -558,6 +558,10 @@ namespace SoftRenderer.Common.Mathes
         {
             return Get(v);
         }
+        public static implicit operator Vector4(float v)
+        {
+            return Get(v, v, v, v);
+        }
         public bool Equals(Vector4 other)
         {
             return x == other.x && y == other.y && z == other.z && w == other.w;

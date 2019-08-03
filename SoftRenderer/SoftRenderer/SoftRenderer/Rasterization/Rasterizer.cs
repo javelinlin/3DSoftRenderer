@@ -293,7 +293,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                             {
                                 v = Interpolation(f0Info, f1Info, t, tt
 #if PERSPECTIVE_CORRECT
-                                newZ, p0InvZ, p1InvZ
+                                ,newZ, p0InvZ, p1InvZ
 #endif
                                     );
                             }
@@ -351,8 +351,8 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
-                                        (float)f0Info.value,
-                                        (float)f1Info.value,
+                                        (Vector2)f0Info.value,
+                                        (Vector2)f1Info.value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
                 v = Mathf.Lerp((Vector2)f0Info.value, (Vector2)f1Info.value, t, tt);
@@ -362,8 +362,8 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
-                                        (float)f0Info.value,
-                                        (float)f1Info.value,
+                                        (Vector3)f0Info.value,
+                                        (Vector3)f1Info.value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
                 v = Mathf.Lerp((Vector3)f0Info.value, (Vector3)f1Info.value, t, tt);
@@ -373,8 +373,8 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             {
 #if PERSPECTIVE_CORRECT
                                     v = PerspectiveInterpolation(
-                                        (float)f0Info.value,
-                                        (float)f1Info.value,
+                                        (Vector4)f0Info.value,
+                                        (Vector4)f1Info.value,
                                         newZ, p0InvZ, p1InvZ, t, tt);
 #else
                 v = Mathf.Lerp((Vector4)f0Info.value, (Vector4)f1Info.value, t, tt);
@@ -407,7 +407,15 @@ namespace SoftRenderer.SoftRenderer.Rasterization
         // 计算深度
         private void CalculDepth(FragInfo f)
         {
-            f.depth = 1 - 1 / f.p.z;
+            // 以下计算方式都不对
+            //f.depth = 1 - 1 / f.p.z;
+            f.depth = 1 - 1 / (f.p.z - renderer.State.CameraNear * renderer.State.CameraFar);
+
+            //var near = renderer.State.CameraNear;
+            //var far = renderer.State.CameraFar;
+            //f.depth = 1 / (((far - near) / near) * f.p.w - far / near);
+
+            //f.depth = f.p.w;
         }
 
         // 生成片段
@@ -620,7 +628,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                                     {
                                         v = Interpolation(f0Info, f1Info, t, tt
 #if PERSPECTIVE_CORRECT
-                                        newZ, p0InvZ, p1InvZ
+                                        ,newZ, p0InvZ, p1InvZ
 #endif
                                             );
                                     }

@@ -235,7 +235,7 @@ namespace SoftRenderer.SoftRenderer
                             // TODO 先放着吧，实在没有精力去研究这个了，坑了好久了。
                             // 网络上也了至少上50篇，没有一个可以解决问题的
                             ndcPos.z = clipPos.z * invW;
-                            ndcPos.w = clipPos.w;
+                            ndcPos.w = ndcPos.z * 0.5f + 0.5f;
                             //ndcPos = clipPos / clipPos.w;
                         }
                         // ndc 2 win
@@ -431,12 +431,13 @@ namespace SoftRenderer.SoftRenderer
             //    //faceNormalDotForward * (renderer.State.DepthOffsetFactor) +
             //    depthInv * (State.DepthOffsetUnit - 0.01f);
             var wireframeColor = State.WireframeColor;
+            offsetDepth = -0.0000009f;
             for (int i = 0; i < len; i++)
             {
                 var f = wireframeResult[i];
                 var testDepth = f.depth + offsetDepth;
                 var c = wireframeColor;
-                if (depthbuff.Test(State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                if (depthbuff.Test(ComparisonFunc.Less, (int)f.p.x, (int)f.p.y, testDepth))
                 {
                     // 是否开启深度写入
                     if (depthwrite == DepthWrite.On)
