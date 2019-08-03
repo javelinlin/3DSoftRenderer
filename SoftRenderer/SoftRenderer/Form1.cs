@@ -67,7 +67,7 @@ namespace SoftRenderer
         // 法线描边的偏移值，这个需要好的模型才能测试出来
         // TODO 后面添加支持：加载*.obj模型
         public float normalOutlineOffset { get; set; } = 0; // 法线现在有问题，所以取负数，以后有精力再看，因为现在看了不少于50篇相关内容，没一个可以解决问题的
-        public float specularPow { get; set; } = 1; // 高光亮度
+        public float specularPow { get; set; } = 10; // 高光亮度
 
         private GlobalMessageHandler globalMsg = new GlobalMessageHandler();
 
@@ -77,6 +77,8 @@ namespace SoftRenderer
 
             PictureBox.MouseDown += PictureBox_MouseDown;
             globalMsg.OnWheelEvent += GlobalMsg_OnWheelEvent;
+            globalMsg.OnMsRDownEvent += GlobalMsg_OnMsRDownEvent;
+            globalMsg.OnAltAndLDownEvent += GlobalMsg_OnAltAndLDownEvent;
             Application.AddMessageFilter(globalMsg);
             this.FormClosed += (s, e) => Application.RemoveMessageFilter(globalMsg);
 
@@ -332,6 +334,16 @@ namespace SoftRenderer
 #endif
         }
 
+        private void GlobalMsg_OnAltAndLDownEvent()
+        {
+            r_before_t = camera.R_Before_T;
+        }
+
+        private void GlobalMsg_OnMsRDownEvent()
+        {
+            ms_down_cam_pos = camera.Translate;
+        }
+
         private void GlobalMsg_OnWheelEvent(bool fromDownToUp)
         {
             if (!PictureBox.Focused) return;
@@ -349,16 +361,17 @@ namespace SoftRenderer
         {
             if (PictureBox.Focused)
             {
-                if (this.globalMsg.GetKeyDown(Keys.ControlKey) && this.globalMsg.MS_LBTN)
+                if (this.globalMsg.IsAltDown && this.globalMsg.MS_LBTN)
                 {
-                    if (this.globalMsg.delta_ms_pos.IsEmpty == false)
-                    {
-                        this.camera.RotateY(this.globalMsg.delta_ms_pos.X);
-                        this.camera.RotateX(-this.globalMsg.delta_ms_pos.Y);
-                        this.globalMsg.delta_ms_pos = Point.Empty;
-                    }
+                    var nowPos = Cursor.Position;
+                    var lastPos = this.globalMsg.last_alt_and_ms_ldown_pos;
+
+                    this.camera.R_Before_T = new Vector3(
+                        r_before_t.x + nowPos.Y - lastPos.Y,
+                        r_before_t.y + nowPos.X - lastPos.X,
+                        r_before_t.z);
                 }
-                if (this.globalMsg.MS_LBTN) // 鼠标左右按下移动，控制相对相机坐标方向来水平、垂直的位移 - 这个功能会比较实用
+                else if (this.globalMsg.MS_MBTN) // 鼠标中键按下移动，控制相对相机坐标方向来水平、垂直的位移 - 这个功能会比较实用
                 {
                     if (this.globalMsg.delta_ms_pos.IsEmpty == false)
                     {
@@ -368,17 +381,28 @@ namespace SoftRenderer
                         this.globalMsg.delta_ms_pos = Point.Empty;
                     }
                 }
-                if (this.globalMsg.MS_MBTN) // 鼠标中键控制镜头的水平、垂直位移，相对世界坐标方向来水平、垂直的位移
+                else if (this.globalMsg.IsAltDown && this.globalMsg.MS_RBTN)
                 {
-                    if (this.globalMsg.delta_ms_pos.IsEmpty == false)
-                    {
-                        const float scale = 0.1f;
-                        camera.Translate -= this.globalMsg.delta_ms_pos.X * scale * Vector3.right;
-                        camera.Translate -= this.globalMsg.delta_ms_pos.Y * scale * Vector3.up;
-                        this.globalMsg.delta_ms_pos = Point.Empty;
-                    }
+                    var nowPos = Cursor.Position;
+                    var lastPos = this.globalMsg.last_ms_rdown_pos;
+                    var dx = nowPos.X - lastPos.X;
+                    var dy = nowPos.Y - lastPos.Y;
+                    var absDX = dx < 0 ? -dx : dx;
+                    var absDY = dy < 0 ? -dy : dy;
+                    var distance = (float)Math.Sqrt(dx * dx + dy * dy);
+
+                    var sv = dx;             // sign value
+                    if (absDX > absDY) sv = dx;
+                    else sv = dy;
+
+                    var s = sv < 0 ? -1 : 1; // sign
+
+                    const float scale = 0.01f;
+                    var offset = scale * distance * camera.Forward * s;
+                    camera.Translate = ms_down_cam_pos + offset;
+                    //Console.WriteLine($"ms_down_cam_pos:{ms_down_cam_pos}, offset:{offset}");
                 }
-                if (this.globalMsg.MS_RBTN) // 按住鼠标右键不放的同时再用W,S,A,D控制镜头的移动
+                else if (this.globalMsg.MS_RBTN) // 按住鼠标右键不放的同时再用W,S,A,D控制镜头的移动
                 {
                     if (this.globalMsg.delta_ms_pos.IsEmpty == false)
                     {
@@ -439,6 +463,8 @@ namespace SoftRenderer
 #endif
         }
 
+        public Vector3 r_before_t;
+        public Vector3 ms_down_cam_pos;
         public Color ambient { get; set; } = new ColorNormalized(0.3f, 0.2f, 0.1f, 0.2f);
         public Color lightColor { get; set; } = new ColorNormalized(1, 0.5f, 0.5f, 1f);
 
@@ -560,36 +586,14 @@ namespace SoftRenderer
             if ((m.Msg == GlobalMessageHandler.WM_KEYDOWN) || (m.Msg == GlobalMessageHandler.WM_SYSKEYDOWN) || (m.Msg == GlobalMessageHandler.WM_KEYUP))
             {
                 var down = (m.Msg == GlobalMessageHandler.WM_KEYDOWN || m.Msg == GlobalMessageHandler.WM_SYSKEYDOWN);
-                if (m.Msg == GlobalMessageHandler.WM_KEYUP) down = false;
+                if (m.Msg == GlobalMessageHandler.WM_KEYUP || m.Msg == GlobalMessageHandler.WM_SYSKEYUP) down = false;
 
-                this.globalMsg.SetKeyDown(keyData, down);
-                //Console.WriteLine($"SetKey:{keyData}, down:{down}");
-
-                //switch (keyData)
-                //{
-                //    case Keys.Down:
-                //        Debug.WriteLine("Down Arrow Captured");
-                //        break;
-
-                //    case Keys.Up:
-                //        Debug.WriteLine("Up Arrow Captured");
-                //        break;
-
-                //    case Keys.Tab:
-                //        Debug.WriteLine("Tab Key Captured");
-                //        break;
-
-                //    case Keys.Control | Keys.M:
-                //        Debug.WriteLine("<CTRL> + M Captured");
-                //        break;
-
-                //    case Keys.Alt | Keys.Z:
-                //        Debug.WriteLine("<ALT> + Z Captured");
-                //        break;
-                //    default:
-                //        Debug.WriteLine($"Unhandle {keyData} Captured");
-                //        break;
-                //}
+                if ((keyData & Keys.Control) != 0)
+                    this.globalMsg.ControlKeys = keyData;
+                if ((keyData & Keys.Alt) != 0)
+                    this.globalMsg.MenuAltKeys = keyData;
+                if ((keyData & Keys.Control) == 0 && (keyData & Keys.Alt) == 0)
+                    this.globalMsg.SetKeyDown(keyData, down);
             }
 
             return base.ProcessCmdKey(ref m, keyData);
@@ -600,8 +604,6 @@ namespace SoftRenderer
             if (m.Msg == GlobalMessageHandler.WM_ACTIVATEAPP)
             {
                 this.globalMsg.appActive = (((int)m.WParam != 0));
-                //Console.WriteLine($"Win actived:{this.globalMsg.appActive}");
-                return;
             }
             base.WndProc(ref m);
         }
@@ -734,6 +736,7 @@ namespace SoftRenderer
                 pos.z = 8;
             }
 
+            camera.R_Before_T = 0;
             camera.RotateTo(Vector3.zero);
             camera.TranslateTo(pos);
         }

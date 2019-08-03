@@ -130,6 +130,8 @@ namespace SoftRenderer.Games
         [Description("相机当前的上方")]
         public Vector3 Up { get; private set; }
 
+        public Vector3 R_Before_T { get; set; }
+
         public Camera()
         {
             View = Matrix4x4.Get();
@@ -188,14 +190,15 @@ namespace SoftRenderer.Games
             else
             {
                 t = -t;
+                var r = R_Before_T;
                 // translate
-                View = Matrix4x4.GenTranslateMat(t.x, t.y, t.z);
+                View = Matrix4x4.GenTranslateMat(t.x, t.y, t.z) * Matrix4x4.GenEulerMat(r.x, r.y, r.z);
                 // rotate
                 View = Matrix4x4.GenEulerMat(Euler.x, Euler.y, Euler.z).MulMat(View);
             }
-            var mat = Matrix4x4.GenEulerMat(-Euler.x, -Euler.y, Euler.z);
-            Forward = mat * forward;
-            Right = mat * right;
+            var matV = Matrix4x4.GenEulerMat(-Euler.x, -Euler.y, -Euler.z);
+            Forward = matV * forward;
+            Right = matV * right;
             Up = Forward.Cross(Right);
             // proj
             if (isOrtho)

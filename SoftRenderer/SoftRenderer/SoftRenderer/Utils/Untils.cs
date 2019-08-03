@@ -74,6 +74,9 @@ namespace SoftRenderer.SoftRenderer.Utils
     public class GlobalMessageHandler : IMessageFilter
     {
         public delegate void OnWheel(bool fromDownToUp);
+        public delegate void OnMsRDown();
+        public delegate void OnAltAndLDown();
+
         /* =======message start======= */
         public const int WM_KEYDOWN = 0x100;
         public const int WM_KEYUP = 0x101;
@@ -98,29 +101,39 @@ namespace SoftRenderer.SoftRenderer.Utils
         //private const int WM_NCMOUSEMOVE = 0x00A0;
         public const int WM_MOUSEMOVE = 0x0200;
 
-        public bool appActive { get; set; }
-        public Point last_ms_pos { get; private set; } = new Point(-1, -1);
-        public Point delta_ms_pos { get; set; }
-        public bool MS_LBTN { get; private set; }
-        public bool MS_RBTN { get; private set; }
-        public bool MS_MBTN { get; private set; }
+        public bool appActive { get; set; }         // 程序是否有激活
+        private Point _last_alt_and_ms_ldown_pos;
+        public Point last_alt_and_ms_ldown_pos { get => _last_alt_and_ms_ldown_pos;
+            private set {
+                _last_alt_and_ms_ldown_pos = value;
+                OnAltAndLDownEvent.Invoke();
+            } } // 上次alt+鼠标左键点下的鼠标坐标
+        public Point last_ms_rdown_pos { get; private set; } // 上次鼠标右键点下的鼠标坐标
+        public Point last_ms_pos { get; private set; } = new Point(-1, -1); // 上次鼠标的位置
+        public Point delta_ms_pos { get; set; }     // 与上次鼠标的偏移差
+        public bool MS_LBTN { get; private set; }   // 鼠标左键
+        public bool MS_RBTN { get; private set; }   // 鼠标右键
+        public bool MS_MBTN { get; private set; }   // 鼠标中键
+        public Keys ControlKeys { get; set; }       // 设置或获取命令键组合值
+        public Keys MenuAltKeys { get; set; }       // 设置或获取菜单键组合值
+        public bool IsCtrlDown { get => (ControlKeys & Keys.ControlKey) != 0; }     // CTRL 键是否按下
+        public bool IsAltDown { get => ((MenuAltKeys & Keys.Menu) != 0 && (MenuAltKeys & Keys.Alt) != 0); }            // ALT 键是否按下
 
         private Dictionary<Keys, bool> keysDownStatus = new Dictionary<Keys, bool>();
 
         public event OnWheel OnWheelEvent;
+        public event OnMsRDown OnMsRDownEvent;
+        public event OnAltAndLDown OnAltAndLDownEvent;
 
-        public void SetKeyDown(Keys k, bool isDown)
+        public void SetKeyDown(Keys k, bool isDown) // 设置普通按键状态
         {
-            if ((k & Keys.Control) != 0)
-                k = k ^ Keys.Control;
             keysDownStatus[k] = isDown;
         }
-        public bool GetKeyDown(Keys k)
+        public bool GetKeyDown(Keys k)              // 获取普通按键状态
         {
             keysDownStatus.TryGetValue(k, out bool down);
             return down;
         }
-
         /* =======message end======= */
 
         #region IMessageFilter Members
@@ -130,7 +143,10 @@ namespace SoftRenderer.SoftRenderer.Utils
             switch (m.Msg)
             {
                 case WM_LBUTTONDOWN:
+                    var srcLbtn = MS_LBTN;
                     MS_LBTN = true;
+                    if (!srcLbtn && IsAltDown && this.MS_LBTN)
+                        last_alt_and_ms_ldown_pos = Cursor.Position;
                     break;
                 case WM_LBUTTONUP:
                     MS_LBTN = false;
@@ -142,7 +158,12 @@ namespace SoftRenderer.SoftRenderer.Utils
                     MS_MBTN = false;
                     break;
                 case WM_RBUTTONDOWN:
-                    MS_RBTN = true;
+                    if (!MS_RBTN)
+                    {
+                        MS_RBTN = true;
+                        last_ms_rdown_pos = Cursor.Position;
+                        OnMsRDownEvent.Invoke();
+                    }
                     break;
                 case WM_RBUTTONUP:
                     MS_RBTN = false;
@@ -166,7 +187,14 @@ namespace SoftRenderer.SoftRenderer.Utils
                     SetKeyDown((Keys)m.WParam, false);
                     //Console.WriteLine($"Key{(Keys)m.WParam} up:true");
                     break;
+                case WM_SYSKEYUP:
+                    var srcAltDown = IsAltDown;
+                    MenuAltKeys = (Keys)m.WParam;
+                    if (!srcAltDown && IsAltDown && this.MS_LBTN)
+                        last_alt_and_ms_ldown_pos = Cursor.Position;
+                    break;
             }
+            
             // Always allow message to continue to the next filter control
             return false;
         }
