@@ -3,7 +3,7 @@ using RendererCommon.SoftRenderer.Common.Attributes;
 using RendererCommon.SoftRenderer.Common.Shader;
 using System;
 using System.ComponentModel;
-using color = SoftRenderer.Common.Mathes.ColorNormalized;
+using color = SoftRenderer.Common.Mathes.Vector4;
 using mat4 = SoftRenderer.Common.Mathes.Matrix4x4;
 using vec2 = SoftRenderer.Common.Mathes.Vector2;
 using vec3 = SoftRenderer.Common.Mathes.Vector3;

@@ -3,7 +3,7 @@ using RendererCommon.SoftRenderer.Common.Attributes;
 using RendererCommon.SoftRenderer.Common.Shader;
 using System;
 using System.ComponentModel;
-using color = SoftRenderer.Common.Mathes.ColorNormalized;
+using color = SoftRenderer.Common.Mathes.Vector4;
 using mat4 = SoftRenderer.Common.Mathes.Matrix4x4;
 using vec2 = SoftRenderer.Common.Mathes.Vector2;
 using vec3 = SoftRenderer.Common.Mathes.Vector3;
@@ -21,6 +21,7 @@ namespace SoftRendererShader
         /* ==========Uniform======== */
         [Uniform] public mat4 MVP;
         [Uniform] public mat4 M;
+        [Uniform] public mat4 MV;
         [Uniform] public mat4 M_IT;
         [Uniform] public float outlineOffset;
 
@@ -37,6 +38,7 @@ namespace SoftRendererShader
 
         [Out] [SV_Position] public vec4 outPos;
         [Out] [Position] public vec4 outWorldPos;
+        [Out] [Texcoord(1)] public vec4 outViewPos;
 
         public VertexShader(BasicShaderData data) : base(data)
         {
@@ -48,6 +50,7 @@ namespace SoftRendererShader
             inPos.xyz += ioNormal * outlineOffset;
             outPos = MVP * inPos;
             outWorldPos = M * inPos;
+            outViewPos = MV * inPos;
             ioNormal = M_IT * ioNormal;
             ioTangent = M_IT * ioTangent;
             outBitangent = ioNormal.Cross(ioTangent);
@@ -68,6 +71,7 @@ namespace SoftRendererShader
 
         [In] [SV_Position] public vec4 inPos;
         [In] [Position] public vec4 inWorldPos;
+        [In] [Texcoord(1)] public vec4 inViewPos;
         [In] [Texcoord] public vec2 inUV;
         [In] [Color] public color inColor;
         [In] [Normal] public vec3 inNormal;

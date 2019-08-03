@@ -27,7 +27,7 @@ namespace SoftRenderer.SoftRenderer
     [Description("纹理")]
     public class Texture : IDisposable
     {
-        private ColorNormalized[,] buffer;
+        private Vector4[,] buffer;
 
         public int Width { get; private set; }
         public int Height { get; private set; }
@@ -41,7 +41,7 @@ namespace SoftRenderer.SoftRenderer
             Width = bmp.Width;
             Height = bmp.Height;
 
-            buffer = new ColorNormalized[Width, Height];
+            buffer = new Vector4[Width, Height];
 
             var bmd = bmp.LockBits(new Rectangle(0, 0, Width, Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             var ptr = bmd.Scan0;
@@ -54,12 +54,12 @@ namespace SoftRenderer.SoftRenderer
                     var g = Marshal.ReadByte(ptr, offset + 1) / 255f;
                     var r = Marshal.ReadByte(ptr, offset + 2) / 255f;
                     var a = Marshal.ReadByte(ptr, offset + 3) / 255f;
-                    buffer[x, y] = new ColorNormalized(r, g, b, a);
+                    buffer[x, y] = Vector4.Get(r, g, b, a);
                 }
             }
             bmp.UnlockBits(bmd);
         }
-        public ColorNormalized Get(int x, int y)
+        public Vector4 Get(int x, int y)
         { // 获取纹素 texel
             return buffer[x, y];
         }
@@ -102,7 +102,7 @@ namespace SoftRenderer.SoftRenderer
         public SampleFilterMode filterMode;
         public SampleWrapMode wrapMode;
 
-        public ColorNormalized Sample(Texture tex, float u, float v)
+        public Vector4 Sample(Texture tex, float u, float v)
         {
             Wrap(ref u, ref v);
 
@@ -192,7 +192,7 @@ namespace SoftRenderer.SoftRenderer
             }
         }
 
-        private ColorNormalized Filter(Texture tex, float u, float v)
+        private Vector4 Filter(Texture tex, float u, float v)
         {
             switch (filterMode)
             {
@@ -207,7 +207,7 @@ namespace SoftRenderer.SoftRenderer
             }
         }
 
-        public ColorNormalized Sample(Texture tex, Vector2 uv)
+        public Vector4 Sample(Texture tex, Vector2 uv)
         {
             return Sample(tex, uv.x, uv.y);
         }

@@ -20,12 +20,12 @@ namespace SoftRenderer.SoftRenderer
 
         private Bitmap buffer;
         private Rectangle defaultRect;
-        private ColorNormalized clearedColor = new ColorNormalized(.5f, .5f, .5f, 1);
+        private Vector4 clearedColor = Vector4.Get(.5f, .5f, .5f, 1);
         private bool clearedColorDirty = true;
         private byte[] clearedBGRBuff;
         private int width;
 
-        public ColorNormalized ClearedColor
+        public Vector4 ClearedColor
         {
             get => clearedColor;
             set
@@ -92,7 +92,7 @@ namespace SoftRenderer.SoftRenderer
             return buffer.LockBits(defaultRect, ImageLockMode.ReadWrite, buffer.PixelFormat);
         }
 
-        public void BeginSetPixel(IntPtr ptr, int x, int y, ColorNormalized color)
+        public void BeginSetPixel(IntPtr ptr, int x, int y, Vector4 color)
         {
             var offset = (x + y * width) * numOfPerColor;
             Marshal.WriteByte(ptr + offset, (byte)(color.b * 255));
@@ -104,7 +104,7 @@ namespace SoftRenderer.SoftRenderer
 #endif
         }
 
-        public ColorNormalized BeginRead(IntPtr ptr, int x, int y)
+        public Vector4 BeginRead(IntPtr ptr, int x, int y)
         {
             var offset = (x + y * width) * numOfPerColor;
             var b = Marshal.ReadByte(ptr, offset);
@@ -114,7 +114,7 @@ namespace SoftRenderer.SoftRenderer
             var a = Marshal.ReadByte(ptr, offset + 3);
             return new ColorNormalized(r * ToNC, g * ToNC, b * ToNC, a * ToNC);
 #else
-            return new ColorNormalized(r * ToNC, g * ToNC, b * ToNC, 1);
+            return Vector4.Get(r * ToNC, g * ToNC, b * ToNC, 1);
 #endif
         }
 
@@ -123,7 +123,7 @@ namespace SoftRenderer.SoftRenderer
             buffer.UnlockBits(bmd);
         }
 
-        public void SetPixel(int x, int y, ColorNormalized color)
+        public void SetPixel(int x, int y, Vector4 color)
         {
             buffer.SetPixel(x, y, color);
         }

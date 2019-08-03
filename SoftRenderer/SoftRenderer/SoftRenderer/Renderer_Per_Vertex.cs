@@ -83,14 +83,6 @@ namespace SoftRenderer.SoftRenderer
             buff[writePos++] = v.w;
         }
 
-        public void Write(ColorNormalized c)
-        {
-            buff[writePos++] = c.r;
-            buff[writePos++] = c.g;
-            buff[writePos++] = c.b;
-            buff[writePos++] = c.a;
-        }
-
         public void Dispose()
         {
             GC.SuppressFinalize(this);

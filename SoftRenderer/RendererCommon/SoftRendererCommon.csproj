@@ -44,7 +44,6 @@
   <ItemGroup>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SoftRenderer\Common\Attributes\Attributes.cs" />
-    <Compile Include="SoftRenderer\Common\Mathes\ColorNormalized.cs" />
     <Compile Include="SoftRenderer\Common\Mathes\Mathes.cs" />
     <Compile Include="SoftRenderer\Common\Shader\Texture.cs" />
     <Compile Include="SoftRenderer\Common\Shader\ShaderBase.cs" />

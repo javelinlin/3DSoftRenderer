@@ -48,6 +48,7 @@
             this.TimeScaleValueLabel = new System.Windows.Forms.Label();
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.ResetCamera = new System.Windows.Forms.Button();
+            this.AutoRotateCheckBox = new System.Windows.Forms.CheckBox();
             ((System.ComponentModel.ISupportInitialize)(this.PictureBox)).BeginInit();
             this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.TimeScaleSlider)).BeginInit();
@@ -55,7 +56,7 @@
             // 
             // PictureBox
             // 
-            this.PictureBox.BackColor = System.Drawing.SystemColors.ActiveCaption;
+            this.PictureBox.BackColor = System.Drawing.Color.Transparent;
             this.PictureBox.BorderStyle = System.Windows.Forms.BorderStyle.Fixed3D;
             this.PictureBox.Location = new System.Drawing.Point(12, 12);
             this.PictureBox.Name = "PictureBox";
@@ -233,11 +234,26 @@
             this.ResetCamera.UseVisualStyleBackColor = true;
             this.ResetCamera.Click += new System.EventHandler(this.ResetCamera_Click);
             // 
+            // AutoRotateCheckBox
+            // 
+            this.AutoRotateCheckBox.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
+            this.AutoRotateCheckBox.AutoSize = true;
+            this.AutoRotateCheckBox.Checked = true;
+            this.AutoRotateCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
+            this.AutoRotateCheckBox.Location = new System.Drawing.Point(15, 473);
+            this.AutoRotateCheckBox.Name = "AutoRotateCheckBox";
+            this.AutoRotateCheckBox.Size = new System.Drawing.Size(109, 19);
+            this.AutoRotateCheckBox.TabIndex = 22;
+            this.AutoRotateCheckBox.Text = "AutoRotate";
+            this.AutoRotateCheckBox.UseVisualStyleBackColor = true;
+            this.AutoRotateCheckBox.CheckedChanged += new System.EventHandler(this.AutoRotateCheckBox_CheckedChanged);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(659, 587);
+            this.Controls.Add(this.AutoRotateCheckBox);
             this.Controls.Add(this.ResetCamera);
             this.Controls.Add(this.richTextBox1);
             this.Controls.Add(this.TimeScaleValueLabel);
@@ -285,6 +301,7 @@
         private System.Windows.Forms.ToolStripStatusLabel focusCtrlLabel;
         private System.Windows.Forms.RichTextBox richTextBox1;
         private System.Windows.Forms.Button ResetCamera;
+        private System.Windows.Forms.CheckBox AutoRotateCheckBox;
     }
 }
 

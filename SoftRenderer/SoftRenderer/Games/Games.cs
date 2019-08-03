@@ -19,7 +19,7 @@ namespace SoftRenderer.Games
         public Vector3[] normals { get; set; }                  // 顶点法线
         public Vector3[] tangents { get; set; }                 // 顶点切线
         public Vector2[] uv { get; set; }                       // 顶点uv
-        public ColorNormalized[] colors { get; set; }           // 顶点颜色
+        public Vector4[] colors { get; set; }                   // 顶点颜色
 
         public void CaculateNormalAndTangent() // 计算法线与切线
         {
@@ -223,6 +223,7 @@ namespace SoftRenderer.Games
     {
         private static readonly int MVP_Hash = "MVP".GetHashCode();
         private static readonly int M_Hash = "M".GetHashCode();
+        private static readonly int MV_Hash = "MV".GetHashCode();
         private static readonly int M_IT_Hash = "M_IT".GetHashCode();
 
         public VertexBuffer VertexBuffer { get; private set; }
@@ -351,6 +352,7 @@ namespace SoftRenderer.Games
             
             Material.VS.ShaderProperties.SetUniform(MVP_Hash, ModelViewProjMat);
             Material.VS.ShaderProperties.SetUniform(M_Hash, ModelMat);
+            Material.VS.ShaderProperties.SetUniform(MV_Hash, ModelViewMat);
             Material.VS.ShaderProperties.SetUniform(M_IT_Hash, ModelITMat);
 
             MR.Renderer.ShaderProgram.SetShader(ShaderType.VertexShader, Material.VS);

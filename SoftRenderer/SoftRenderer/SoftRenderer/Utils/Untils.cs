@@ -283,7 +283,7 @@ namespace SoftRenderer.SoftRenderer.Utils
                     }
                     else if (type == DataType.colors)
                     {
-                        mesh.colors = ReadDatType<ColorNormalized>(count, txtReader);
+                        mesh.colors = ReadDatType<Vector4>(count, txtReader);
                         type = DataType.none;
                     }
                     else if (type == DataType.uv)

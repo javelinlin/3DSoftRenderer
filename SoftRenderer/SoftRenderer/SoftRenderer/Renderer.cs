@@ -135,7 +135,7 @@ namespace SoftRenderer.SoftRenderer
                     switch (format.type)
                     {
                         case VertexDataType.Position:
-                            var pos = new Vector4(
+                            var pos = Vector4.Get(
                                 floatBuff[offset + 0],
                                 floatBuff[offset + 1],
                                 floatBuff[offset + 2],
@@ -144,7 +144,7 @@ namespace SoftRenderer.SoftRenderer
                             vs.ShaderProperties.SetIn(InLayout.Position, pos);
                             break;
                         case VertexDataType.Color:
-                            var color = new ColorNormalized(
+                            var color = Vector4.Get(
                                 floatBuff[offset + 0],
                                 floatBuff[offset + 1],
                                 floatBuff[offset + 2],
@@ -205,7 +205,7 @@ namespace SoftRenderer.SoftRenderer
                 {
                     if (outInfos[j].layout == OutLayout.SV_Position)
                     {
-                        Vector4 ndcPos;
+                        Vector4 ndcPos = Vector4.Get();
                         // clip here
                         // 这儿本应该处理剪切
                         // 不过如果要在这儿剪切的话，那前提是先图元装配好
@@ -244,7 +244,7 @@ namespace SoftRenderer.SoftRenderer
                         //var wposX = cw * 0.5f * ndcPos.x + (cx + cw * 0.5f);
                         //var wposY = ch * 0.5f * ndcPos.y + (cy + ch * 0.5f);
                         var wposZ = (f - n) * 0.5f * ndcPos.z + (f + n) * 0.5f;
-                        var winPos = new Vector4(wposX, wposY, wposZ, ndcPos.w);
+                        var winPos = Vector4.Get(wposX, wposY, wposZ, ndcPos.w);
                         outInfos[j].value = winPos;
                         shaderOut.clip = ShoudClip(ndcPos);
                         break;
@@ -403,7 +403,7 @@ namespace SoftRenderer.SoftRenderer
                         depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
                     }
 
-                    var srcColor = fs.ShaderProperties.GetOut<ColorNormalized>(OutLayout.SV_Target); // 目前值处理SV_Target0
+                    var srcColor = fs.ShaderProperties.GetOut<Vector4>(OutLayout.SV_Target); // 目前值处理SV_Target0
                     //// alpha 测试
                     //if (alphaTest == AlphaTest.On)
                     //{
@@ -450,7 +450,7 @@ namespace SoftRenderer.SoftRenderer
             // debug: show normal line
             if (State.DebugShowTBN)
             {
-                var blueColor = new ColorNormalized(0, 0, 1, 1);
+                var blueColor = Vector4.Get(0, 0, 1, 1);
                 len = normalLineResult.Count;
                 for (int i = 0; i < len; i++)
                 {
@@ -489,12 +489,12 @@ namespace SoftRenderer.SoftRenderer
         {
             return backBuffer.Begin();
         }
-        internal void BeginSetPixel(IntPtr ptr, Vector3 v, ColorNormalized color)
+        internal void BeginSetPixel(IntPtr ptr, Vector3 v, Vector4 color)
         {
             //BeginSetPixel(ptr, (int)Math.Round(v.x), (int)Math.Round(v.y), color);
             BeginSetPixel(ptr, (int)(v.x), (int)(v.y), color);
         }
-        internal void BeginSetPixel(IntPtr ptr, int x, int y, ColorNormalized color)
+        internal void BeginSetPixel(IntPtr ptr, int x, int y, Vector4 color)
         {
             //if (x < 0 || x >= backBufferWidth || y < 0 || y >= backBufferHeight) return;
             color.Clamp();
@@ -503,12 +503,12 @@ namespace SoftRenderer.SoftRenderer
             bufferDirty = true;
 #endif
         }
-        internal ColorNormalized BeginRead(IntPtr ptr, int x, int y)
+        internal Vector4 BeginRead(IntPtr ptr, int x, int y)
         {
             //if (x < 0 || x >= backBufferWidth || y < 0 || y >= backBufferHeight) return;
             return backBuffer.BeginRead(ptr, x, y);
         }
-        internal ColorNormalized BeginRead(IntPtr ptr, Vector3 p)
+        internal Vector4 BeginRead(IntPtr ptr, Vector3 p)
         {
             return BeginRead(ptr, (int)p.x, (int)p.y);
         }
@@ -517,7 +517,7 @@ namespace SoftRenderer.SoftRenderer
             backBuffer.End(bmd);
         }
 
-        internal void SetPixel(int x, int y, ColorNormalized color)
+        internal void SetPixel(int x, int y, Vector4 color)
         {
             //if (x < 0 || x >= backBufferWidth || y < 0 || y >= backBufferHeight) return;
             backBuffer.SetPixel(x, y, color);

@@ -41,8 +41,8 @@ namespace SoftRenderer.SoftRenderer
         }
 
         // 混合
-        public ColorNormalized Blend(
-            ColorNormalized src, ColorNormalized dst,
+        public Vector4 Blend(
+            Vector4 src, Vector4 dst,
             BlendFactor srcColorFactor, BlendFactor dstColorFactor,
             BlendFactor srcAlphaFactor, BlendFactor dstAlphaFactor,
             BlendOp blendColorOp, BlendOp blendAlphaOp
@@ -117,7 +117,7 @@ namespace SoftRenderer.SoftRenderer
                 case BlendOp.Divide: sa /= da; break; // 除法的性能好渣，尽量不用
                 default: throw new NotImplementedException($"Not implements");
             }
-            return new ColorNormalized(sr, sg, sb, sa);
+            return Vector4.Get(sr, sg, sb, sa);
         }
 
         public void Dispose()

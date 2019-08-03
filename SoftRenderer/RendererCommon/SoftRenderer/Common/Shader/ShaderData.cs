@@ -54,12 +54,12 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             }
         }
 
-        public void WriteColor(ColorNormalized color)
+        public void WriteColor(Vector4 color)
         {
             WriteVec(color);
         }
 
-        public void WriteColor(ColorNormalized[] colors)
+        public void WriteColor(Vector4[] colors)
         {
             foreach (var c in colors)
             {
@@ -135,12 +135,12 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             }
         }
 
-        public ColorNormalized ReadColor()
+        public Vector4 ReadColor()
         {
-            return Datas[readIdx++];
+            return (Vector4)Datas[readIdx++];
         }
 
-        public void ReadColor(ref ColorNormalized color)
+        public void ReadColor(ref Vector4 color)
         {
             var c = Datas[readIdx++];
             color.r = c.x;
@@ -149,9 +149,9 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             color.a = c.w;
         }
 
-        public ColorNormalized[] ReadColors(int num)
+        public Vector4[] ReadColors(int num)
         {
-            ColorNormalized[] mats = new ColorNormalized[num];
+            Vector4[] mats = new Vector4[num];
             for (int i = 0; i < num; i++)
             {
                 mats[i] = ReadColor();
@@ -159,7 +159,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             return mats;
         }
 
-        public void ReadColors(int num, ref ColorNormalized[] colors)
+        public void ReadColors(int num, ref Vector4[] colors)
         {
             for (int i = 0; i < num; i++)
             {
@@ -202,10 +202,10 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         public Vector4 CameraPos;
         public Vector4 CameraParams; // x=near,y=far,z=unused,w=unused
 
-        public ColorNormalized Ambient;
+        public Vector4 Ambient;
 
         public Vector4[] LightPos;
-        public ColorNormalized[] LightColor;
+        public Vector4[] LightColor;
         public Vector4[] LightItensity;
         public Vector4[] LightParams1;
 
@@ -218,10 +218,10 @@ namespace RendererCommon.SoftRenderer.Common.Shader
 
             CameraPos = new Vector4();
 
-            Ambient = new ColorNormalized();
+            Ambient = new Vector4();
 
             LightPos = new Vector4[maxLight];
-            LightColor = new ColorNormalized[maxLight];
+            LightColor = new Vector4[maxLight];
             LightItensity = new Vector4[maxLight];
             LightParams1 = new Vector4[maxLight];
         }

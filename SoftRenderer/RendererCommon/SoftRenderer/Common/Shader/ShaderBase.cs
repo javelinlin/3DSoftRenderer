@@ -31,6 +31,16 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         Tangent,        // 暂时没用到
     }
 
+    [Description("布局符使用的浮点个数")]
+    public enum LayoutFloatNum
+    {
+        Undefine,
+        F2,
+        F1,
+        F3,
+        F4,
+    }
+
     [Description("Shader字段反射")]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ShaderFieldReflection : IDisposable
@@ -45,6 +55,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         private Dictionary<OutLayout, Dictionary<int, FieldInfo>> outLayoutFieldDict = new Dictionary<OutLayout, Dictionary<int, FieldInfo>>();
 
         private Dictionary<FieldInfo, bool> nointerpolationFlagDict = new Dictionary<FieldInfo, bool>();
+        private Dictionary<FieldInfo, LayoutFloatNum> layoutFloatNumDict = new Dictionary<FieldInfo, LayoutFloatNum>();
 
         public ShaderBase Shader { get; private set; }
 
@@ -58,6 +69,12 @@ namespace RendererCommon.SoftRenderer.Common.Shader
             var inAtType = typeof(InAttribute);
             var outAtType = typeof(OutAttribute);
             var nointerpolation = typeof(NointerpolationAttribute);
+
+            var fType = typeof(float);
+            var vec2Type = typeof(Vector2);
+            var vec3Type = typeof(Vector3);
+            var vec4Type = typeof(Vector4);
+
             foreach (var f in fs)
             {
                 foreach (var at in f.CustomAttributes)
@@ -147,6 +164,14 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                         nointerpolationFlagDict[f] = true;
                     }
                 }
+
+                var floatNum = LayoutFloatNum.Undefine;
+                if (f.FieldType == fType) floatNum = LayoutFloatNum.F1;
+                else if (f.FieldType == vec2Type) floatNum = LayoutFloatNum.F2;
+                else if (f.FieldType == vec3Type) floatNum = LayoutFloatNum.F3;
+                else if (f.FieldType == vec4Type) floatNum = LayoutFloatNum.F4;
+
+                layoutFloatNumDict[f] = floatNum;
             }
         }
 
@@ -209,12 +234,14 @@ namespace RendererCommon.SoftRenderer.Common.Shader
                 foreach (var kkvv in kv.Value)
                 {
                     nointerpolationFlagDict.TryGetValue(kkvv.Value, out bool nointerpolation);
+                    layoutFloatNumDict.TryGetValue(kkvv.Value, out LayoutFloatNum floatNum);
                     result[idx++] = new OutInfo
                     {
                         layout = kv.Key,
                         location = kkvv.Key,
                         value = kkvv.Value.GetValue(Shader),
-                        nointerpolation = nointerpolation
+                        nointerpolation = nointerpolation,
+                        floatNum = floatNum,
                     };
                 }
             }
@@ -275,6 +302,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
     public struct OutInfo
     {
         public OutLayout layout;
+        public LayoutFloatNum floatNum;
         public int location;
         public object value;
         public bool nointerpolation;
@@ -304,7 +332,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         public float depth;
         public bool discard;
 
-        public ColorNormalized normalLineColor; // 调试用
+        public Vector4 normalLineColor; // 调试用
 
         public Vector4 p;
 
@@ -364,7 +392,7 @@ namespace RendererCommon.SoftRenderer.Common.Shader
         protected static Vector2 clamp(Vector2 v, float min, float max) => Mathf.Clamp(v, min, max);
         protected static Vector3 clamp(Vector3 v, float min, float max) => Mathf.Clamp(v, min, max);
         protected static Vector4 clamp(Vector4 v, float min, float max) => Mathf.Clamp(v, min, max);
-        protected static ColorNormalized tex2D(Sampler2D sampler, Texture2D tex, Vector2 uv)=> sampler.Sample(tex, uv);
+        protected static Vector4 tex2D(Sampler2D sampler, Texture2D tex, Vector2 uv)=> sampler.Sample(tex, uv);
         protected static float pow(float v, float times) => (float)Math.Pow(v, times);
         protected static float min(float a, float b) => Mathf.Min(a, b);
         protected static float max(float a, float b) => Mathf.Max(a, b);

@@ -2,6 +2,8 @@
 
 using System;
 using System.ComponentModel;
+using System.Drawing;
+using System.Runtime.InteropServices;
 
 namespace SoftRenderer.Common.Mathes
 {
@@ -312,13 +314,99 @@ namespace SoftRenderer.Common.Mathes
 
     [TypeConverter(typeof(ExpandableObjectConverter))]
     [Description("4D向量")]
+    [StructLayout(LayoutKind.Explicit)]
     public struct Vector4 : IEquatable<Vector4>, IConvert<Vector4>
     {
-        public static readonly Vector4 one = new Vector4(1, 1, 1, 1);
-        public static readonly Vector4 zero = new Vector4(0, 0, 0, 0);
-        public static readonly Vector4 zeroPos = new Vector4(0, 0, 0, 1);
+        public static readonly Vector4 one = Get(1, 1, 1, 1);
+        public static readonly Vector4 zeroPos = Get(0, 0, 0, 1);
+        public static readonly Vector4 zero = Get(0, 0, 0, 0);
+        public static readonly Vector4 black = Get(0, 0, 0, 1);
+        public static readonly Vector4 white = Get(1, 1, 1, 1);
+        public static readonly Vector4 red = Get(1, 0, 0, 1);
+        public static readonly Vector4 green = Get(0, 1, 0, 1);
+        public static readonly Vector4 blue = Get(0, 0, 1, 1);
+        public static readonly Vector4 yellow = Get(1, 1, 0, 1);
+        public static readonly Vector4 pink = Get(1, 0, 1, 1);
+        public static readonly Vector4 purple = Get(90f / 255f, 0, 0.5f, 1);
+        public static readonly Vector4 gray = Get(0.5f, 0.5f, 0.5f, 1);
 
-        public float x, y, z, w;
+        public static readonly Vector4 lightRed = Get(1, 0.5f, 0.5f, 1);
+        public static readonly Vector4 lightGreen = Get(0.5f, 1, 0.5f, 1);
+        public static readonly Vector4 lightBlue = Get(0, 1, 1, 1);
+
+        public static readonly Vector4 darkRed = Get(0.5f, 0, 0, 1);
+        public static readonly Vector4 darkGreen = Get(0, 0.5f, 0, 1);
+        public static readonly Vector4 darkBlue = Get(0, 0.5f, 0.5f, 1);
+
+        public const float inv = 1 / 255f;
+
+        public static Vector4 Get()
+        {
+            return new Vector4();
+        }
+        public static Vector4 Get(float x, float y, float z, float w)
+        {
+            var result = new Vector4();
+            result.x = x;
+            result.y = y;
+            result.z = z;
+            result.w = w;
+            return result;
+        }
+        public static Vector4 Get(Vector4 v)
+        {
+            var result = new Vector4();
+            result.x = v.x;
+            result.y = v.y;
+            result.z = v.z;
+            result.w = v.w;
+            return result;
+        }
+        public static Vector4 Get(Vector2 v)
+        {
+            var result = new Vector4();
+            result.x = v.x;
+            result.y = v.y;
+            result.z = 0;
+            result.w = 1;
+            return result;
+        }
+        public static Vector4 Get(Vector3 v)
+        {
+            var result = new Vector4();
+            result.x = v.x;
+            result.y = v.y;
+            result.z = v.z;
+            result.w = 1;
+            return result;
+        }
+        public static Vector4 Get(Vector3 v, float w = 1)
+        {
+            var result = new Vector4();
+            result.x = v.x;
+            result.y = v.y;
+            result.z = v.z;
+            result.w = w;
+            return result;
+        }
+
+        [FieldOffset(4 * 0)]
+        public float x;
+        [FieldOffset(4 * 1)]
+        public float y;
+        [FieldOffset(4 * 2)]
+        public float z;
+        [FieldOffset(4 * 3)]
+        public float w;
+
+        [FieldOffset(4 * 0)]
+        public float r;
+        [FieldOffset(4 * 1)]
+        public float g;
+        [FieldOffset(4 * 2)]
+        public float b;
+        [FieldOffset(4 * 3)]
+        public float a;
         // swizzle
         // 可惜C#没有宏定义，有的话，可以写swizzle语法就爽爆了
         // 虽然可以枚举出所有的swizzle的分量组合情况，但是太多了，懒得写
@@ -341,6 +429,16 @@ namespace SoftRenderer.Common.Mathes
                 y = value.y;
             }
         }
+        public Vector3 rgb
+        {
+            get => new Vector3(r, g, b);
+            set
+            {
+                r = value.x;
+                g = value.y;
+                b = value.z;
+            }
+        }
         public float length
         {
             get
@@ -357,40 +455,16 @@ namespace SoftRenderer.Common.Mathes
                 return result;
             }
         }
-        public Vector4(float x, float y, float z, float w)
+        public void Clamp()
         {
-            this.x = x;
-            this.y = y;
-            this.z = z;
-            this.w = w;
-        }
-        public Vector4(Vector4 v)
-        {
-            this.x = v.x;
-            this.y = v.y;
-            this.z = v.z;
-            this.w = v.w;
-        }
-        public Vector4(Vector2 v)
-        {
-            this.x = v.x;
-            this.y = v.y;
-            this.z = 0;
-            this.w = 1;
-        }
-        public Vector4(Vector3 v)
-        {
-            this.x = v.x;
-            this.y = v.y;
-            this.z = v.z;
-            this.w = 1;
-        }
-        public Vector4(Vector3 v, float w = 1)
-        {
-            this.x = v.x;
-            this.y = v.y;
-            this.z = v.z;
-            this.w = w;
+            if (r < 0) r = 0;
+            if (r > 1) r = 1;
+            if (g < 0) g = 0;
+            if (g > 1) g = 1;
+            if (b < 0) b = 0;
+            if (b > 1) b = 1;
+            if (a < 0) a = 0;
+            if (a > 1) a = 1;
         }
         public float Dot(Vector4 other)
         {
@@ -412,37 +486,61 @@ namespace SoftRenderer.Common.Mathes
         */
         public Vector4 Cross(Vector4 a)
         {
-            return new Vector4(
+            return Get(
                y * a.z - z * a.y,
                z * a.x - x * a.z,
                x * a.y - y * a.x,
                w
                 );
         }
+        public static implicit operator Color(Vector4 v)
+        {
+            return Color.FromArgb((byte)(v.a * 255), (byte)(v.r * 255), (byte)(v.g * 255), (byte)(v.b * 255));
+        }
+        public static implicit operator Vector4(Color c)
+        {
+            return Get((c.R * inv), (c.G * inv), (c.B * inv), (c.A * inv));
+        }
         public static Vector4 operator -(Vector4 a, Vector4 b)
         {
-            return new Vector4(a.x - b.x, a.y - b.y, a.z - b.z, a.w);
+            return Get(a.x - b.x, a.y - b.y, a.z - b.z, a.w);
+        }
+        public static Vector4 operator -(Vector4 a, float b)
+        {
+            return Get(a.x - b, a.y - b, a.z - b, a.w - b);
+        }
+        public static Vector4 operator -(float a, Vector4 b)
+        {
+            return Get(a - b.x, a - b.y, a - b.z, a - b.w);
         }
         public static Vector4 operator +(Vector4 a, Vector4 b)
         {
-            return new Vector4(a.x + b.x, a.y + b.y, a.z + b.z, a.w);
+            return Get(a.x + b.x, a.y + b.y, a.z + b.z, a.w);
+        }
+        public static Vector4 operator +(Vector4 a, float b)
+        {
+            return Get(a.x + b, a.y + b, a.z + b, a.w + b);
+        }
+        public static Vector4 operator +(float a, Vector4 b)
+        {
+            return Get(a + b.x, a + b.y, a + b.z, a + b.w);
         }
         public static Vector4 operator *(Vector4 a, float s)
         {
-            return new Vector4(a.x * s, a.y * s, a.z * s, a.w);
+            return Get(a.x * s, a.y * s, a.z * s, a.w);
+        }
+        public static Vector4 operator *(Vector4 a, Vector4 b)
+        {
+            return Get(a.x * b.x, a.y * b.y, a.z * b.z, a.w * b.w);
         }
         public static Vector4 operator *(float s, Vector4 a)
         {
-            return new Vector4(a.x * s, a.y * s, a.z * s, a.w);
-        }
-        public static Vector4 operator +(Vector4 a, float s)
-        {
-            return new Vector4(a.x + s, a.y + s, a.z + s, a.w);
+            return Get(a.x * s, a.y * s, a.z * s, a.w);
         }
         public static Vector4 operator /(Vector4 a, float s)
         {
             var inv = 1f / s;
-            return new Vector4(a.x * inv, a.y * inv, a.z * inv, 1);
+            return Get(a.x * inv, a.y * inv, a.z * inv, 1);
         }
         public static bool operator ==(Vector4 a, Vector4 b)
         {
@@ -454,15 +552,11 @@ namespace SoftRenderer.Common.Mathes
         }
         public static implicit operator Vector4(Vector3 v)
         {
-            return new Vector4(v);
+            return Get(v);
         }
         public static implicit operator Vector4(Vector2 v)
         {
-            return new Vector4(v);
-        }
-        public static implicit operator Vector4(ColorNormalized c)
-        {
-            return new Vector4(c.r, c.g, c.b, c.a);
+            return Get(v);
         }
         public bool Equals(Vector4 other)
         {
@@ -508,7 +602,7 @@ namespace SoftRenderer.Common.Mathes
         }
         public static Vector4 Min(Vector4 v1, Vector4 v2)
         {
-            return new Vector4(
+            return Vector4.Get(
                 Min(v1.x, v2.x),
                 Min(v1.y, v2.y),
                 Min(v1.z, v2.z),
@@ -532,7 +626,7 @@ namespace SoftRenderer.Common.Mathes
         }
         public static Vector4 Max(Vector4 v1, Vector4 v2)
         {
-            return new Vector4(
+            return Vector4.Get(
                 Max(v1.x, v2.x),
                 Max(v1.y, v2.y),
                 Max(v1.z, v2.z),
@@ -576,27 +670,18 @@ namespace SoftRenderer.Common.Mathes
         }
         public static Vector4 Clamp(Vector4 v, float min, float max)
         {
-            return new Vector4(
+            return Vector4.Get(
                 Clamp(v.x, min, max),
                 Clamp(v.y, min, max),
                 Clamp(v.z, min, max),
                 Clamp(v.w, min, max)
                 );
         }
-        public static ColorNormalized Clamp(ColorNormalized c, float min = 0, float max = 1)
-        {
-            c.r = Clamp(c.r, min, max);
-            c.g = Clamp(c.g, min, max);
-            c.b = Clamp(c.b, min, max);
-            c.a = Clamp(c.a, min, max);
-            return c;
-        }
         public static int Lerp(int from, int to, float t) => (int)((1 - t) * from + t * to);
         public static float Lerp(float from, float to, float t) => (1 - t) * from + t * to;
         public static Vector2 Lerp(Vector2 from, Vector2 to, float t) =>  from * (1 - t) + to * t;
         public static Vector3 Lerp(Vector3 from, Vector3 to, float t) =>  from * (1 - t) + to * t;
         public static Vector4 Lerp(Vector4 from, Vector4 to, float t) => from * (1 - t) + to * t;
-        public static ColorNormalized Lerp(ColorNormalized from, ColorNormalized to, float t) => from * (1 - t) + to * t;
         public static Matrix4x4 Lerp(Matrix4x4 from, Matrix4x4 to, float t) => from * (1 - t) + to * t;
 
         public static int Lerp(int from, int to, float t, float tt) => (int)(tt * from + t * to);
@@ -604,7 +689,6 @@ namespace SoftRenderer.Common.Mathes
         public static Vector2 Lerp(Vector2 from, Vector2 to, float t, float tt) => from * tt + to * t;
         public static Vector3 Lerp(Vector3 from, Vector3 to, float t, float tt) => from * tt + to * t;
         public static Vector4 Lerp(Vector4 from, Vector4 to, float t, float tt) => from * tt + to * t;
-        public static ColorNormalized Lerp(ColorNormalized from, ColorNormalized to, float t, float tt) => from * tt + to * t;
         public static Matrix4x4 Lerp(Matrix4x4 from, Matrix4x4 to, float t, float tt) => from * tt + to * t;
     }
 
@@ -1094,7 +1178,7 @@ namespace SoftRenderer.Common.Mathes
         {
             idx = idx * 4;
 
-            return new Vector4(
+            return Vector4.Get(
                 m[idx],
                 m[idx + 1],
                 m[idx + 2],
@@ -1112,7 +1196,7 @@ namespace SoftRenderer.Common.Mathes
         }
         public Vector4 GetRow(int idx)
         {
-            return new Vector4(
+            return Vector4.Get(
                 m[idx],      
                 m[idx + 4],
                 m[idx + 8],
@@ -1316,7 +1400,7 @@ namespace SoftRenderer.Common.Mathes
         //}
         public Vector4 MulPos(Vector4 v)
         {
-            return new Vector4(
+            return Vector4.Get(
                 m[0] * v.x + m[4] * v.y + m[8] * v.z + m[12] * v.w,
                 m[1] * v.x + m[5] * v.y + m[9] * v.z + m[13] * v.w,
                 m[2] * v.x + m[6] * v.y + m[10] * v.z + m[14] * v.w,

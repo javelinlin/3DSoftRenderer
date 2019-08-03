@@ -12,8 +12,6 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 
-using Color = SoftRenderer.Common.Mathes.ColorNormalized;
-
 namespace SoftRenderer.SoftRenderer.Rasterization
 {
     // 栅格器
@@ -291,70 +289,19 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                             {
                                 v = newP;
                             }
-                            else if (f0Info.layout == OutLayout.Position)
-                            {
-#if PERSPECTIVE_CORRECT
-                            v = PerspectiveInterpolation(
-                                (Vector4)f0Info.value,
-                                (Vector4)f1Info.value,
-                                newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                v = Mathf.Lerp((Vector4)f0Info.value, (Vector4)f1Info.value, t, tt);
-#endif
-                            }
-                            else if (f0Info.layout == OutLayout.Color)
-                            {
-#if PERSPECTIVE_CORRECT
-                            v = PerspectiveInterpolation(
-                                (Color)f0Info.value,
-                                (Color)f1Info.value,
-                                newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                v = Mathf.Lerp((Color)f0Info.value, (Color)f1Info.value, t, tt);
-#endif
-
-                            }
-                            else if (f0Info.layout == OutLayout.Normal)
-                            {
-#if PERSPECTIVE_CORRECT
-                            v = PerspectiveInterpolation(
-                                (Vector3)f0Info.value,
-                                (Vector3)f1Info.value,
-                                newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                v = Mathf.Lerp((Vector3)f0Info.value, (Vector3)f1Info.value, t, tt);
-#endif
-                            }
-                            else if (f0Info.layout == OutLayout.Texcoord)
-                            {
-#if PERSPECTIVE_CORRECT
-                            v = PerspectiveInterpolation(
-                                (Vector2)f0Info.value,
-                                (Vector2)f1Info.value,
-                                newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                v = Mathf.Lerp((Vector2)f0Info.value, (Vector2)f1Info.value, t, tt);
-#endif
-                            }
-                            else if (f0Info.layout == OutLayout.Tangent)
-                            {
-#if PERSPECTIVE_CORRECT
-                            v = PerspectiveInterpolation(
-                                (Vector3)f0Info.value,
-                                (Vector3)f1Info.value,
-                                newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                v = Mathf.Lerp((Vector3)f0Info.value, (Vector3)f1Info.value, t, tt);
-#endif
-                            }
                             else
                             {
-                                throw new Exception($"new layout data : {f0Info.layout} handle, not implements");
+                                v = Interpolation(f0Info, f1Info, t, tt
+#if PERSPECTIVE_CORRECT
+                                newZ, p0InvZ, p1InvZ
+#endif
+                                    );
                             }
                         }
                         infos[j] = new OutInfo
                         {
                             layout = f0Info.layout,
+                            floatNum = f0Info.floatNum,
                             location = f0Info.location,
                             value = v
                         };
@@ -381,6 +328,68 @@ namespace SoftRenderer.SoftRenderer.Rasterization
         //{
         //    return newZ * Mathf.Lerp(v1 * invZ0, v2 * invZ1, t, tt);
         //}
+
+        private object Interpolation(OutInfo f0Info, OutInfo f1Info, float t, float tt
+#if PERSPECTIVE_CORRECT
+            , float newZ, float p0InvZ, float  p1InvZ
+#endif
+            )
+        {
+            object v = null;
+            if (f0Info.floatNum == LayoutFloatNum.F1)
+            {
+#if PERSPECTIVE_CORRECT
+                                    v = PerspectiveInterpolation(
+                                        (float)f0Info.value,
+                                        (float)f1Info.value,
+                                        newZ, p0InvZ, p1InvZ, t, tt);
+#else
+                v = Mathf.Lerp((float)f0Info.value, (float)f1Info.value, t, tt);
+#endif
+            }
+            else if (f0Info.floatNum == LayoutFloatNum.F2)
+            {
+#if PERSPECTIVE_CORRECT
+                                    v = PerspectiveInterpolation(
+                                        (float)f0Info.value,
+                                        (float)f1Info.value,
+                                        newZ, p0InvZ, p1InvZ, t, tt);
+#else
+                v = Mathf.Lerp((Vector2)f0Info.value, (Vector2)f1Info.value, t, tt);
+#endif
+            }
+            else if (f0Info.floatNum == LayoutFloatNum.F3)
+            {
+#if PERSPECTIVE_CORRECT
+                                    v = PerspectiveInterpolation(
+                                        (float)f0Info.value,
+                                        (float)f1Info.value,
+                                        newZ, p0InvZ, p1InvZ, t, tt);
+#else
+                v = Mathf.Lerp((Vector3)f0Info.value, (Vector3)f1Info.value, t, tt);
+#endif
+            }
+            else if (f0Info.floatNum == LayoutFloatNum.F4)
+            {
+#if PERSPECTIVE_CORRECT
+                                    v = PerspectiveInterpolation(
+                                        (float)f0Info.value,
+                                        (float)f1Info.value,
+                                        newZ, p0InvZ, p1InvZ, t, tt);
+#else
+                v = Mathf.Lerp((Vector4)f0Info.value, (Vector4)f1Info.value, t, tt);
+#endif
+            }
+            else
+            {
+                throw new Exception($"not implements floatNum:{f0Info.floatNum}");
+            }
+            return v;
+        }
+        private float PerspectiveInterpolation(float v1, float v2, float newZ, float invZ0, float invZ1, float t, float tt)
+        {
+            return newZ * Mathf.Lerp(v1 * invZ0, v2 * invZ1, t, tt);
+        }
         private Vector2 PerspectiveInterpolation(Vector2 v1, Vector2 v2, float newZ, float invZ0, float invZ1, float t, float tt)
         {
             return newZ * Mathf.Lerp(v1 * invZ0, v2 * invZ1, t, tt);
@@ -390,10 +399,6 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             return newZ * Mathf.Lerp(v1 * invZ0, v2 * invZ1, t, tt);
         }
         private Vector4 PerspectiveInterpolation(Vector4 v1, Vector4 v2, float newZ, float invZ0, float invZ1, float t, float tt)
-        {
-            return newZ * Mathf.Lerp(v1 * invZ0, v2 * invZ1, t, tt);
-        }
-        private Color PerspectiveInterpolation(Color v1, Color v2, float newZ, float invZ0, float invZ1, float t, float tt)
         {
             return newZ * Mathf.Lerp(v1 * invZ0, v2 * invZ1, t, tt);
         }
@@ -611,69 +616,19 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                                     {
                                         v = newP;
                                     }
-                                    else if (f0Info.layout == OutLayout.Position)
-                                    {
-#if PERSPECTIVE_CORRECT
-                                    v = PerspectiveInterpolation(
-                                        (Vector4)f0Info.value,
-                                        (Vector4)f1Info.value,
-                                        newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                        v = Mathf.Lerp((Vector4)f0Info.value, (Vector4)f1Info.value, t, tt);
-#endif
-                                    }
-                                    else if (f0Info.layout == OutLayout.Color)
-                                    {
-#if PERSPECTIVE_CORRECT
-                                    v = PerspectiveInterpolation(
-                                        (Color)f0Info.value,
-                                        (Color)f1Info.value,
-                                        newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                        v = Mathf.Lerp((Color)f0Info.value, (Color)f1Info.value, t, tt);
-#endif
-                                    }
-                                    else if (f0Info.layout == OutLayout.Normal)
-                                    {
-#if PERSPECTIVE_CORRECT
-                                    v = PerspectiveInterpolation(
-                                        (Vector3)f0Info.value,
-                                        (Vector3)f1Info.value,
-                                        newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                        v = Mathf.Lerp((Vector3)f0Info.value, (Vector3)f1Info.value, t, tt);
-#endif
-                                    }
-                                    else if (f0Info.layout == OutLayout.Texcoord)
-                                    {
-#if PERSPECTIVE_CORRECT
-                                    v = PerspectiveInterpolation(
-                                        (Vector2)f0Info.value,
-                                        (Vector2)f1Info.value,
-                                        newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                        v = Mathf.Lerp((Vector2)f0Info.value, (Vector2)f1Info.value, t, tt);
-#endif
-                                    }
-                                    else if (f0Info.layout == OutLayout.Tangent)
-                                    {
-#if PERSPECTIVE_CORRECT
-                                    v = PerspectiveInterpolation(
-                                        (Vector3)f0Info.value,
-                                        (Vector3)f1Info.value,
-                                        newZ, p0InvZ, p1InvZ, t, tt);
-#else
-                                        v = Mathf.Lerp((Vector3)f0Info.value, (Vector3)f1Info.value, t, tt);
-#endif
-                                    }
                                     else
                                     {
-                                        throw new Exception($"new layout data : {f0Info.layout} handle, not implements");
+                                        v = Interpolation(f0Info, f1Info, t, tt
+#if PERSPECTIVE_CORRECT
+                                        newZ, p0InvZ, p1InvZ
+#endif
+                                            );
                                     }
                                 }
                                 infos[j] = new OutInfo
                                 {
                                     layout = f0Info.layout,
+                                    floatNum = f0Info.floatNum,
                                     location = f0Info.location,
                                     value = v
                                 };
@@ -734,24 +689,24 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             if (Renderer.State.DebugShowTBN)
             {
                 // tangent
-                var from = Color.lightRed;
-                var to = Color.darkRed;
+                var from = Vector4.lightRed;
+                var to = Vector4.darkRed;
                 CollectTBN(triangle, OutLayout.Tangent, 0, from, to, normalLineResult);
 
                 // bitangent
-                from = Color.lightGreen;
-                to = Color.green;
+                from = Vector4.lightGreen;
+                to = Vector4.green;
                 CollectTBN(triangle, OutLayout.Tangent, 1, from, to, normalLineResult);
 
                 // normals
-                from = Color.lightBlue;
-                to = Color.blue;
+                from = Vector4.lightBlue;
+                to = Vector4.blue;
                 CollectTBN(triangle, OutLayout.Normal, 0, from, to, normalLineResult);
             }
         }
 
         // 收集TBN线条的片段
-        private void CollectTBN(Primitive_Triangle triangle, OutLayout layout, int location, Color from, Color to, List<FragInfo> normalLineResult)
+        private void CollectTBN(Primitive_Triangle triangle, OutLayout layout, int location, Vector4 from, Vector4 to, List<FragInfo> normalLineResult)
         {
             var depthBuff = renderer.Per_Frag.DepthBuff;
             var depthInv = 1 / (renderer.State.CameraFar + renderer.State.CameraFar * renderer.State.CameraNear);
@@ -788,7 +743,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 }
                 if (vec.HasValue)
                 {
-                    var vecPos = f.p + new Vector4(vec.Value * renderer.State.DebugTBNlLen, 1);
+                    var vecPos = f.p + Vector4.Get(vec.Value * renderer.State.DebugTBNlLen, 1);
 
                     var f0 = FragInfo.GetFragInfo();
                     f0.p = f.p;
@@ -932,7 +887,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             fs.Add(f);
         }
         // 绘制三角形：旧版管线中的绘制三角
-        public void DrawTriangle(Triangle t, Color triangleColor, Color wireFrameColor)
+        public void DrawTriangle(Triangle t, Vector4 triangleColor, Vector4 wireFrameColor)
         {
             var validated = (t.Validated() && !CullingTriangle(t));
             if (!validated) return;
@@ -1095,7 +1050,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             // shaded
             var len = fragList.Count;
             var bmd = renderer.Begin(); // begin
-            var finalColor = new Color();
+            var finalColor = Vector4.Get();
             for (int i = 0; i < len; i++)
             {
                 var f = fragList[i];
@@ -1170,7 +1125,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             // debug: show normal line
             if (renderer.State.DebugShowTBN)
             {
-                var blueColor = new Color(0, 0, 1, 1);
+                var blueColor = Vector4.Get(0, 0, 1, 1);
                 var normalPos0 = t.p0;
                 var normalPos1 = normalPos0 + faceNormal.normalized * renderer.State.DebugTBNlLen;
                 ToPool(fragsHelper1);

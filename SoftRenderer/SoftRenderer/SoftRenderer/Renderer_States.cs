@@ -71,7 +71,7 @@ namespace SoftRenderer.SoftRenderer
         [Category("ShadingMode")]
         public ShadingMode ShadingMode { get; set; }
         [Category("ShadingMode")]
-        public ColorNormalized WireframeColor { get; set; } = ColorNormalized.white;
+        public Vector4 WireframeColor { get; set; } = Vector4.white;
         [Category("Depth")]
         public DepthWrite DepthWrite { get; set; }
         [Category("Depth")]
@@ -114,7 +114,7 @@ namespace SoftRenderer.SoftRenderer
         public bool DebugSpecular = true;
         [Category("Debug")]
         [Description("调试用：高光颜色")]
-        public ColorNormalized DebugSpecularColor = new ColorNormalized(1, 1, 1, 1);
+        public Vector4 DebugSpecularColor = Vector4.Get(1, 1, 1, 1);
         [Category("Debug")]
         [Description("调试用：高光强度[0~100]的值，默认80")]
         public float DebugSpecularItensity = 80f;

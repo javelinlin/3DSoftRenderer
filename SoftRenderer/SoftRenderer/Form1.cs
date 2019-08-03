@@ -95,6 +95,8 @@ namespace SoftRenderer
 
             this.PictureBox.Width = buff_size;
             this.PictureBox.Height = buff_size;
+            this.autoRotate = AutoRotateCheckBox.Checked;
+
 
             PropertyGrid.SelectedObject = renderer;
 
@@ -208,17 +210,17 @@ namespace SoftRenderer
                 uvs[i + 2] = new Vector2(0, 1) * uvScale + new Vector2(offsetU, offsetV);    // 2
                 uvs[i + 3] = new Vector2(1, 0) * uvScale + new Vector2(offsetU, offsetV);    // 3
             }
-            var colors = new ColorNormalized[vertices.Length];
+            var colors = new Vector4[vertices.Length];
             for (int i = 0; i < colors.Length; i+=4)
             {
                 //colors[i + 0] = ColorNormalized.red;
                 //colors[i + 1] = ColorNormalized.green;
                 //colors[i + 2] = ColorNormalized.blue;
                 //colors[i + 3] = ColorNormalized.yellow;
-                colors[i + 0] = ColorNormalized.yellow;
-                colors[i + 1] = ColorNormalized.yellow;
-                colors[i + 2] = ColorNormalized.yellow;
-                colors[i + 3] = ColorNormalized.yellow;
+                colors[i + 0] = Vector4.yellow;
+                colors[i + 1] = Vector4.yellow;
+                colors[i + 2] = Vector4.yellow;
+                colors[i + 3] = Vector4.yellow;
             }
             //colors[0] = ColorNormalized.red;
             //colors[1] = ColorNormalized.green;
@@ -233,17 +235,17 @@ namespace SoftRenderer
             // 第一个游戏对象
             gameObjs.Add(go);
 
-            colors = new ColorNormalized[vertices.Length];
+            colors = new Vector4[vertices.Length];
             for (int i = 0; i < colors.Length; i += 4)
             {
                 //colors[i + 0] = ColorNormalized.lightBlue;
                 //colors[i + 1] = ColorNormalized.pink;
                 //colors[i + 2] = ColorNormalized.purple;
                 //colors[i + 3] = ColorNormalized.green;
-                colors[i + 0] = ColorNormalized.blue;
-                colors[i + 1] = ColorNormalized.blue;
-                colors[i + 2] = ColorNormalized.blue;
-                colors[i + 3] = ColorNormalized.blue;
+                colors[i + 0] = Vector4.blue;
+                colors[i + 1] = Vector4.blue;
+                colors[i + 2] = Vector4.blue;
+                colors[i + 3] = Vector4.blue;
             }
             go = new GameObject("Cube1");
             go.LocalPosition = new Vector3(1, 0, -1);
@@ -367,7 +369,7 @@ namespace SoftRenderer
                     var lastPos = this.globalMsg.last_alt_and_ms_ldown_pos;
 
                     this.camera.R_Before_T = new Vector3(
-                        r_before_t.x + nowPos.Y - lastPos.Y,
+                        r_before_t.x - (nowPos.Y - lastPos.Y),
                         r_before_t.y + nowPos.X - lastPos.X,
                         r_before_t.z);
                 }
@@ -447,7 +449,7 @@ namespace SoftRenderer
             shaderData.LightItensity[0] = Vector4.one;
             shaderData.LightParams1[0] = Vector4.one;
             shaderData.CameraPos = camera.Translate;
-            shaderData.CameraParams = new Vector4(camera.near, camera.far, 0, 0);
+            shaderData.CameraParams = Vector4.Get(camera.near, camera.far, 0, 0);
 
             shaderData.NowDataWriteToBuff();
 
@@ -465,8 +467,8 @@ namespace SoftRenderer
 
         public Vector3 r_before_t;
         public Vector3 ms_down_cam_pos;
-        public Color ambient { get; set; } = new ColorNormalized(0.3f, 0.2f, 0.1f, 0.2f);
-        public Color lightColor { get; set; } = new ColorNormalized(1, 0.5f, 0.5f, 1f);
+        public Vector4 ambient { get; set; } = Vector4.Get(0.3f, 0.2f, 0.1f, 0.2f);
+        public Vector4 lightColor { get; set; } = Vector4.Get(1, 0.5f, 0.5f, 1f);
 
         private void Draw()
         {
@@ -710,7 +712,7 @@ namespace SoftRenderer
         {
             for (int i = 0; i < gameObjs.Count; i++)
             {
-                gameObjs[i].LocalPosition = Vector3.zero;
+                //gameObjs[i].LocalPosition = Vector3.zero;
                 gameObjs[i].LocalRotation = Vector3.zero;
                 gameObjs[i].LocalScale = Vector3.one;
             }
@@ -739,6 +741,11 @@ namespace SoftRenderer
             camera.R_Before_T = 0;
             camera.RotateTo(Vector3.zero);
             camera.TranslateTo(pos);
+        }
+
+        private void AutoRotateCheckBox_CheckedChanged(object sender, EventArgs e)
+        {
+            autoRotate = AutoRotateCheckBox.Checked;
         }
     }
 }
