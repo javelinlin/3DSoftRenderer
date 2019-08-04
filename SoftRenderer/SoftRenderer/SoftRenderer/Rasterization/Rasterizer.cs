@@ -408,8 +408,8 @@ namespace SoftRenderer.SoftRenderer.Rasterization
         private void CalculDepth(FragInfo f)
         {
             // 以下计算方式都不对
-            //f.depth = 1 - 1 / f.p.z;
-            f.depth = 1 - 1 / (f.p.z - renderer.State.CameraNear * renderer.State.CameraFar);
+            f.depth = 1 - 1 / f.p.z;
+            //f.depth = 1 - 1 / (f.p.z - renderer.State.CameraNear * renderer.State.CameraFar);
 
             //var near = renderer.State.CameraNear;
             //var far = renderer.State.CameraFar;

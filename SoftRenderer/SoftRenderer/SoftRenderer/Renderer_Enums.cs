@@ -115,8 +115,20 @@ namespace SoftRenderer.SoftRenderer
     public enum PolygonMode
     {
         //这里就不高line_strip, triangle_strip了
-        Triangle,               // 三角形
-        Line,                   // 线
-        Point,                  // 点
+        Triangle,               // 三角形 - 目前实现的方式
+        Line,                   // 线 - 未实现
+        Point,                  // 点 - 未实现
+    }
+    [Description("AA：Anti-Aliasing，抗锯齿")]
+    public enum AA
+    {
+        Off,        // 默认是关闭的（本想默认开的，但这个功能太卡，就改为默认Off吧）
+        On
+    }
+    [Description("AA的抗锯齿类型")]
+    public enum AAType
+    {
+        MSAA,       // 目前实现的
+        //ETC,  以后再实现其他的
     }
 }

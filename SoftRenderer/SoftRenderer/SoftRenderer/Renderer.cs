@@ -12,6 +12,7 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
 using System.Drawing.Imaging;
+using System.Runtime.InteropServices;
 
 namespace SoftRenderer.SoftRenderer
 {
@@ -41,6 +42,7 @@ namespace SoftRenderer.SoftRenderer
         public ShaderLoadMgr ShaderMgr { get; private set; }
         public BasicShaderData ShaderData { get; set; }
         public RenderState State { get; private set; }
+        public GlobalRenderSstate GlobalState { get; private set; }
         public Rasterizer Rasterizer { get; private set; }
         public int BackBufferWidth { get => backBufferWidth; }
         public int BackBufferHeight { get => backBufferHeight; }
@@ -60,6 +62,7 @@ namespace SoftRenderer.SoftRenderer
             backBuffer = new ColorBuffer(bufferW, bufferH);
 
             State = new RenderState(this);
+            GlobalState = new GlobalRenderSstate();
             Rasterizer = new Rasterizer(this);
             Per_Frag = new Per_Frag(this);
             ShaderData = new ShaderData(1);
@@ -120,6 +123,281 @@ namespace SoftRenderer.SoftRenderer
 #if DOUBLE_BUFF
             bufferDirty = true;
 #endif
+        }
+
+        // 后效
+        // 后面我会完善后效的架构，目前测试用 // for testing here code
+        // 因为后面需要重写ColorBuffer，改写成FrameBuffer
+        // Shader需要添加Pass
+        // Present接口改：DrawCall, Flush接口处理
+        //  - DrawCall处理都是绘制到FrameBuffer
+        //  - Flush会将当前的FrameBuffer刷新到对象的设备（这里是Bitmap）
+        public void PostProcess()
+        {
+            var bmd = Begin();
+            // 抗锯齿处理
+            AAHandle(bmd.Scan0);
+            // 全屏模糊
+            FullScreenBlurHandle(bmd.Scan0);
+            End(bmd);
+        }
+
+        // 为了外部测试用，所以我这里公开了AA的函数
+        private void AAHandle(IntPtr ptr)
+        {
+            if (GlobalState.AA == AA.Off) return;
+            switch (GlobalState.AAType)
+            {
+                case AAType.MSAA: // 这个会很卡
+                    EdgePickup(ptr);              // 提取边缘
+                    MSAAHandle(ptr);              // 抗锯齿
+                    break;
+                    throw new Exception($"not implements error, aa type:{GlobalState.AAType}");
+                default:
+                    throw new Exception($"not implements error, aa type:{GlobalState.AAType}");
+            }
+        }
+
+        private int[] edgePosList;
+        private int edge_count;
+
+        private void EdgePickup(IntPtr ptr)
+        {
+            var depthbuff = Per_Frag.DepthBuff;
+            var w = backBufferWidth;
+            var h = backBufferHeight;
+
+            if (edgePosList == null ||
+                edgePosList.Length != w * h)
+            {
+                edgePosList = new int[w * h];
+            }
+            edge_count = 0;
+
+            var sampleOffset = new int[]
+                { //x, y
+                    // 1
+                    -1, -1,
+                    1, -1,
+                    -1, 1,
+                    1, 1,
+                };
+            var sampleCount = sampleOffset.Length;
+
+            var maxOX = w - 1;
+            var maxOY = h - 1;
+
+            var edgeColor = Vector4.red;
+            var edge_thresold = GlobalState.edge_thresold;
+            var show_edge = GlobalState.show_edge;
+
+            for (int x = 0; x < w; x++)
+            {
+                for (int y = 0; y < h; y++)
+                {
+                    var depth = depthbuff.TestPickup(x, y);
+
+                    var isEdge = false;
+                    for (int i = 0; i < sampleCount; i += 2)
+                    {
+                        var ox = sampleOffset[i] + x;
+                        var oy = sampleOffset[i + 1] + y;
+                        if (ox < 0) ox = 0;
+                        if (ox > maxOX) ox = maxOX;
+                        if (oy < 0) oy = 0;
+                        if (oy > maxOY) oy = maxOY;
+                        var offsetDepth = depthbuff.TestPickup(ox, oy);
+                        if (float.IsNaN(depth))
+                        {
+                            if (float.IsNaN(offsetDepth))
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                isEdge = true;
+                                break;
+                            }
+                        }
+                        else
+                        {
+                            if (float.IsNaN(offsetDepth))
+                            {
+                                isEdge = true;
+                                break;
+                            }
+                        }
+
+                        if (Math.Abs(depth - offsetDepth) > edge_thresold)
+                        {
+                            isEdge = true;
+                            break;
+                        }
+                    }
+                    if (isEdge)
+                    {
+                        if (show_edge)
+                        {
+                            BeginSetPixel(ptr, x, y, edgeColor);
+                        }
+                        edgePosList[edge_count] = x;
+                        edgePosList[edge_count + 1] = y;
+                        edge_count += 2;
+                    }
+                }
+            }
+        }
+
+        private Vector4[,] AA_src_buffer;
+
+        private void MSAAHandle(IntPtr ptr)
+        {
+            var w = backBufferWidth;
+            var h = backBufferHeight;
+            if (AA_src_buffer == null ||
+                AA_src_buffer.GetLength(0) != w ||
+                AA_src_buffer.GetLength(1) != h)
+            {
+                AA_src_buffer = new Vector4[w, h];
+            }
+            for (int x = 0; x < w; x++)
+            {
+                for (int y = 0; y < h; y++)
+                {
+#if BUFF_RGBA
+                    var offset = (x + y * w) * 3;
+                    var b = Marshal.ReadByte(ptr, offset) / 255f;
+                    var g = Marshal.ReadByte(ptr, offset + 1) / 255f;
+                    var r = Marshal.ReadByte(ptr, offset + 2) / 255f;
+                    var a = Marshal.ReadByte(ptr, offset + 3) / 255f;
+                    AA_src_buffer[x, y] = Vector4.Get(r, g, b, a);
+#else
+                    var offset = (x + y * w) * 3;
+                    var b = Marshal.ReadByte(ptr, offset) / 255f;
+                    var g = Marshal.ReadByte(ptr, offset + 1) / 255f;
+                    var r = Marshal.ReadByte(ptr, offset + 2) / 255f;
+                    AA_src_buffer[x, y] = Vector4.Get(r, g, b, 1);
+#endif
+                }
+            }
+            var sampleOffset = new int[]
+                { //x, y
+                    // 1
+                    -1,0,
+                    1,0,
+                    0,1,
+                    0,-1,
+                    -1, -1,
+                    1, -1,
+                    -1, 1,
+                    1, 1,
+                };
+            var sampleCount = sampleOffset.Length;
+
+            var maxOX = w - 1;
+            var maxOY = h - 1;
+
+            var resampleCount = GlobalState.aa_resample_count;
+
+            for (int i = 0; i < edge_count; i += 2)
+            {
+                var x = edgePosList[i];
+                var y = edgePosList[i + 1];
+                var srcPos = BeginRead(ptr, x, y);
+                for (int rs = 0; rs < resampleCount; rs++)
+                {
+                    for (int j = 0; j < sampleCount; j += 2)
+                    {
+                        var ox = sampleOffset[j] * (rs + 1) + x;
+                        var oy = sampleOffset[j + 1] * (rs + 1) + y;
+                        if (ox < 0) ox = 0;
+                        if (ox > maxOX) ox = maxOX;
+                        if (oy < 0) oy = 0;
+                        if (oy > maxOY) oy = maxOY;
+                        srcPos += AA_src_buffer[ox, oy];
+                    }
+                }
+                srcPos /= sampleCount * resampleCount / 2;
+
+                BeginSetPixel(ptr, x, y, srcPos);
+            }
+        }
+
+        private Vector4[,] blur_src_buffer;
+
+        private void FullScreenBlurHandle(IntPtr ptr)
+        {
+            if (!GlobalState.fullscreen_blur) return;
+            var w = backBufferWidth;
+            var h = backBufferHeight;
+            if (blur_src_buffer == null ||
+                blur_src_buffer.GetLength(0) != w ||
+                blur_src_buffer.GetLength(1) != h)
+            {
+                blur_src_buffer = new Vector4[w, h];
+            }
+            for (int x = 0; x < w; x++)
+            {
+                for (int y = 0; y < h; y++)
+                {
+#if BUFF_RGBA
+                    var offset = (x + y * w) * 3;
+                    var b = Marshal.ReadByte(ptr, offset) / 255f;
+                    var g = Marshal.ReadByte(ptr, offset + 1) / 255f;
+                    var r = Marshal.ReadByte(ptr, offset + 2) / 255f;
+                    var a = Marshal.ReadByte(ptr, offset + 3) / 255f;
+                    AA_src_buffer[x, y] = Vector4.Get(r, g, b, a);
+#else
+                    var offset = (x + y * w) * 3;
+                    var b = Marshal.ReadByte(ptr, offset) / 255f;
+                    var g = Marshal.ReadByte(ptr, offset + 1) / 255f;
+                    var r = Marshal.ReadByte(ptr, offset + 2) / 255f;
+                    blur_src_buffer[x, y] = Vector4.Get(r, g, b, 1);
+#endif
+                }
+            }
+            var sampleOffset = new int[]
+                { //x, y
+                    // 1
+                    -1,0,
+                    1,0,
+                    0,1,
+                    0,-1,
+                    -1, -1,
+                    1, -1,
+                    -1, 1,
+                    1, 1,
+                };
+            var sampleCount = sampleOffset.Length;
+
+            var maxOX = w - 1;
+            var maxOY = h - 1;
+
+            var resampleCount = GlobalState.fullscreen_blur_resample_count;
+
+            for (int x = 0; x < w; x++)
+            {
+                for (int y = 0; y < h; y++)
+                {
+                    var srcPos = BeginRead(ptr, x, y);
+                    for (int rs = 0; rs < resampleCount; rs++)
+                    {
+                        for (int i = 0; i < sampleCount; i += 2)
+                        {
+                            var ox = sampleOffset[i] * (rs + 1) + x;
+                            var oy = sampleOffset[i + 1] * (rs + 1) + y;
+                            if (ox < 0) ox = 0;
+                            if (ox > maxOX) ox = maxOX;
+                            if (oy < 0) oy = 0;
+                            if (oy > maxOY) oy = maxOY;
+                            srcPos += blur_src_buffer[ox, oy];
+                        }
+                    }
+                    srcPos /= sampleCount * resampleCount / 2 + 1;
+
+                    BeginSetPixel(ptr, x, y, srcPos);
+                }
+            }
         }
 
         private void VertexShader(ShaderBase vs)

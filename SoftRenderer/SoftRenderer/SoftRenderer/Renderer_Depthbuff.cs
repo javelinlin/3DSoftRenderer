@@ -67,6 +67,16 @@ namespace SoftRenderer.SoftRenderer
             Marshal.Copy(clearedBuffer, 0, ptr, clearedBuffer.Length);
         }
 
+        public float TestPickup(int x, int y)
+        {
+            var offset = (x + y * w) * 4; // float 4 bytes
+            readHelper[0] = Marshal.ReadByte(ptr, offset);
+            readHelper[1] = Marshal.ReadByte(ptr, offset + 1);
+            readHelper[2] = Marshal.ReadByte(ptr, offset + 2);
+            readHelper[3] = Marshal.ReadByte(ptr, offset + 3);
+            return ToValue(readHelper);
+        }
+
         public bool Test(ComparisonFunc comp, int x, int y, float depth)
         {
             if (comp == ComparisonFunc.Always) return true;

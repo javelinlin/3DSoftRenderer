@@ -85,6 +85,7 @@ namespace SoftRenderer
             renderer = new Renderer(buff_size, buff_size);
 
             renderer.State.ClearColor = Color.Gray;
+            renderer.State.WireframeColor = Color.Black;
             renderer.State.ShadingMode = ShadingMode.Shaded;
             renderer.State.BlendSrcColorFactor = BlendFactor.SrcAlpha;
             renderer.State.BlendDstColorFactor = BlendFactor.OneMinusSrcAlpha;
@@ -497,6 +498,7 @@ namespace SoftRenderer
             {
                 gameObjs[i].Draw();
             }
+            renderer.PostProcess();
 #else
             //var srcDepthOffset = renderer.State.DepthOffset;
             //var srcDepthOffsetFactor = renderer.State.DepthOffsetFactor;

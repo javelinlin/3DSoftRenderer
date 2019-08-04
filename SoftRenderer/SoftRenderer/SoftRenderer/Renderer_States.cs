@@ -129,4 +129,21 @@ namespace SoftRenderer.SoftRenderer
             this.ScissorRect = new Rectangle(0, 0, renderer.BackBufferWidth, renderer.BackBufferHeight);
         }
     }
+
+    [Description("全局的渲染状态")]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class GlobalRenderSstate
+    {
+        [Description("抗锯齿开光")]
+        public AA AA { get; set; }
+        [Description("抗锯齿类型")]
+        public AAType AAType { get; set; }
+
+        public int aa_resample_count { get; set; } = 1;
+        public float edge_thresold { get; set; } = 3e-5f;
+        public bool show_edge { get; set; } = false;
+
+        public bool fullscreen_blur { get; set; } = false;
+        public int fullscreen_blur_resample_count { get; set; } = 3;
+    }
 }
