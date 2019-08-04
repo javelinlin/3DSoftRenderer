@@ -178,8 +178,8 @@ namespace SoftRenderer.SoftRenderer
                 { //x, y
                     // 1
                     -1, -1,
-                    1, -1,
-                    -1, 1,
+                    //1, -1,
+                    //-1, 1,
                     1, 1,
                 };
             var sampleCount = sampleOffset.Length;
@@ -285,14 +285,15 @@ namespace SoftRenderer.SoftRenderer
                     // 1
                     -1,0,
                     1,0,
-                    0,1,
-                    0,-1,
-                    -1, -1,
-                    1, -1,
-                    -1, 1,
-                    1, 1,
+                    //0,1,
+                    //0,-1,
+                    //-1, -1,
+                    //1, -1,
+                    //-1, 1,
+                    //1, 1,
                 };
             var sampleCount = sampleOffset.Length;
+            var half_sampleCount = sampleCount / 2;
 
             var maxOX = w - 1;
             var maxOY = h - 1;
@@ -317,7 +318,7 @@ namespace SoftRenderer.SoftRenderer
                         srcPos += AA_src_buffer[ox, oy];
                     }
                 }
-                srcPos /= sampleCount * resampleCount / 2;
+                srcPos /= half_sampleCount * resampleCount + 1;
 
                 BeginSetPixel(ptr, x, y, srcPos);
             }
@@ -369,6 +370,7 @@ namespace SoftRenderer.SoftRenderer
                     1, 1,
                 };
             var sampleCount = sampleOffset.Length;
+            var half_sampleCount = sampleCount / 2;
 
             var maxOX = w - 1;
             var maxOY = h - 1;
@@ -393,7 +395,7 @@ namespace SoftRenderer.SoftRenderer
                             srcPos += blur_src_buffer[ox, oy];
                         }
                     }
-                    srcPos /= sampleCount * resampleCount / 2 + 1;
+                    srcPos /= half_sampleCount * resampleCount + 1;
 
                     BeginSetPixel(ptr, x, y, srcPos);
                 }
