@@ -12,6 +12,7 @@ using System;
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Drawing;
+using System.Drawing.Imaging;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -71,6 +72,8 @@ namespace SoftRenderer
 
         private GlobalMessageHandler globalMsg = new GlobalMessageHandler();
 
+        private Bitmap deviceBmp;
+
         public MainForm()
         {
             InitializeComponent();
@@ -80,9 +83,12 @@ namespace SoftRenderer
             globalMsg.OnMsRDownEvent += GlobalMsg_OnMsRDownEvent;
             globalMsg.OnAltAndLDownEvent += GlobalMsg_OnAltAndLDownEvent;
             Application.AddMessageFilter(globalMsg);
-            this.FormClosed += (s, e) => Application.RemoveMessageFilter(globalMsg);
+            FormClosed += (s, e) => Application.RemoveMessageFilter(globalMsg);
 
             renderer = new Renderer(buff_size, buff_size);
+            deviceBmp = new Bitmap(buff_size, buff_size, PixelFormat.Format24bppRgb); ;
+            PictureBox.Width = buff_size;
+            PictureBox.Height = buff_size;
 
             renderer.State.ClearColor = Color.Gray;
             renderer.State.WireframeColor = Color.Black;
@@ -94,9 +100,7 @@ namespace SoftRenderer
             // test
             //renderer.State.Cull = FaceCull.Off;
 
-            this.PictureBox.Width = buff_size;
-            this.PictureBox.Height = buff_size;
-            this.autoRotate = AutoRotateCheckBox.Checked;
+            autoRotate = AutoRotateCheckBox.Checked;
 
 
             PropertyGrid.SelectedObject = renderer;
@@ -645,7 +649,9 @@ namespace SoftRenderer
                 Update(usingDt);
                 UpdateGameObjs(usingDt);
                 Draw();
-                PictureBox.Image = renderer.SwapBuffer();
+
+                renderer.SwapBuffer(deviceBmp);
+                PictureBox.Image = deviceBmp;
 
                 if (fpsShowType == FpsShowType.Immediately)
                 {

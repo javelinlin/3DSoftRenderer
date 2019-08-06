@@ -11,6 +11,7 @@ namespace SoftRenderer.SoftRenderer
         None = 0,
         ColorBuffer = 1,        // 颜色缓存
         DepthBuffer = 2,        // 深度缓存
+        StencilBuffer=3,        // 模板缓存
     }
     [Description("混合开关")]
     public enum Blend

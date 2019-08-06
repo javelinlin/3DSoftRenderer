@@ -716,7 +716,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
         // 收集TBN线条的片段
         private void CollectTBN(Primitive_Triangle triangle, OutLayout layout, int location, Vector4 from, Vector4 to, List<FragInfo> normalLineResult)
         {
-            var depthBuff = renderer.Per_Frag.DepthBuff;
+            var depthBuff = renderer.FrameBuffer.Attachment.DepthBuffer;
             var depthInv = 1 / (renderer.State.CameraFar + renderer.State.CameraFar * renderer.State.CameraNear);
 
             var minX = 0;
@@ -1015,7 +1015,8 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 }
             }
 
-            var depthbuff = renderer.Per_Frag.DepthBuff;
+            var framebuff = renderer.FrameBuffer;
+            var depthbuff = framebuff.Attachment.DepthBuffer;
             var depthwrite = renderer.State.DepthWrite;
             var maxZ = renderer.State.CameraFar;
             maxZ += renderer.State.CameraFar * renderer.State.CameraNear;
@@ -1057,7 +1058,6 @@ namespace SoftRenderer.SoftRenderer.Rasterization
 #endif
             // shaded
             var len = fragList.Count;
-            var bmd = renderer.Begin(); // begin
             var finalColor = Vector4.Get();
             for (int i = 0; i < len; i++)
             {
@@ -1067,12 +1067,12 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 var testDepth = f.depth;
                 if (depthOffset == DepthOffset.On)
                     testDepth += offsetDepth;
-                if (depthbuff.Test(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                if (framebuff.DepthTest(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
                 {
                     // 是否开启深度写入
                     if (depthwrite == DepthWrite.On)
                     {
-                        depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
+                        depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
                     }
                     finalColor = triangleColor * lightDotNormal;
 #if SPECULAR
@@ -1085,7 +1085,7 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                         finalColor += specular;
                     }
 #endif
-                    renderer.BeginSetPixel(bmd.Scan0, f.p, finalColor);
+                    framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, finalColor);
                 }
             }
 
@@ -1101,14 +1101,14 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                     if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
                     f.depth = 1 - f.p.z * depthInv;
                     var testDepth = f.depth + offsetDepth;
-                    if (depthbuff.Test(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                    if (framebuff.DepthTest(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
                     {
                         // 是否开启深度写入
                         if (depthwrite == DepthWrite.On)
                         {
-                            depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
+                            depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
                         }
-                        renderer.BeginSetPixel(bmd.Scan0, f.p, wireFrameColor);
+                        framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, wireFrameColor);
                     }
                 }
                 count = fragsHelper2.Count;
@@ -1118,14 +1118,14 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                     if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
                     f.depth = 1 - f.p.z * depthInv + offsetDepth;
                     var testDepth = f.depth + offsetDepth;
-                    if (depthbuff.Test(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                    if (framebuff.DepthTest(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
                     {
                         // 是否开启深度写入
                         if (depthwrite == DepthWrite.On)
                         {
-                            depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
+                            depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
                         }
-                        renderer.BeginSetPixel(bmd.Scan0, f.p, wireFrameColor);
+                        framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, wireFrameColor);
                     }
                 }
             }
@@ -1143,11 +1143,9 @@ namespace SoftRenderer.SoftRenderer.Rasterization
                 {
                     var f = fragsHelper1[i];
                     if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
-                    renderer.BeginSetPixel(bmd.Scan0, f.p, blueColor);
+                    framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, blueColor);
                 }
             }
-
-            renderer.End(bmd); // end
 
             ToPool(fragsHelper1);
             ToPool(fragsHelper2);
@@ -1222,5 +1220,35 @@ namespace SoftRenderer.SoftRenderer.Rasterization
             return new Vector3(P3X, mv.y, lerpValue);
         }
 #endif
+    }
+
+    [Description("旧版-片段数据")]
+    public class FragData : IDisposable
+    {
+        public Vector3 p;
+        public bool discard;
+        public float depth;
+        public List<Vector4> datas = new List<Vector4>(); // 需要插值的数据
+
+        public FragData()
+        {
+
+        }
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+
+            if (datas != null)
+            {
+                datas.Clear();
+                datas = null;
+            }
+        }
+
+        public override string ToString()
+        {
+            return p.ToString();
+        }
     }
 }

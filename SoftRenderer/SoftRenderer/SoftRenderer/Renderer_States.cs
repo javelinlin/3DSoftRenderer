@@ -22,14 +22,14 @@ namespace SoftRenderer.SoftRenderer
         [Category("ClearInfo")]
         [Description("Clear Color buff的颜色值")]
         public Color ClearColor {
-            get => Renderer.backBuffer.ClearedColor;
-            set => Renderer.backBuffer.ClearedColor = value; }
+            get => Renderer.FrameBuffer.ClearedColor;
+            set => Renderer.FrameBuffer.ClearedColor = value; }
 
         [Category("ClearInfo")]
         [Description("Clear Depth buff的值")]
         public float ClearDepthBuffValue {
-            get => Renderer.Per_Frag.DepthBuff.ClearedBuffValue;
-            set => Renderer.Per_Frag.DepthBuff.ClearedBuffValue = value;
+            get => Renderer.FrameBuffer.ClearedDepth;
+            set => Renderer.FrameBuffer.ClearedDepth = value;
         }
 
         private Rectangle scissorRect;

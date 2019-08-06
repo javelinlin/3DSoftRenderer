@@ -22,11 +22,8 @@ namespace SoftRenderer.SoftRenderer
     {
         public static Renderer Instance { get; private set; }
 
-        private int backBufferWidth = 512;
-        private int backBufferHeight = 512;
-        private PixelFormat pixelFormat;
-        internal ColorBuffer frontBuffer;
-        internal ColorBuffer backBuffer;
+        private Buffer_Color frontBuffer;           // frontbuffer
+        private FrameBuffer defaultFrameBuffer;     // backbuffer
         private List<ShaderOut> vertexshaderOutput = new List<ShaderOut>();
         private List<Primitive_Triangle> trianglePrimitiveHelper = new List<Primitive_Triangle>();
         private List<Primitive_Line> linePrimitiveHelper = new List<Primitive_Line>();
@@ -38,33 +35,32 @@ namespace SoftRenderer.SoftRenderer
 #if DOUBLE_BUFF
         private bool bufferDirty = false;
 #endif
+        public FrameBuffer FrameBuffer { get; set; }
         public ShaderProgram ShaderProgram { get; set; }
         public ShaderLoadMgr ShaderMgr { get; private set; }
         public BasicShaderData ShaderData { get; set; }
         public RenderState State { get; private set; }
         public GlobalRenderSstate GlobalState { get; private set; }
         public Rasterizer Rasterizer { get; private set; }
-        public int BackBufferWidth { get => backBufferWidth; }
-        public int BackBufferHeight { get => backBufferHeight; }
-
-        public Per_Frag Per_Frag { get; private set; }
+        public int BackBufferWidth { get; }
+        public int BackBufferHeight { get; }
 
         public VertexBuffer CurVertexBuffer { get; private set; }
         public IndexBuffer CurIndexBuffer { get; private set; }
 
-        public Renderer(int bufferW = 512, int bufferH = 512, PixelFormat pixelFormat = PixelFormat.Format24bppRgb)
+        public Renderer(int bufferW = 512, int bufferH = 512)
         {
-            this.backBufferWidth = bufferW;
-            this.backBufferHeight = bufferH;
-            this.pixelFormat = pixelFormat;
+            this.BackBufferWidth = bufferW;
+            this.BackBufferHeight = bufferH;
 
-            frontBuffer = new ColorBuffer(bufferW, bufferH);
-            backBuffer = new ColorBuffer(bufferW, bufferH);
+            this.defaultFrameBuffer = new FrameBuffer(bufferW, bufferH);
+            this.FrameBuffer = this.defaultFrameBuffer;     // using default buffer
+
+            this.frontBuffer = new Buffer_Color(bufferW, bufferH);
 
             State = new RenderState(this);
             GlobalState = new GlobalRenderSstate();
             Rasterizer = new Rasterizer(this);
-            Per_Frag = new Per_Frag(this);
             ShaderData = new ShaderData(1);
             ShaderMgr = new ShaderLoadMgr(this);
             ShaderProgram = new ShaderProgram(this);
@@ -74,10 +70,87 @@ namespace SoftRenderer.SoftRenderer
 
         public void Clear(ClearFlag flag = ClearFlag.ColorBuffer | ClearFlag.DepthBuffer)
         {
-            if ((flag | ClearFlag.ColorBuffer) != 0)
-                backBuffer.Clear();
-            if ((flag | ClearFlag.DepthBuffer) != 0)
-                Per_Frag.DepthBuff.Clear();
+            FrameBuffer.Clear(flag);
+        }
+
+        // 混合
+        public Vector4 BlendHandle(
+            Vector4 src, Vector4 dst,
+            BlendFactor srcColorFactor, BlendFactor dstColorFactor,
+            BlendFactor srcAlphaFactor, BlendFactor dstAlphaFactor,
+            BlendOp blendColorOp, BlendOp blendAlphaOp
+            )
+        {
+            var sr = src.r;
+            var sg = src.g;
+            var sb = src.b;
+            var sa = src.a;
+
+            var dr = dst.r;
+            var dg = dst.g;
+            var db = dst.b;
+            var da = dst.a;
+
+            var oneMSA = 1 - sa;
+            var oneMDA = 1 - da;
+
+            switch (srcColorFactor)
+            {
+                case BlendFactor.One: /* noops */ break;
+                case BlendFactor.Zero: sr = 0; sg = 0; sb = 0; break;
+                case BlendFactor.SrcAlpha: sr *= sa; sg *= sa; sb *= sa; break;
+                case BlendFactor.OneMinusSrcAlpha: sr *= oneMSA; sg *= oneMSA; sb *= oneMSA; break;
+                case BlendFactor.DstAlpha: sr *= da; sg *= da; sb *= da; break;
+                case BlendFactor.OneMinusDstAlpha: sr *= oneMDA; sg *= oneMDA; sb *= oneMDA; break;
+                default: throw new NotImplementedException($"Not implements");
+            }
+            switch (dstColorFactor)
+            {
+                case BlendFactor.One: /* noops */ break;
+                case BlendFactor.Zero: dr = 0; dg = 0; db = 0; break;
+                case BlendFactor.SrcAlpha: dr *= sa; dg *= sa; db *= sa; break;
+                case BlendFactor.OneMinusSrcAlpha: dr *= oneMSA; dg *= oneMSA; db *= oneMSA; break;
+                case BlendFactor.DstAlpha: dr *= da; dg *= da; db *= da; break;
+                case BlendFactor.OneMinusDstAlpha: dr *= oneMDA; dg *= oneMDA; db *= oneMDA; break;
+                default: throw new NotImplementedException($"Not implements");
+            }
+            switch (srcAlphaFactor)
+            {
+                case BlendFactor.One: /* noops */ break;
+                case BlendFactor.Zero: sa = 0; break;
+                case BlendFactor.SrcAlpha: sa *= sa; break;
+                case BlendFactor.OneMinusSrcAlpha: sa *= oneMSA; break;
+                case BlendFactor.DstAlpha: sa *= da; break;
+                case BlendFactor.OneMinusDstAlpha: sa *= oneMDA; break;
+                default: throw new NotImplementedException($"Not implements");
+            }
+            switch (dstAlphaFactor)
+            {
+                case BlendFactor.One: /* noops */ break;
+                case BlendFactor.Zero: da = 0; break;
+                case BlendFactor.SrcAlpha: da *= sa; break;
+                case BlendFactor.OneMinusSrcAlpha: da *= oneMSA; break;
+                case BlendFactor.DstAlpha: da *= da; break;
+                case BlendFactor.OneMinusDstAlpha: da *= oneMDA; break;
+                default: throw new NotImplementedException($"Not implements");
+            }
+            switch (blendColorOp)
+            {
+                case BlendOp.Add: sr += dr; sg += dg; sb += db; break;
+                case BlendOp.Sub: sr -= dr; sg -= dg; sb -= db; break;
+                case BlendOp.Multiply: sr *= dr; sg *= dg; sb *= db; break;
+                case BlendOp.Divide: sr /= dr; sg /= dg; sb /= db; break; // 除法的性能好渣，尽量不用
+                default: throw new NotImplementedException($"Not implements");
+            }
+            switch (blendAlphaOp)
+            {
+                case BlendOp.Add: sa += da; break;
+                case BlendOp.Sub: sa -= da; break;
+                case BlendOp.Multiply: sa *= da; break;
+                case BlendOp.Divide: sa /= da; break; // 除法的性能好渣，尽量不用
+                default: throw new NotImplementedException($"Not implements");
+            }
+            return Vector4.Get(sr, sg, sb, sa);
         }
 
         public void Present()
@@ -134,23 +207,21 @@ namespace SoftRenderer.SoftRenderer
         //  - Flush会将当前的FrameBuffer刷新到对象的设备（这里是Bitmap）
         public void PostProcess()
         {
-            var bmd = Begin();
             // 抗锯齿处理
-            AAHandle(bmd.Scan0);
+            AAHandle();
             // 全屏模糊
-            FullScreenBlurHandle(bmd.Scan0);
-            End(bmd);
+            FullScreenBlurHandle();
         }
 
         // 为了外部测试用，所以我这里公开了AA的函数
-        private void AAHandle(IntPtr ptr)
+        private void AAHandle()
         {
             if (GlobalState.AA == AA.Off) return;
             switch (GlobalState.AAType)
             {
                 case AAType.MSAA: // 这个会很卡
-                    EdgePickup(ptr);              // 提取边缘
-                    MSAAHandle(ptr);              // 抗锯齿
+                    EdgePickup();              // 提取边缘
+                    MSAAHandle();              // 抗锯齿
                     break;
                     throw new Exception($"not implements error, aa type:{GlobalState.AAType}");
                 default:
@@ -161,11 +232,11 @@ namespace SoftRenderer.SoftRenderer
         private int[] edgePosList;
         private int edge_count;
 
-        private void EdgePickup(IntPtr ptr)
+        private void EdgePickup()
         {
-            var depthbuff = Per_Frag.DepthBuff;
-            var w = backBufferWidth;
-            var h = backBufferHeight;
+            var depthbuff = FrameBuffer.Attachment.DepthBuffer;
+            var w = BackBufferWidth;
+            var h = BackBufferHeight;
 
             if (edgePosList == null ||
                 edgePosList.Length != w * h)
@@ -191,11 +262,13 @@ namespace SoftRenderer.SoftRenderer
             var edge_thresold = GlobalState.edge_thresold;
             var show_edge = GlobalState.show_edge;
 
+            var backbuffer = FrameBuffer.Attachment.ColorBuffer[0];
+
             for (int x = 0; x < w; x++)
             {
                 for (int y = 0; y < h; y++)
                 {
-                    var depth = depthbuff.TestPickup(x, y);
+                    var depth = depthbuff.Get(x, y);
 
                     var isEdge = false;
                     for (int i = 0; i < sampleCount; i += 2)
@@ -206,7 +279,7 @@ namespace SoftRenderer.SoftRenderer
                         if (ox > maxOX) ox = maxOX;
                         if (oy < 0) oy = 0;
                         if (oy > maxOY) oy = maxOY;
-                        var offsetDepth = depthbuff.TestPickup(ox, oy);
+                        var offsetDepth = depthbuff.Get(ox, oy);
                         if (float.IsNaN(depth))
                         {
                             if (float.IsNaN(offsetDepth))
@@ -238,7 +311,7 @@ namespace SoftRenderer.SoftRenderer
                     {
                         if (show_edge)
                         {
-                            BeginSetPixel(ptr, x, y, edgeColor);
+                            FrameBuffer.WriteColor(0, x, y, edgeColor);
                         }
                         edgePosList[edge_count] = x;
                         edgePosList[edge_count + 1] = y;
@@ -248,38 +321,19 @@ namespace SoftRenderer.SoftRenderer
             }
         }
 
-        private Vector4[,] AA_src_buffer;
+        private Buffer_Color AA_src_buffer;
 
-        private void MSAAHandle(IntPtr ptr)
+        private void MSAAHandle()
         {
-            var w = backBufferWidth;
-            var h = backBufferHeight;
+            var w = BackBufferWidth;
+            var h = BackBufferHeight;
+            var backbuffer = FrameBuffer.Attachment.ColorBuffer[0];
             if (AA_src_buffer == null ||
-                AA_src_buffer.GetLength(0) != w ||
-                AA_src_buffer.GetLength(1) != h)
+                AA_src_buffer.Len != w * h)
             {
-                AA_src_buffer = new Vector4[w, h];
+                AA_src_buffer = new Buffer_Color(w, h);
             }
-            for (int x = 0; x < w; x++)
-            {
-                for (int y = 0; y < h; y++)
-                {
-#if BUFF_RGBA
-                    var offset = (x + y * w) * 3;
-                    var b = Marshal.ReadByte(ptr, offset) / 255f;
-                    var g = Marshal.ReadByte(ptr, offset + 1) / 255f;
-                    var r = Marshal.ReadByte(ptr, offset + 2) / 255f;
-                    var a = Marshal.ReadByte(ptr, offset + 3) / 255f;
-                    AA_src_buffer[x, y] = Vector4.Get(r, g, b, a);
-#else
-                    var offset = (x + y * w) * 3;
-                    var b = Marshal.ReadByte(ptr, offset) / 255f;
-                    var g = Marshal.ReadByte(ptr, offset + 1) / 255f;
-                    var r = Marshal.ReadByte(ptr, offset + 2) / 255f;
-                    AA_src_buffer[x, y] = Vector4.Get(r, g, b, 1);
-#endif
-                }
-            }
+            backbuffer.CopyTo(AA_src_buffer);
             var sampleOffset = new int[]
                 { //x, y
                     // 1
@@ -300,11 +354,12 @@ namespace SoftRenderer.SoftRenderer
 
             var resampleCount = GlobalState.aa_resample_count;
 
+
             for (int i = 0; i < edge_count; i += 2)
             {
                 var x = edgePosList[i];
                 var y = edgePosList[i + 1];
-                var srcPos = BeginRead(ptr, x, y);
+                var srcPosColor = backbuffer.Get(x, y);
                 for (int rs = 0; rs < resampleCount; rs++)
                 {
                     for (int j = 0; j < sampleCount; j += 2)
@@ -315,48 +370,28 @@ namespace SoftRenderer.SoftRenderer
                         if (ox > maxOX) ox = maxOX;
                         if (oy < 0) oy = 0;
                         if (oy > maxOY) oy = maxOY;
-                        srcPos += AA_src_buffer[ox, oy];
+                        srcPosColor += AA_src_buffer[ox, oy];
                     }
                 }
-                srcPos /= half_sampleCount * resampleCount + 1;
-
-                BeginSetPixel(ptr, x, y, srcPos);
+                srcPosColor /= half_sampleCount * resampleCount + 1;
+                FrameBuffer.WriteColor(0, x, y, srcPosColor);
             }
         }
 
-        private Vector4[,] blur_src_buffer;
+        private Buffer_Color blur_src_buffer;
 
-        private void FullScreenBlurHandle(IntPtr ptr)
+        private void FullScreenBlurHandle()
         {
             if (!GlobalState.fullscreen_blur) return;
-            var w = backBufferWidth;
-            var h = backBufferHeight;
+            var w = BackBufferWidth;
+            var h = BackBufferHeight;
+            var backbuffer = FrameBuffer.Attachment.ColorBuffer[0];
             if (blur_src_buffer == null ||
-                blur_src_buffer.GetLength(0) != w ||
-                blur_src_buffer.GetLength(1) != h)
+                blur_src_buffer.Len != w * h)
             {
-                blur_src_buffer = new Vector4[w, h];
+                blur_src_buffer = new Buffer_Color(w, h);
             }
-            for (int x = 0; x < w; x++)
-            {
-                for (int y = 0; y < h; y++)
-                {
-#if BUFF_RGBA
-                    var offset = (x + y * w) * 3;
-                    var b = Marshal.ReadByte(ptr, offset) / 255f;
-                    var g = Marshal.ReadByte(ptr, offset + 1) / 255f;
-                    var r = Marshal.ReadByte(ptr, offset + 2) / 255f;
-                    var a = Marshal.ReadByte(ptr, offset + 3) / 255f;
-                    AA_src_buffer[x, y] = Vector4.Get(r, g, b, a);
-#else
-                    var offset = (x + y * w) * 3;
-                    var b = Marshal.ReadByte(ptr, offset) / 255f;
-                    var g = Marshal.ReadByte(ptr, offset + 1) / 255f;
-                    var r = Marshal.ReadByte(ptr, offset + 2) / 255f;
-                    blur_src_buffer[x, y] = Vector4.Get(r, g, b, 1);
-#endif
-                }
-            }
+            backbuffer.CopyTo(blur_src_buffer);
             var sampleOffset = new int[]
                 { //x, y
                     // 1
@@ -381,7 +416,7 @@ namespace SoftRenderer.SoftRenderer
             {
                 for (int y = 0; y < h; y++)
                 {
-                    var srcPos = BeginRead(ptr, x, y);
+                    var srcPosColor = backbuffer.Get(x, y);
                     for (int rs = 0; rs < resampleCount; rs++)
                     {
                         for (int i = 0; i < sampleCount; i += 2)
@@ -392,12 +427,11 @@ namespace SoftRenderer.SoftRenderer
                             if (ox > maxOX) ox = maxOX;
                             if (oy < 0) oy = 0;
                             if (oy > maxOY) oy = maxOY;
-                            srcPos += blur_src_buffer[ox, oy];
+                            srcPosColor += blur_src_buffer[ox, oy];
                         }
                     }
-                    srcPos /= half_sampleCount * resampleCount + 1;
-
-                    BeginSetPixel(ptr, x, y, srcPos);
+                    srcPosColor /= half_sampleCount * resampleCount + 1;
+                    FrameBuffer.WriteColor(0, x, y, srcPosColor);
                 }
             }
         }
@@ -613,7 +647,8 @@ namespace SoftRenderer.SoftRenderer
             List<FragInfo> normalLineResult)
         {
             /* ======depth start====== */
-            var depthbuff = Per_Frag.DepthBuff;
+            var framebuff = FrameBuffer;
+            var depthbuff = FrameBuffer.Attachment.DepthBuffer;
             var depthwrite = State.DepthWrite;
             //var maxZ = State.CameraFar;
             //maxZ += State.CameraFar * State.CameraNear;
@@ -653,7 +688,7 @@ namespace SoftRenderer.SoftRenderer
 
             // shaded
             var len = shadedResult.Count;
-            var bmd = Begin(); // begin
+            var backbuffer = FrameBuffer.Attachment.ColorBuffer[0];
             for (int i = 0; i < len; i++)
             {
                 var f = shadedResult[i];
@@ -662,7 +697,7 @@ namespace SoftRenderer.SoftRenderer
                     testDepth += offsetDepth;
 
                 // 深度测试
-                if (depthbuff.Test(State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                if (framebuff.DepthTest(State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
                 {
                     // 执行fragment shader
                     var jLen = f.ShaderOut.upperStageOutInfos.Length;
@@ -680,7 +715,8 @@ namespace SoftRenderer.SoftRenderer
                     // 是否开启深度写入
                     if (depthwrite == DepthWrite.On)
                     {
-                        depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
+                        testDepth = Mathf.Clamp(testDepth, 0, 1);
+                        depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
                     }
 
                     var srcColor = fs.ShaderProperties.GetOut<Vector4>(OutLayout.SV_Target); // 目前值处理SV_Target0
@@ -698,10 +734,10 @@ namespace SoftRenderer.SoftRenderer
                     // 是否开启混合
                     if (blend == Blend.On)
                     {
-                        var dstColor = BeginRead(bmd.Scan0, f.p);
-                        srcColor  = Per_Frag.Blend(srcColor, dstColor, srcColorFactor, dstColorFactor, srcAlphaFactor, dstAlphaFactor, colorOp, alphaOp);
+                        var dstColor = backbuffer.Get((int)f.p.x, (int)f.p.y);
+                        srcColor  = BlendHandle(srcColor, dstColor, srcColorFactor, dstColorFactor, srcAlphaFactor, dstAlphaFactor, colorOp, alphaOp);
                     }
-                    BeginSetPixel(bmd.Scan0, f.p, srcColor);
+                    framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, srcColor);
                 }
             }
 
@@ -717,14 +753,14 @@ namespace SoftRenderer.SoftRenderer
                 var f = wireframeResult[i];
                 var testDepth = f.depth + offsetDepth;
                 var c = wireframeColor;
-                if (depthbuff.Test(ComparisonFunc.Less, (int)f.p.x, (int)f.p.y, testDepth))
+                if (framebuff.DepthTest(ComparisonFunc.Less, (int)f.p.x, (int)f.p.y, testDepth))
                 {
                     // 是否开启深度写入
                     if (depthwrite == DepthWrite.On)
                     {
-                        depthbuff.Write((int)f.p.x, (int)f.p.y, testDepth);
+                        depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
                     }
-                    BeginSetPixel(bmd.Scan0, f.p, c);
+                    backbuffer.Set((int)f.p.x, (int)f.p.y, c);
                 }
             }
 
@@ -737,87 +773,74 @@ namespace SoftRenderer.SoftRenderer
                 {
                     var f = normalLineResult[i];
                     if (f.discard) continue;
-                    BeginSetPixel(bmd.Scan0, f.p, f.normalLineColor);
+                    backbuffer.Set((int)f.p.x, (int)f.p.y, f.normalLineColor);
                 }
             }
-
-            End(bmd); // end
         }
-
         public void BindVertexBuff(VertexBuffer buffer)
         {
             CurVertexBuffer = buffer;
         }
-
         public void BindIndexBuff(IndexBuffer buffer)
         {
             CurIndexBuffer = buffer;
         }
-
         public void BackbuffSaveAs(string path)
         {
-            Bitmap bmp = frontBuffer;
-            bmp.Save(path);
+            using (var bmp = new Bitmap(BackBufferWidth, BackBufferHeight))
+            {
+                SwapBuffer(bmp);
+                bmp.Save(path);
+            }
         }
-
-        public Bitmap BackbuffSaveAs()
+        public void BackbuffSaveAs(Bitmap result)
         {
-            Bitmap bmp = frontBuffer;
-            return bmp.Clone(new Rectangle(0, 0, bmp.Width, bmp.Height), bmp.PixelFormat);
+            SwapBuffer(result);
         }
-
-        internal BitmapData Begin()
-        {
-            return backBuffer.Begin();
-        }
-        internal void BeginSetPixel(IntPtr ptr, Vector3 v, Vector4 color)
-        {
-            //BeginSetPixel(ptr, (int)Math.Round(v.x), (int)Math.Round(v.y), color);
-            BeginSetPixel(ptr, (int)(v.x), (int)(v.y), color);
-        }
-        internal void BeginSetPixel(IntPtr ptr, int x, int y, Vector4 color)
-        {
-            //if (x < 0 || x >= backBufferWidth || y < 0 || y >= backBufferHeight) return;
-            color.Clamp();
-            backBuffer.BeginSetPixel(ptr, x, y, color);
-#if DOUBLE_BUFF
-            bufferDirty = true;
-#endif
-        }
-        internal Vector4 BeginRead(IntPtr ptr, int x, int y)
-        {
-            //if (x < 0 || x >= backBufferWidth || y < 0 || y >= backBufferHeight) return;
-            return backBuffer.BeginRead(ptr, x, y);
-        }
-        internal Vector4 BeginRead(IntPtr ptr, Vector3 p)
-        {
-            return BeginRead(ptr, (int)p.x, (int)p.y);
-        }
-        internal void End(BitmapData bmd)
-        {
-            backBuffer.End(bmd);
-        }
-
-        internal void SetPixel(int x, int y, Vector4 color)
-        {
-            //if (x < 0 || x >= backBufferWidth || y < 0 || y >= backBufferHeight) return;
-            backBuffer.SetPixel(x, y, color);
-        }
-
-        public ColorBuffer SwapBuffer()
+        public Buffer_Color SwapBuffer()
         {
 #if DOUBLE_BUFF
             if (bufferDirty)
             {
                 bufferDirty = false;
-                var t = backBuffer;
-                backBuffer = frontBuffer;
+                var t = FrameBuffer.Attachment.ColorBuffer[0];
+                FrameBuffer.Attachment.ColorBuffer[0] = frontBuffer;
                 frontBuffer = t;
             }
             return frontBuffer;
 #else
-            return backBuffer;
+            return FrameBuffer.Attachment.ColorBuffer[0];
 #endif
+        }
+        public void SwapBuffer(Bitmap result)
+        {
+            var buff = SwapBuffer();
+
+            var w = BackBufferWidth;
+            var h = BackBufferHeight;
+
+            var bmd = result.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.WriteOnly, result.PixelFormat);
+            var ptr = bmd.Scan0;
+            for (int x = 0; x < w; x++)
+            {
+                for (int y = 0; y < h; y++)
+                {
+                    var writev = buff[x, y];
+#if BUFF_RGBA
+                    var offset = (x + y * w) * 4;
+                    Marshal.WriteByte(ptr, offset, (byte)(writev.b * 255));
+                    Marshal.WriteByte(ptr, offset + 1, (byte)(writev.g * 255));
+                    Marshal.WriteByte(ptr, offset + 2, (byte)(writev.r * 255));
+                    Marshal.WriteByte(ptr, offset + 3, (byte)(writev.a * 255));
+#else
+                    var offset = (x + y * w) * 3;
+                    Marshal.WriteByte(ptr, offset, (byte)(writev.b * 255));
+                    Marshal.WriteByte(ptr, offset + 1, (byte)(writev.g * 255));
+                    Marshal.WriteByte(ptr, offset + 2, (byte)(writev.r * 255));
+#endif
+                }
+            }
+            result.UnlockBits(bmd);
         }
 
         public void Dispose()
@@ -829,20 +852,15 @@ namespace SoftRenderer.SoftRenderer
                 frontBuffer.Dispose();
                 frontBuffer = null;
             }
-            if (backBuffer != null)
+            if (FrameBuffer != null)
             {
-                backBuffer.Dispose();
-                backBuffer = null;
+                FrameBuffer.Dispose();
+                FrameBuffer = null;
             }
             if (Rasterizer != null)
             {
                 Rasterizer.Dispose();
                 Rasterizer = null;
-            }
-            if (Per_Frag != null)
-            {
-                Per_Frag.Dispose();
-                Per_Frag = null;
             }
             if (ShaderData != null)
             {

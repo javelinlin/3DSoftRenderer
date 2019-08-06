@@ -56,15 +56,11 @@
     <Compile Include="Games\Games.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
-    <Compile Include="SoftRenderer\Renderer_ColorBuffer.cs" />
+    <Compile Include="SoftRenderer\Renderer_Buffer.cs" />
     <Compile Include="SoftRenderer\Rasterization\Rasterizer.cs" />
     <Compile Include="SoftRenderer\Primitives\Primitives.cs" />
     <Compile Include="SoftRenderer\Renderer.cs" />
-    <Compile Include="SoftRenderer\Renderer_Depthbuff.cs" />
     <Compile Include="SoftRenderer\Renderer_Enums.cs" />
-    <Compile Include="SoftRenderer\Renderer_Frags.cs" />
-    <Compile Include="SoftRenderer\Renderer_Per_Frag.cs" />
-    <Compile Include="SoftRenderer\Renderer_Per_Vertex.cs" />
     <Compile Include="SoftRenderer\Renderer_States.cs" />
     <Compile Include="SoftRenderer\Renderer_Shader.cs" />
     <Compile Include="SoftRenderer\Renderer_Texture.cs" />
