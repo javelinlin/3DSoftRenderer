@@ -75,6 +75,7 @@ namespace RendererShader
         [In] [Tangent(1)] public vec3 inBitangent;
 
         [Out] [SV_Target] public color outColor;
+        [Out] [SV_Target(1)] public color outNormal;
 
         public FragmentShader(BasicShaderData data) : base(data)
         {
@@ -143,6 +144,7 @@ namespace RendererShader
             ambient.rgb *= ambient.a;
 
             outColor = diffuse + specular + ambient;
+            outNormal = inNormal;
         }
     }
 

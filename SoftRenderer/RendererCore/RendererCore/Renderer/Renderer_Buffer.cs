@@ -112,7 +112,7 @@ namespace RendererCore.Renderer
 
         public Vector4 ClearedColor
         {
-            get=> clearedColor;
+            get=> this.clearedColor;
             set
             {
                 if (this.clearedColor != value)
@@ -124,7 +124,7 @@ namespace RendererCore.Renderer
         }
         public float ClearedDepth
         {
-            get => ClearedDepth;
+            get => this.clearedDepth;
             set
             {
                 if (this.clearedDepth != value)
@@ -136,7 +136,7 @@ namespace RendererCore.Renderer
         }
         public byte ClearedStencil
         {
-            get => ClearedStencil;
+            get => this.clearedStencil;
             set
             {
                 if (this.clearedStencil != value)

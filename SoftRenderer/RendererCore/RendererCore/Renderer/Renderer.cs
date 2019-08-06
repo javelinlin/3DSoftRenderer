@@ -1,7 +1,6 @@
 ﻿// jave.lin 2019.07.15
 
 #define DOUBLE_BUFF // 使用双缓存
-//#define BUFF_RGBA // 使用4通道缓存，不开使用3通道，没有Alpha
 
 using RendererCore.Renderer.Primitives;
 using RendererCore.Renderer.Rasterization;
@@ -48,10 +47,16 @@ namespace RendererCore.Renderer
         public VertexBuffer CurVertexBuffer { get; private set; }
         public IndexBuffer CurIndexBuffer { get; private set; }
 
-        public Renderer(int bufferW = 512, int bufferH = 512)
+        public PixelFormat OutPxielFormat { get; }
+        public int OutPixelFormatSize { get; }
+
+        public Renderer(int bufferW = 512, int bufferH = 512, PixelFormat outPixelFormat = PixelFormat.Format24bppRgb)
         {
             this.BackBufferWidth = bufferW;
             this.BackBufferHeight = bufferH;
+
+            this.OutPxielFormat = outPixelFormat;
+            this.OutPixelFormatSize = GetDevicePixelSize(outPixelFormat);
 
             this.defaultFrameBuffer = new FrameBuffer(bufferW, bufferH);
             this.FrameBuffer = this.defaultFrameBuffer;     // using default buffer
@@ -204,20 +209,151 @@ namespace RendererCore.Renderer
         }
 
         // 后效
-        // 后面我会完善后效的架构，目前测试用 // for testing here code
-        // 因为后面需要重写ColorBuffer，改写成FrameBuffer
-        // Shader需要添加Pass
-        // Present接口改：DrawCall, Flush接口处理
-        //  - DrawCall处理都是绘制到FrameBuffer
-        //  - Flush会将当前的FrameBuffer刷新到对象的设备（这里是Bitmap）
         public void PostProcess()
         {
-            // 抗锯齿处理
+            // 抗锯齿处理，这里的抗锯齿算法有问题，有空再去研究真的MSAA算法
             AAHandle();
             // 全屏模糊
             FullScreenBlurHandle();
         }
 
+        public void BindVertexBuff(VertexBuffer buffer)
+        {
+            CurVertexBuffer = buffer;
+        }
+        public void BindIndexBuff(IndexBuffer buffer)
+        {
+            CurIndexBuffer = buffer;
+        }
+        public void BackbuffSaveAs(string path)
+        {
+            using (var bmp = new Bitmap(BackBufferWidth, BackBufferHeight, OutPxielFormat))
+            {
+                SwapBuffer(bmp);
+                bmp.Save(path);
+            }
+        }
+        public void BackbuffSaveAs(Bitmap result)
+        {
+            SwapBuffer(result);
+        }
+        public Buffer_Color SwapBuffer()
+        {
+#if DOUBLE_BUFF
+            if (bufferDirty)
+            {
+                bufferDirty = false;
+                var t = FrameBuffer.Attachment.ColorBuffer[0];
+                FrameBuffer.Attachment.ColorBuffer[0] = frontBuffer;
+                frontBuffer = t;
+            }
+            return frontBuffer;
+#else
+            return FrameBuffer.Attachment.ColorBuffer[0];
+#endif
+        }
+        public void SwapBuffer(Bitmap result)
+        {
+            var targetPixelSize = GetDevicePixelSize(result.PixelFormat);
+            if (targetPixelSize != 3 && targetPixelSize != 4)
+                throw new Exception($"not support device pixel size:{targetPixelSize}, pixel format:{result.PixelFormat}");
+
+            var buff = SwapBuffer();
+
+            var w = BackBufferWidth;
+            var h = BackBufferHeight;
+
+            var bmd = result.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.WriteOnly, result.PixelFormat);
+            var ptr = bmd.Scan0;
+            if (OutPixelFormatSize == 4)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    for (int y = 0; y < h; y++)
+                    {
+                        var writev = buff[x, y];
+                        var offset = (x + y * w) * 4;
+                        Marshal.WriteByte(ptr, offset, (byte)(writev.b * 255));
+                        Marshal.WriteByte(ptr, offset + 1, (byte)(writev.g * 255));
+                        Marshal.WriteByte(ptr, offset + 2, (byte)(writev.r * 255));
+                        Marshal.WriteByte(ptr, offset + 3, (byte)(writev.a * 255));
+                    }
+                }
+            }
+            else if (OutPixelFormatSize == 3)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    for (int y = 0; y < h; y++)
+                    {
+                        var writev = buff[x, y];
+                        var offset = (x + y * w) * 3;
+                        Marshal.WriteByte(ptr, offset, (byte)(writev.b * 255));
+                        Marshal.WriteByte(ptr, offset + 1, (byte)(writev.g * 255));
+                        Marshal.WriteByte(ptr, offset + 2, (byte)(writev.r * 255));
+                    }
+                }
+            }
+            else
+            {
+                throw new Exception($"not supports out pixel format size:{OutPixelFormatSize}");
+            }
+            result.UnlockBits(bmd);
+        }
+        public void TargetWrite(Bitmap result, int targetLocal = 0)
+        {
+            var targetPixelSize = GetDevicePixelSize(result.PixelFormat);
+            if (targetPixelSize != 3 && targetPixelSize != 4)
+                throw new Exception($"not support device pixel size:{targetPixelSize}, pixel format:{result.PixelFormat}");
+
+            var buff = FrameBuffer.Attachment.ColorBuffer[targetLocal];
+
+            var w = BackBufferWidth;
+            var h = BackBufferHeight;
+
+            var bmd = result.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.WriteOnly, result.PixelFormat);
+            var ptr = bmd.Scan0;
+            if (OutPixelFormatSize == 4)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    for (int y = 0; y < h; y++)
+                    {
+                        var writev = buff[x, y];
+                        var offset = (x + y * w) * 4;
+                        Marshal.WriteByte(ptr, offset, (byte)(writev.b * 255));
+                        Marshal.WriteByte(ptr, offset + 1, (byte)(writev.g * 255));
+                        Marshal.WriteByte(ptr, offset + 2, (byte)(writev.r * 255));
+                        Marshal.WriteByte(ptr, offset + 3, (byte)(writev.a * 255));
+                    }
+                }
+            }
+            else if (OutPixelFormatSize == 3)
+            {
+                for (int x = 0; x < w; x++)
+                {
+                    for (int y = 0; y < h; y++)
+                    {
+                        var writev = buff[x, y];
+                        var offset = (x + y * w) * 3;
+                        Marshal.WriteByte(ptr, offset, (byte)(writev.b * 255));
+                        Marshal.WriteByte(ptr, offset + 1, (byte)(writev.g * 255));
+                        Marshal.WriteByte(ptr, offset + 2, (byte)(writev.r * 255));
+                    }
+                }
+            }
+            else
+            {
+                throw new Exception($"not supports out pixel format size:{OutPixelFormatSize}");
+            }
+            result.UnlockBits(bmd);
+        }
+        private int GetDevicePixelSize(PixelFormat format)
+        {
+            if (format == PixelFormat.Format24bppRgb) return 3;
+            if (format == PixelFormat.Format32bppArgb) return 4;
+            else throw new Exception($"not iplements out pixel size:{format}");
+        }
         // 为了外部测试用，所以我这里公开了AA的函数
         private void AAHandle()
         {
@@ -225,7 +361,7 @@ namespace RendererCore.Renderer
             switch (GlobalState.AAType)
             {
                 case AAType.MSAA: // 这个会很卡
-                    EdgePickup();              // 提取边缘
+                    AAEdgePickup();              // 提取边缘
                     MSAAHandle();              // 抗锯齿
                     break;
                     throw new Exception($"not implements error, aa type:{GlobalState.AAType}");
@@ -234,28 +370,28 @@ namespace RendererCore.Renderer
             }
         }
 
-        private int[] edgePosList;
-        private int edge_count;
+        private int[] AA_edgePosList;
+        private int AA_edge_count;
 
-        private void EdgePickup()
+        private void AAEdgePickup()
         {
             var depthbuff = FrameBuffer.Attachment.DepthBuffer;
             var w = BackBufferWidth;
             var h = BackBufferHeight;
 
-            if (edgePosList == null ||
-                edgePosList.Length != w * h)
+            if (AA_edgePosList == null ||
+                AA_edgePosList.Length != w * h)
             {
-                edgePosList = new int[w * h];
+                AA_edgePosList = new int[w * h];
             }
-            edge_count = 0;
+            AA_edge_count = 0;
 
             var sampleOffset = new int[]
                 { //x, y
                     // 1
-                    -1, -1,
+                    //-1, -1,
                     //1, -1,
-                    //-1, 1,
+                    -1, 1,
                     1, 1,
                 };
             var sampleCount = sampleOffset.Length;
@@ -318,9 +454,9 @@ namespace RendererCore.Renderer
                         {
                             FrameBuffer.WriteColor(0, x, y, edgeColor);
                         }
-                        edgePosList[edge_count] = x;
-                        edgePosList[edge_count + 1] = y;
-                        edge_count += 2;
+                        AA_edgePosList[AA_edge_count] = x;
+                        AA_edgePosList[AA_edge_count + 1] = y;
+                        AA_edge_count += 2;
                     }
                 }
             }
@@ -359,11 +495,10 @@ namespace RendererCore.Renderer
 
             var resampleCount = GlobalState.aa_resample_count;
 
-
-            for (int i = 0; i < edge_count; i += 2)
+            for (int i = 0; i < AA_edge_count; i += 2)
             {
-                var x = edgePosList[i];
-                var y = edgePosList[i + 1];
+                var x = AA_edgePosList[i];
+                var y = AA_edgePosList[i + 1];
                 var srcPosColor = backbuffer.Get(x, y);
                 for (int rs = 0; rs < resampleCount; rs++)
                 {
@@ -500,7 +635,7 @@ namespace RendererCore.Renderer
                 }
                 vs.Main();
 
-                var outs = vs.ShaderProperties.GetOuts();
+                var outs = vs.ShaderProperties.GetVertexOuts();
                 vertexshaderOutput.Add(new ShaderOut {  upperStageOutInfos = outs });
             }
         }
@@ -725,6 +860,13 @@ namespace RendererCore.Renderer
                     }
 
                     var srcColor = fs.ShaderProperties.GetOut<Vector4>(OutLayout.SV_Target); // 目前值处理SV_Target0
+                    var targets = fs.ShaderProperties.GetTargetOut();
+                    var tLen = targets.Length;
+                    for (int ti = 0; ti < tLen; ti++)
+                    {
+                        var tInfo = targets[ti];
+                        framebuff.WriteColor(tInfo.localtion, (int)f.p.x, (int)f.p.y, tInfo.data);
+                    }
                     //// alpha 测试
                     //if (alphaTest == AlphaTest.On)
                     //{
@@ -781,71 +923,6 @@ namespace RendererCore.Renderer
                     backbuffer.Set((int)f.p.x, (int)f.p.y, f.normalLineColor);
                 }
             }
-        }
-        public void BindVertexBuff(VertexBuffer buffer)
-        {
-            CurVertexBuffer = buffer;
-        }
-        public void BindIndexBuff(IndexBuffer buffer)
-        {
-            CurIndexBuffer = buffer;
-        }
-        public void BackbuffSaveAs(string path)
-        {
-            using (var bmp = new Bitmap(BackBufferWidth, BackBufferHeight))
-            {
-                SwapBuffer(bmp);
-                bmp.Save(path);
-            }
-        }
-        public void BackbuffSaveAs(Bitmap result)
-        {
-            SwapBuffer(result);
-        }
-        public Buffer_Color SwapBuffer()
-        {
-#if DOUBLE_BUFF
-            if (bufferDirty)
-            {
-                bufferDirty = false;
-                var t = FrameBuffer.Attachment.ColorBuffer[0];
-                FrameBuffer.Attachment.ColorBuffer[0] = frontBuffer;
-                frontBuffer = t;
-            }
-            return frontBuffer;
-#else
-            return FrameBuffer.Attachment.ColorBuffer[0];
-#endif
-        }
-        public void SwapBuffer(Bitmap result)
-        {
-            var buff = SwapBuffer();
-
-            var w = BackBufferWidth;
-            var h = BackBufferHeight;
-
-            var bmd = result.LockBits(new Rectangle(0, 0, w, h), ImageLockMode.WriteOnly, result.PixelFormat);
-            var ptr = bmd.Scan0;
-            for (int x = 0; x < w; x++)
-            {
-                for (int y = 0; y < h; y++)
-                {
-                    var writev = buff[x, y];
-#if BUFF_RGBA
-                    var offset = (x + y * w) * 4;
-                    Marshal.WriteByte(ptr, offset, (byte)(writev.b * 255));
-                    Marshal.WriteByte(ptr, offset + 1, (byte)(writev.g * 255));
-                    Marshal.WriteByte(ptr, offset + 2, (byte)(writev.r * 255));
-                    Marshal.WriteByte(ptr, offset + 3, (byte)(writev.a * 255));
-#else
-                    var offset = (x + y * w) * 3;
-                    Marshal.WriteByte(ptr, offset, (byte)(writev.b * 255));
-                    Marshal.WriteByte(ptr, offset + 1, (byte)(writev.g * 255));
-                    Marshal.WriteByte(ptr, offset + 2, (byte)(writev.r * 255));
-#endif
-                }
-            }
-            result.UnlockBits(bmd);
         }
 
         public void Dispose()

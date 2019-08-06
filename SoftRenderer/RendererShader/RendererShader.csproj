@@ -49,6 +49,7 @@
     <ProjectReference Include="..\RendererCoreCommon\RendererCoreCommon.csproj">
       <Project>{6c875b2c-dbf3-4b33-a28b-00a90dbf970c}</Project>
       <Name>RendererCoreCommon</Name>
+      <Private>False</Private>
     </ProjectReference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

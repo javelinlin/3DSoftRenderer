@@ -73,6 +73,8 @@ namespace SoftRenderer
         private GlobalMessageHandler globalMsg = new GlobalMessageHandler();
 
         private Bitmap deviceBmp;
+        private Bitmap normalBmp;
+        private Texture normalTex;
 
         public MainForm()
         {
@@ -99,9 +101,10 @@ namespace SoftRenderer
             renderer.State.BlendDstAlphaFactor = BlendFactor.One;
             // test
             //renderer.State.Cull = FaceCull.Off;
+            normalTex = new Texture(normalBmp = new Bitmap(deviceBmp.Width, deviceBmp.Height, deviceBmp.PixelFormat));
+            renderer.FrameBuffer.AttachColor(normalTex, 1);
 
             autoRotate = AutoRotateCheckBox.Checked;
-
 
             PropertyGrid.SelectedObject = renderer;
 
@@ -652,6 +655,9 @@ namespace SoftRenderer
 
                 renderer.SwapBuffer(deviceBmp);
                 PictureBox.Image = deviceBmp;
+
+                renderer.TargetWrite(normalBmp, 1);
+                DepthPictureBox.Image = normalBmp;
 
                 if (fpsShowType == FpsShowType.Immediately)
                 {

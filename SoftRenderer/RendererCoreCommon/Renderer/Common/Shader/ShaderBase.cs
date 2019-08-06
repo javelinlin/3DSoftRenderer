@@ -220,7 +220,25 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             return (T)outLayoutFieldDict[layout][num].GetValue(Shader);
         }
 
-        public OutInfo[] GetOuts()
+        public OutTargetInfo[] GetTargetOut()
+        {
+            outLayoutFieldDict.TryGetValue(OutLayout.SV_Target, out Dictionary<int, FieldInfo> dict);
+            var result = new OutTargetInfo[dict.Count];
+            if (dict.Count > 0)
+            {
+                var idx = 0;
+                foreach (var kv in dict)
+                {
+                    result[idx++] = new OutTargetInfo {
+                        localtion =kv.Key,
+                        data = (Vector4)kv.Value.GetValue(Shader),
+                    };
+                }
+            }
+            return result;
+        }
+
+        public OutInfo[] GetVertexOuts()
         {
             var count = 0;
             foreach (var kv in outLayoutFieldDict)
@@ -311,6 +329,13 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         {
             return (T)value;
         }
+    }
+
+    [Description("像素着色器的输出数据")]
+    public struct OutTargetInfo
+    {
+        public int localtion;
+        public Vector4 data;
     }
 
     [Description("着色器的输出数据容器")]

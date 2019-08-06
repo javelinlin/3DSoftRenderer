@@ -49,9 +49,11 @@
             this.richTextBox1 = new System.Windows.Forms.RichTextBox();
             this.ResetCamera = new System.Windows.Forms.Button();
             this.AutoRotateCheckBox = new System.Windows.Forms.CheckBox();
+            this.DepthPictureBox = new System.Windows.Forms.PictureBox();
             ((System.ComponentModel.ISupportInitialize)(this.PictureBox)).BeginInit();
             this.statusStrip1.SuspendLayout();
             ((System.ComponentModel.ISupportInitialize)(this.TimeScaleSlider)).BeginInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DepthPictureBox)).BeginInit();
             this.SuspendLayout();
             // 
             // PictureBox
@@ -69,9 +71,9 @@
             this.PropertyGrid.Anchor = ((System.Windows.Forms.AnchorStyles)((((System.Windows.Forms.AnchorStyles.Top | System.Windows.Forms.AnchorStyles.Bottom) 
             | System.Windows.Forms.AnchorStyles.Left) 
             | System.Windows.Forms.AnchorStyles.Right)));
-            this.PropertyGrid.Location = new System.Drawing.Point(377, 12);
+            this.PropertyGrid.Location = new System.Drawing.Point(675, 12);
             this.PropertyGrid.Name = "PropertyGrid";
-            this.PropertyGrid.Size = new System.Drawing.Size(270, 550);
+            this.PropertyGrid.Size = new System.Drawing.Size(281, 556);
             this.PropertyGrid.TabIndex = 5;
             // 
             // timer1
@@ -85,7 +87,7 @@
             this.FpsLabel1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.FpsLabel1.AutoSize = true;
             this.FpsLabel1.BackColor = System.Drawing.Color.Transparent;
-            this.FpsLabel1.Location = new System.Drawing.Point(12, 516);
+            this.FpsLabel1.Location = new System.Drawing.Point(12, 522);
             this.FpsLabel1.Name = "FpsLabel1";
             this.FpsLabel1.Size = new System.Drawing.Size(31, 15);
             this.FpsLabel1.TabIndex = 7;
@@ -94,7 +96,7 @@
             // PauseBtn
             // 
             this.PauseBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.PauseBtn.Location = new System.Drawing.Point(12, 534);
+            this.PauseBtn.Location = new System.Drawing.Point(12, 540);
             this.PauseBtn.Name = "PauseBtn";
             this.PauseBtn.Size = new System.Drawing.Size(88, 27);
             this.PauseBtn.TabIndex = 8;
@@ -105,7 +107,7 @@
             // SelectCameraBtn
             // 
             this.SelectCameraBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectCameraBtn.Location = new System.Drawing.Point(106, 534);
+            this.SelectCameraBtn.Location = new System.Drawing.Point(106, 540);
             this.SelectCameraBtn.Name = "SelectCameraBtn";
             this.SelectCameraBtn.Size = new System.Drawing.Size(118, 27);
             this.SelectCameraBtn.TabIndex = 9;
@@ -116,7 +118,7 @@
             // SelectRendererBtn
             // 
             this.SelectRendererBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectRendererBtn.Location = new System.Drawing.Point(230, 534);
+            this.SelectRendererBtn.Location = new System.Drawing.Point(230, 540);
             this.SelectRendererBtn.Name = "SelectRendererBtn";
             this.SelectRendererBtn.Size = new System.Drawing.Size(141, 27);
             this.SelectRendererBtn.TabIndex = 10;
@@ -127,7 +129,7 @@
             // SelectFormBtn
             // 
             this.SelectFormBtn.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.SelectFormBtn.Location = new System.Drawing.Point(230, 501);
+            this.SelectFormBtn.Location = new System.Drawing.Point(230, 507);
             this.SelectFormBtn.Name = "SelectFormBtn";
             this.SelectFormBtn.Size = new System.Drawing.Size(141, 27);
             this.SelectFormBtn.TabIndex = 11;
@@ -138,7 +140,7 @@
             // button1
             // 
             this.button1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.button1.Location = new System.Drawing.Point(106, 501);
+            this.button1.Location = new System.Drawing.Point(106, 507);
             this.button1.Name = "button1";
             this.button1.Size = new System.Drawing.Size(118, 27);
             this.button1.TabIndex = 12;
@@ -152,9 +154,9 @@
             this.statusStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.statusLabel,
             this.focusCtrlLabel});
-            this.statusStrip1.Location = new System.Drawing.Point(0, 562);
+            this.statusStrip1.Location = new System.Drawing.Point(0, 568);
             this.statusStrip1.Name = "statusStrip1";
-            this.statusStrip1.Size = new System.Drawing.Size(659, 25);
+            this.statusStrip1.Size = new System.Drawing.Size(968, 25);
             this.statusStrip1.TabIndex = 13;
             this.statusStrip1.Text = "statusStrip1";
             // 
@@ -172,7 +174,7 @@
             // resetTRS
             // 
             this.resetTRS.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.resetTRS.Location = new System.Drawing.Point(263, 468);
+            this.resetTRS.Location = new System.Drawing.Point(263, 474);
             this.resetTRS.Name = "resetTRS";
             this.resetTRS.Size = new System.Drawing.Size(108, 27);
             this.resetTRS.TabIndex = 14;
@@ -184,7 +186,7 @@
             // 
             this.TimeScaleLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.TimeScaleLabel.AutoSize = true;
-            this.TimeScaleLabel.Location = new System.Drawing.Point(12, 408);
+            this.TimeScaleLabel.Location = new System.Drawing.Point(12, 414);
             this.TimeScaleLabel.Name = "TimeScaleLabel";
             this.TimeScaleLabel.Size = new System.Drawing.Size(151, 15);
             this.TimeScaleLabel.TabIndex = 15;
@@ -193,7 +195,7 @@
             // TimeScaleSlider
             // 
             this.TimeScaleSlider.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.TimeScaleSlider.Location = new System.Drawing.Point(161, 407);
+            this.TimeScaleSlider.Location = new System.Drawing.Point(161, 413);
             this.TimeScaleSlider.Maximum = 1000;
             this.TimeScaleSlider.Name = "TimeScaleSlider";
             this.TimeScaleSlider.Size = new System.Drawing.Size(151, 56);
@@ -206,7 +208,7 @@
             // 
             this.TimeScaleValueLabel.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.TimeScaleValueLabel.AutoSize = true;
-            this.TimeScaleValueLabel.Location = new System.Drawing.Point(318, 408);
+            this.TimeScaleValueLabel.Location = new System.Drawing.Point(318, 414);
             this.TimeScaleValueLabel.Name = "TimeScaleValueLabel";
             this.TimeScaleValueLabel.Size = new System.Drawing.Size(31, 15);
             this.TimeScaleValueLabel.TabIndex = 17;
@@ -216,7 +218,7 @@
             // 
             this.richTextBox1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
             this.richTextBox1.BorderStyle = System.Windows.Forms.BorderStyle.None;
-            this.richTextBox1.Location = new System.Drawing.Point(12, 318);
+            this.richTextBox1.Location = new System.Drawing.Point(12, 324);
             this.richTextBox1.Name = "richTextBox1";
             this.richTextBox1.ReadOnly = true;
             this.richTextBox1.Size = new System.Drawing.Size(359, 87);
@@ -226,7 +228,7 @@
             // ResetCamera
             // 
             this.ResetCamera.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Left)));
-            this.ResetCamera.Location = new System.Drawing.Point(149, 469);
+            this.ResetCamera.Location = new System.Drawing.Point(149, 475);
             this.ResetCamera.Name = "ResetCamera";
             this.ResetCamera.Size = new System.Drawing.Size(108, 27);
             this.ResetCamera.TabIndex = 21;
@@ -240,7 +242,7 @@
             this.AutoRotateCheckBox.AutoSize = true;
             this.AutoRotateCheckBox.Checked = true;
             this.AutoRotateCheckBox.CheckState = System.Windows.Forms.CheckState.Checked;
-            this.AutoRotateCheckBox.Location = new System.Drawing.Point(15, 473);
+            this.AutoRotateCheckBox.Location = new System.Drawing.Point(15, 479);
             this.AutoRotateCheckBox.Name = "AutoRotateCheckBox";
             this.AutoRotateCheckBox.Size = new System.Drawing.Size(109, 19);
             this.AutoRotateCheckBox.TabIndex = 22;
@@ -248,11 +250,21 @@
             this.AutoRotateCheckBox.UseVisualStyleBackColor = true;
             this.AutoRotateCheckBox.CheckedChanged += new System.EventHandler(this.AutoRotateCheckBox_CheckedChanged);
             // 
+            // DepthPictureBox
+            // 
+            this.DepthPictureBox.BackColor = System.Drawing.Color.Transparent;
+            this.DepthPictureBox.Location = new System.Drawing.Point(340, 12);
+            this.DepthPictureBox.Name = "DepthPictureBox";
+            this.DepthPictureBox.Size = new System.Drawing.Size(300, 300);
+            this.DepthPictureBox.TabIndex = 23;
+            this.DepthPictureBox.TabStop = false;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 15F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(659, 587);
+            this.ClientSize = new System.Drawing.Size(968, 593);
+            this.Controls.Add(this.DepthPictureBox);
             this.Controls.Add(this.AutoRotateCheckBox);
             this.Controls.Add(this.ResetCamera);
             this.Controls.Add(this.richTextBox1);
@@ -277,6 +289,7 @@
             this.statusStrip1.ResumeLayout(false);
             this.statusStrip1.PerformLayout();
             ((System.ComponentModel.ISupportInitialize)(this.TimeScaleSlider)).EndInit();
+            ((System.ComponentModel.ISupportInitialize)(this.DepthPictureBox)).EndInit();
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -302,6 +315,7 @@
         private System.Windows.Forms.RichTextBox richTextBox1;
         private System.Windows.Forms.Button ResetCamera;
         private System.Windows.Forms.CheckBox AutoRotateCheckBox;
+        private System.Windows.Forms.PictureBox DepthPictureBox;
     }
 }
 
