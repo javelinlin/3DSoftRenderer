@@ -1,4 +1,5 @@
-﻿using RendererCoreCommon.Renderer.Common.Attributes;
+﻿// jave.lin 2019.08.06
+using RendererCoreCommon.Renderer.Common.Attributes;
 using RendererCoreCommon.Renderer.Common.Shader;
 using System;
 using System.ComponentModel;
@@ -31,8 +32,7 @@ namespace RendererShader
         [Uniform] public float specularPow = 1;
         public Sampler2D sampler = default(Sampler2D);
 
-        /* ==========In or Out======== */
-
+        // 查看该shader时，先将下面的subshader, pass[n]先的IDE里代码折叠起来，会清晰很多
         private class _SubShader : SubShaderExt<SphereShader>
         {
             public _SubShader(SphereShader shader) : base(shader)
@@ -42,6 +42,7 @@ namespace RendererShader
             }
         }
 
+        // 正常绘制模式的pass
         private class _PassExt : PassExt<_SubShader>
         {
             /* ==========In or Out======== */
@@ -186,6 +187,7 @@ namespace RendererShader
             }
         }
 
+        // 描边的pass
         private class _PassExt1 : PassExt<_SubShader>
         {
             /* ==========In or Out======== */
