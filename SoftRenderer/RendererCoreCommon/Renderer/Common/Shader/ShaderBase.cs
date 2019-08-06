@@ -1,9 +1,12 @@
 ﻿// jave.lin 2019.07.21
+#define SHOW_WARNING_NOT_FOUND_SHADER_FIELD // 没有找到Shader字段时，提示警告
+
 using RendererCoreCommon.Renderer.Common.Attributes;
 using RendererCoreCommon.Renderer.Common.Mathes;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
+using System.Drawing;
 using System.Reflection;
 
 namespace RendererCoreCommon.Renderer.Common.Shader
@@ -41,13 +44,34 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         F4,
     }
 
-    [Description("Shader字段反射")]
-    [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class ShaderFieldReflection : IDisposable
+    [Description("FuncData字段类")]
+    public class FuncField : IDisposable
     {
-        private Dictionary<string, FieldInfo> uniformFieldDictName = new Dictionary<string, FieldInfo>();
-        private Dictionary<int, FieldInfo> uniformFieldDictHash = new Dictionary<int, FieldInfo>();
+        public FuncFieldReflection<FuncField> Properties { get; private set; }
+        public Pass Pass { get; private set; }
 
+        public FuncField(Pass pass)
+        {
+            Pass = pass;
+            Properties = new FuncFieldReflection<FuncField>(this);
+        }
+
+        public virtual void Dispose()
+        {
+            GC.SuppressFinalize(this);
+
+            if (Properties != null)
+            {
+                Properties.Dispose();
+                Properties = null;
+            }
+            Pass = null;
+        }
+    }
+
+    [Description("FuncData字段反射")]
+    public class FuncFieldReflection<T> : IDisposable
+    {
         private Dictionary<string, FieldInfo> inFieldDictName = new Dictionary<string, FieldInfo>();
         private Dictionary<int, FieldInfo> inFieldDictHash = new Dictionary<int, FieldInfo>();
 
@@ -57,13 +81,11 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         private Dictionary<FieldInfo, bool> nointerpolationFlagDict = new Dictionary<FieldInfo, bool>();
         private Dictionary<FieldInfo, LayoutFloatNum> layoutFloatNumDict = new Dictionary<FieldInfo, LayoutFloatNum>();
 
-        public ShaderBase Shader { get; private set; }
-
-        public ShaderFieldReflection(ShaderBase shader)
+        public T Owner { get; private set; }
+        public FuncFieldReflection(T owner)
         {
-            Shader = shader;
-
-            var type = shader.GetType();
+            Owner = owner;
+            var type = owner.GetType();
             var fs = type.GetFields();
             var uniformAtType = typeof(UniformAttribute);
             var inAtType = typeof(InAttribute);
@@ -79,24 +101,8 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             {
                 foreach (var at in f.CustomAttributes)
                 {
-                    // 收集uniform字段
-                    if (at.AttributeType.IsEquivalentTo(uniformAtType))
-                    {
-                        var outConflict = f.GetCustomAttribute<OutAttribute>(); // conflict out
-                        if (outConflict != null)
-                        {
-                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {outConflict.GetType().Name}");
-                        }
-                        var inConflict = f.GetCustomAttribute<InAttribute>();  // conflict in
-                        if (inConflict != null)
-                        {
-                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {inConflict.GetType().Name}");
-                        }
-                        uniformFieldDictName[f.Name] = f;
-                        uniformFieldDictHash[f.Name.GetHashCode()] = f;
-                    }
                     // 收集in字段
-                    else if (at.AttributeType.IsEquivalentTo(inAtType))
+                    if (at.AttributeType.IsEquivalentTo(inAtType))
                     {
                         var conflict = f.GetCustomAttribute<UniformAttribute>(); // conflict uniform
                         if (conflict != null)
@@ -175,22 +181,24 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             }
         }
 
-        // 以name指定变量，设置uniform变量的数据，
-        public void SetUniform<T>(string name, T value)
-        {
-            uniformFieldDictName[name].SetValue(Shader, value);
-        }
-
-        // 以hash指定变量，设置uniform变量的数据，
-        public void SetUniform<T>(int hash, T value)
-        {
-            uniformFieldDictHash[hash].SetValue(Shader, value);
-        }
-
         // 根据输入限定符来输入数据
-        public void SetIn<T>(InLayout layout, T value, int num = 0)
+        public void SetIn<T>(InLayout layout, T value, int location = 0)
         {
-            inLayoutFieldDict[layout][num].SetValue(Shader, value);
+#if SHOW_WARNING_NOT_FOUND_SHADER_FIELD
+            if (inLayoutFieldDict.TryGetValue(layout, out Dictionary<int, FieldInfo> dict))
+            {
+                if (dict.TryGetValue(location, out FieldInfo f))
+                {
+                    f.SetValue(Owner, value);
+                }
+                else
+                    ;// Console.WriteLine($"Not found the location:{location}");
+            }
+            else
+                ;// Console.WriteLine($"Not found the layout:{layout}");
+#else
+            inLayoutFieldDict[layout][location].SetValue(Owner, value);
+#endif
         }
 
         // 根据输出限定符来输入数据
@@ -215,9 +223,9 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             SetIn<T>(inlayout, value, num);
         }
 
-        public T GetOut<T>(OutLayout layout, int num = 0) where T: struct
+        public T GetOut<T>(OutLayout layout, int num = 0) where T : struct
         {
-            return (T)outLayoutFieldDict[layout][num].GetValue(Shader);
+            return (T)outLayoutFieldDict[layout][num].GetValue(Owner);
         }
 
         public OutTargetInfo[] GetTargetOut()
@@ -229,9 +237,10 @@ namespace RendererCoreCommon.Renderer.Common.Shader
                 var idx = 0;
                 foreach (var kv in dict)
                 {
-                    result[idx++] = new OutTargetInfo {
-                        localtion =kv.Key,
-                        data = (Vector4)kv.Value.GetValue(Shader),
+                    result[idx++] = new OutTargetInfo
+                    {
+                        localtion = kv.Key,
+                        data = (Vector4)kv.Value.GetValue(Owner),
                     };
                 }
             }
@@ -257,13 +266,103 @@ namespace RendererCoreCommon.Renderer.Common.Shader
                     {
                         layout = kv.Key,
                         location = kkvv.Key,
-                        value = kkvv.Value.GetValue(Shader),
+                        value = kkvv.Value.GetValue(Owner),
                         nointerpolation = nointerpolation,
                         floatNum = floatNum,
                     };
                 }
             }
             return result;
+        }
+
+        public void Dispose()
+        {
+            GC.SuppressFinalize(this);
+
+            inFieldDictName = null;
+            inFieldDictHash = null;
+            inLayoutFieldDict = null;
+            outLayoutFieldDict = null;
+            nointerpolationFlagDict = null;
+            layoutFloatNumDict = null;
+
+            Owner = default(T);
+        }
+    }
+
+    [Description("Shader字段反射")]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ShaderFieldReflection : IDisposable
+    {
+        private Dictionary<string, FieldInfo> uniformFieldDictName = new Dictionary<string, FieldInfo>();
+        private Dictionary<int, FieldInfo> uniformFieldDictHash = new Dictionary<int, FieldInfo>();
+
+        public ShaderBase Shader { get; private set; }
+
+        public ShaderFieldReflection(ShaderBase shader)
+        {
+            Shader = shader;
+
+            var type = shader.GetType();
+            var fs = type.GetFields();
+            var uniformAtType = typeof(UniformAttribute);
+            var inAtType = typeof(InAttribute);
+            var outAtType = typeof(OutAttribute);
+            var nointerpolation = typeof(NointerpolationAttribute);
+
+            var fType = typeof(float);
+            var vec2Type = typeof(Vector2);
+            var vec3Type = typeof(Vector3);
+            var vec4Type = typeof(Vector4);
+
+            foreach (var f in fs)
+            {
+                foreach (var at in f.CustomAttributes)
+                {
+                    // 收集uniform字段
+                    if (at.AttributeType.IsEquivalentTo(uniformAtType))
+                    {
+                        var outConflict = f.GetCustomAttribute<OutAttribute>(); // conflict out
+                        if (outConflict != null)
+                        {
+                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {outConflict.GetType().Name}");
+                        }
+                        var inConflict = f.GetCustomAttribute<InAttribute>();  // conflict in
+                        if (inConflict != null)
+                        {
+                            throw new Exception($"Shader:{type.Name} field:{f.Name}'s {at.AttributeType.Name} conflict, it also has {inConflict.GetType().Name}");
+                        }
+                        uniformFieldDictName[f.Name] = f;
+                        uniformFieldDictHash[f.Name.GetHashCode()] = f;
+                    }
+                }
+            }
+        }
+
+        // 以name指定变量，设置uniform变量的数据，
+        public void SetUniform<T>(string name, T value)
+        {
+            uniformFieldDictName[name].SetValue(Shader, value);
+        }
+
+        // 以hash指定变量，设置uniform变量的数据，
+        public void SetUniform<T>(int hash, T value)
+        {
+#if SHOW_WARNING_NOT_FOUND_SHADER_FIELD
+            if (uniformFieldDictHash.TryGetValue(hash, out FieldInfo f))
+            {
+                if (f != null)
+                {
+                    f.SetValue(Shader, value);
+                }
+                else
+                    ; // Console.WriteLine($"not found uniform field:{hash}");
+            }
+            else
+                ; // Console.WriteLine($"not found uniform field:{hash}");
+#else
+            uniformFieldDictHash[hash].SetValue(Shader, value);
+#endif
         }
 
         public void Dispose()
@@ -278,39 +377,6 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             {
                 uniformFieldDictHash.Clear();
                 uniformFieldDictHash = null;
-            }
-            if (inFieldDictName != null)
-            {
-                inFieldDictName.Clear();
-                inFieldDictName = null;
-            }
-            if (inFieldDictHash != null)
-            {
-                inFieldDictHash.Clear();
-                inFieldDictHash = null;
-            }
-            if (inLayoutFieldDict != null)
-            {
-                foreach (var kv in inLayoutFieldDict)
-                {
-                    kv.Value.Clear();
-                }
-                inLayoutFieldDict.Clear();
-                inLayoutFieldDict = null;
-            }
-            if (outLayoutFieldDict != null)
-            {
-                foreach (var kv in outLayoutFieldDict)
-                {
-                    kv.Value.Clear();
-                }
-                outLayoutFieldDict.Clear();
-                outLayoutFieldDict = null;
-            }
-            if (nointerpolationFlagDict != null)
-            {
-                nointerpolationFlagDict.Clear();
-                nointerpolationFlagDict = null;
             }
             Shader = null;
         }
@@ -399,10 +465,56 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         }
     }
 
-    [Description("Shader基类")]
+    [Description("Shader.SubShader.Pass.DrawState")]
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class ShaderBase : IDisposable
+    public class DrawState
     {
+        [Category("Blend")] public Blend Blend { get; set; } = Blend.Off;
+        [Category("Blend")] public BlendFactor BlendSrcColorFactor { get; set; } = BlendFactor.SrcAlpha;
+        [Category("Blend")] public BlendFactor BlendDstColorFactor { get; set; } = BlendFactor.OneMinusSrcAlpha;
+        [Category("Blend")] public BlendFactor BlendSrcAlphaFactor { get; set; } = BlendFactor.One;
+        [Category("Blend")] public BlendFactor BlendDstAlphaFactor { get; set; } = BlendFactor.Zero;
+        [Category("Blend")] public BlendOp BlendColorOp { get; set; } = BlendOp.Add;
+        [Category("Blend")] public BlendOp BlendAlphaOp { get; set; } = BlendOp.Add;
+
+        [Category("Scissor")]
+        public Rectangle ScissorRect { get; set; }
+        [Category("Scissor")]
+        public Scissor Scissor { get; set; } = Scissor.Off;
+        [Category("Facing-Culling")]
+        public FrontFace FrontFace { get; set; } = FrontFace.Clock;
+        [Category("Facing-Culling")]
+        public FaceCull Cull { get; set; } = FaceCull.Back;
+        [Category("Depth")]
+        public DepthWrite DepthWrite { get; set; } = DepthWrite.On;
+        [Category("Depth")]
+        public ComparisonFunc DepthTest { get; set; } = ComparisonFunc.Less;
+        [Category("Depth")]
+        public DepthOffset DepthOffset { get; set; } = DepthOffset.Off;
+        [Category("PolygonMode")]
+        public PolygonMode PolygonMode { get; set; } = PolygonMode.Triangle;
+        [Category("Depth")]
+        [Description("Depth的掠射角偏移系数")]
+        public float DepthOffsetFactor { get; set; } = 0;
+        [Category("Depth的最小深度刻度单位偏移系数")]
+        public float DepthOffsetUnit { get; set; } = 0;
+    }
+
+    [Description("Shader.SubShader.Pass")]
+    public class Pass : IDisposable
+    {
+        public DrawState State { get; protected set; }
+
+        public SubShader SubShader { get; private set; }
+
+        public bool Actived { get; set; } = true;
+
+        public virtual FuncField VertField { get; protected set; }
+        //public virtual FuncField TessCtrlField { get; protected set; }
+        //public virtual FuncField TessEvaField { get; protected set; }
+        //public virtual FuncField GeometryField { get; protected set; }
+        public virtual FuncField FragField { get; protected set; }
+
         protected static float dot(Vector2 v1, Vector2 v2) => v1.Dot(v2);
         protected static float dot(Vector3 v1, Vector3 v2) => v1.Dot(v2);
         protected static float dot(Vector4 v1, Vector4 v2) => v1.Dot(v2);
@@ -417,14 +529,133 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         protected static Vector2 clamp(Vector2 v, float min, float max) => Mathf.Clamp(v, min, max);
         protected static Vector3 clamp(Vector3 v, float min, float max) => Mathf.Clamp(v, min, max);
         protected static Vector4 clamp(Vector4 v, float min, float max) => Mathf.Clamp(v, min, max);
-        protected static Vector4 tex2D(Sampler2D sampler, Texture2D tex, Vector2 uv)=> sampler.Sample(tex, uv);
+        protected static Vector4 tex2D(Sampler2D sampler, Texture2D tex, Vector2 uv) => sampler.Sample(tex, uv);
         protected static float pow(float v, float times) => (float)Math.Pow(v, times);
         protected static float min(float a, float b) => Mathf.Min(a, b);
         protected static float max(float a, float b) => Mathf.Max(a, b);
 
+        public Pass(SubShader subshader)
+        {
+            State = new DrawState();
+            SubShader = subshader;
+        }
+
+        public virtual void Attach()
+        {
+
+        }
+
+        public virtual void Dispose()
+        {
+            GC.SuppressFinalize(this);
+
+            if (VertField != null)
+            {
+                VertField.Dispose();
+                VertField = null;
+            }
+            if (FragField != null)
+            {
+                FragField.Dispose();
+                FragField = null;
+            }
+
+            State = null;
+            SubShader = null;
+        }
+    }
+
+    [Description("Shader.SubShader")]
+    public class SubShader : IDisposable
+    {
+        public bool IsSupported { get; private set; } = true;
+
+        public List<Pass> passList { get; private set; }
+        public ShaderBase Shader { get; private set; }
+
+        public SubShader(ShaderBase shader)
+        {
+            passList = new List<Pass>();
+            Shader = shader;
+        }
+
+        public virtual void Dispose()
+        {
+            GC.SuppressFinalize(this);
+
+            if (passList != null)
+            {
+                foreach (var p in passList)
+                {
+                    p.Dispose();
+                }
+                passList.Clear();
+                passList = null;
+            }
+            Shader = null;
+        }
+    }
+
+    public delegate void Vert();
+    public delegate void TessCtrl();
+    public delegate void TessEva();
+    public delegate void Geometry();
+    public delegate void Frag();
+
+    public class SubShaderExt<T> : SubShader where T : ShaderBase
+    {
+        public T Shader_T { get; private set; }
+
+        public SubShaderExt(T shader) : base(shader)
+        {
+            Shader_T = shader;
+        }
+
+        public override void Dispose()
+        {
+            Shader_T = default(T);
+
+            base.Dispose();
+        }
+    }
+
+    public class PassExt<T> : Pass where T : SubShader
+    {
+        public T SubShader_T { get; private set; }
+
+        public PassExt(T subshader) : base(subshader)
+        {
+            SubShader_T = subshader;
+        }
+
+        public override void Dispose()
+        {
+            GC.SuppressFinalize(this);
+
+            SubShader_T = null;
+
+            base.Dispose();
+        }
+    }
+
+    [Description("Shader基类")]
+    [TypeConverter(typeof(ExpandableObjectConverter))]
+    public class ShaderBase : IDisposable
+    {
         public ShaderFieldReflection ShaderProperties;
-        [SharedData]
         public BasicShaderData Data { get; private set; }
+
+        public Vert vert;           // required
+        public TessCtrl tessCtrl;   // optional
+        public TessEva tessEva;     // optional
+        public Geometry geometry;   // optional
+        public Frag frag;           // required
+
+        public FragInfo f;
+        public bool discard;
+
+        public List<SubShader> SubShaderList { get; private set; }
+
         public ShaderBase(BasicShaderData data)
         {
             this.Data = data;
@@ -437,34 +668,48 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             {
                 Console.WriteLine($"error:{er.StackTrace}");
             }
+
+            SubShaderList = new List<SubShader>();
         }
 
-        public virtual void Begin()
+        public void Reset()
         {
-
+            discard = false;
         }
 
-        [Main]
-        public virtual void Main()
+        public void Init()
         {
-
-        }
-
-        public virtual void End()
-        {
-
+            // analyze pass
         }
 
         public virtual void Dispose()
         {
             GC.SuppressFinalize(this);
 
+            if (SubShaderList != null)
+            {
+                var subshaderCount = SubShaderList.Count;
+                for (int i = 0; i < subshaderCount; i++)
+                {
+                    SubShaderList[i].Dispose();
+                }
+                SubShaderList.Clear();
+                SubShaderList = null;
+            }
+
             if (ShaderProperties != null)
             {
                 ShaderProperties.Dispose();
                 ShaderProperties = null;
             }
+
             Data = null;
+
+            vert = null;
+            tessCtrl = null;
+            tessEva = null;
+            geometry = null;
+            frag = null;
         }
     }
 

@@ -229,6 +229,11 @@ namespace RendererCoreCommon.Renderer.Common.Mathes
             return i - 2 * n.Dot(i) * n;
         }
         public float x, y, z;
+        public Vector2 xy
+        {
+            get { return new Vector2(x, y); }
+            set { x = value.x; y = value.y; }
+        }
         public float length
         {
             get

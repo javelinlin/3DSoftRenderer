@@ -1,23 +1,19 @@
 ﻿// jave.lin 2019.07.18
 using RendererCoreCommon.Renderer.Common.Mathes;
+using RendererCoreCommon.Renderer.Common.Shader;
 using System.ComponentModel;
 using System.Drawing;
 
 namespace RendererCore.Renderer
 {
-    [Description("渲染状态")]
+    [Description("渲染状态，包含了一些测试用的数据")]
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class RenderState
+    public class RendererState
     {
         public Renderer Renderer { get; private set; }
 
-        [Category("Blend")] public Blend Blend { get; set; } = Blend.Off;
-        [Category("Blend")] public BlendFactor BlendSrcColorFactor { get; set; } = BlendFactor.One;
-        [Category("Blend")] public BlendFactor BlendDstColorFactor { get; set; } = BlendFactor.Zero;
-        [Category("Blend")] public BlendFactor BlendSrcAlphaFactor { get; set; } = BlendFactor.One;
-        [Category("Blend")] public BlendFactor BlendDstAlphaFactor { get; set; } = BlendFactor.Zero;
-        [Category("Blend")] public BlendOp BlendColorOp { get; set; } = BlendOp.Add;
-        [Category("Blend")] public BlendOp BlendAlphaOp { get; set; } = BlendOp.Add;
+        // default state
+        public DrawState DrawState { get; set; } = new DrawState();
 
         [Category("ClearInfo")]
         [Description("Clear Color buff的颜色值")]
@@ -32,59 +28,6 @@ namespace RendererCore.Renderer
             set => Renderer.FrameBuffer.ClearedDepth = value;
         }
 
-        private Rectangle scissorRect;
-        [Category("Scissor")]
-        public Rectangle ScissorRect
-        {
-            get { return scissorRect; }
-            set
-            {
-                var sl = value.Left;
-                var sr = value.Right;
-                var st = value.Top;
-                var sb = value.Bottom;
-
-                if (sl < 0) sl = 0;
-                if (sr > Renderer.BackBufferWidth - 1)
-                    sr = Renderer.BackBufferWidth - 1;
-                if (st < 0) st = 0;
-                if (sb > Renderer.BackBufferHeight - 1)
-                    sb = Renderer.BackBufferHeight - 1;
-
-                this.scissorRect = Rectangle.FromLTRB(sl, st, sr, sb);
-            }
-        }
-        [Category("Scissor")]
-        public Scissor Scissor { get; set; }
-        //[Category("AlphaTest")]
-        //public AlphaTest AlphaTest { get; set; }
-        //[Category("AlphaTest")]
-        //[Description("Alpha测试的比较关系")]
-        //public ComparisonFunc AlphaTestComp { get; set; } = ComparisonFunc.LEqual;
-        //[Category("AlphaTest")]
-        //[Description("Alpha测试的参考值")]
-        //public float AlphaTestRef { get; set; } = 1f;
-        [Category("Facing-Culling")]
-        public FrontFace FrontFace { get; set; }
-        [Category("Facing-Culling")]
-        public FaceCull Cull { get; set; }
-        [Category("ShadingMode")]
-        public ShadingMode ShadingMode { get; set; }
-        [Category("ShadingMode")]
-        public Vector4 WireframeColor { get; set; } = Vector4.white;
-        [Category("Depth")]
-        public DepthWrite DepthWrite { get; set; }
-        [Category("Depth")]
-        public ComparisonFunc DepthTest { get; set; }
-        [Category("Depth")]
-        public DepthOffset DepthOffset { get; set; }
-        [Category("PolygonMode")]
-        public PolygonMode PolygonMode { get; set; }
-        [Category("Depth")]
-        [Description("Depth的掠射角偏移系数")]
-        public float DepthOffsetFactor { get; set; } = 0;
-        [Category("Depth的最小深度刻度单位偏移系数")]
-        public float DepthOffsetUnit { get; set; } = 0;
         [Category("Camera")]
         public float CameraNear { get; set; }
         [Category("Camera")]
@@ -93,6 +36,11 @@ namespace RendererCore.Renderer
         public Rectangle CameraViewport { get; set; }
         [Category("Camera")]
         public bool IsOrtho { get; set; }
+
+        [Category("ShadingMode")]
+        public ShadingMode ShadingMode { get; set; } = ShadingMode.Shaded;
+        [Category("ShadingMode")]
+        public Vector4 WireframeColor { get; set; } = Vector4.white;
 
         [Category("Debug")]
         [Description("调试用：显示TBN切线、副切线、法线")]
@@ -123,10 +71,9 @@ namespace RendererCore.Renderer
         public float CamY;
         public float CamZ;
 
-        public RenderState(Renderer renderer)
+        public RendererState(Renderer renderer)
         {
             Renderer = renderer;
-            this.ScissorRect = new Rectangle(0, 0, renderer.BackBufferWidth, renderer.BackBufferHeight);
         }
     }
 

@@ -94,11 +94,6 @@ namespace SoftRenderer
 
             renderer.State.ClearColor = Color.Gray;
             renderer.State.WireframeColor = Color.Black;
-            renderer.State.ShadingMode = ShadingMode.Shaded;
-            renderer.State.BlendSrcColorFactor = BlendFactor.SrcAlpha;
-            renderer.State.BlendDstColorFactor = BlendFactor.OneMinusSrcAlpha;
-            renderer.State.BlendSrcAlphaFactor = BlendFactor.One;
-            renderer.State.BlendDstAlphaFactor = BlendFactor.One;
             // test
             //renderer.State.Cull = FaceCull.Off;
             normalTex = new Texture(normalBmp = new Bitmap(deviceBmp.Width, deviceBmp.Height, deviceBmp.PixelFormat));
@@ -292,7 +287,7 @@ namespace SoftRenderer
             go.LocalPosition = new Vector3(3, 0, -1);
             go.LocalScale = 3;
             // 第三个是球体
-            //gameObjs.Add(go);
+            gameObjs.Add(go);
 
             go = new GameObject("Ballooncat");
             ModelReader.ReadOut("Models/BalloonStupidCat_637003750150312129.m", out Mesh ballooncat);
@@ -322,27 +317,20 @@ namespace SoftRenderer
 
             renderer.ShaderMgr.Load("Shaders/RendererShader.dll");
 
-            var vs_shaderName = "MyTestVSShader";
-            var fs_shaderName = "MyTestFSShader";
+            var shaderName1 = "Test/TestShader";
+            var shaderName2 = "SphereVertexShader";
+            var shaderName3 = "BallooncatShader";
 
-            var sphere_vs_shaderName = "SphereVertexShader";
-            var sphere_fs_shaderName = "SphereFragmentShader";
+            var shader1 = renderer.ShaderMgr.CreateShader(shaderName1);
+            var shader2 = renderer.ShaderMgr.CreateShader(shaderName2);
+            var shader3 = renderer.ShaderMgr.CreateShader(shaderName3);
 
-            var ballooncat_vs_shaderName = "BallooncatVertexShader";
-            var ballooncat_fs_shaderName = "BallooncatFragmentShader";
-
-            var vsShader = renderer.ShaderMgr.CreateShader(vs_shaderName);
-            var fsShader = renderer.ShaderMgr.CreateShader(fs_shaderName);
-            var sphere_vsShader = renderer.ShaderMgr.CreateShader(sphere_vs_shaderName);
-            var sphere_fsShader = renderer.ShaderMgr.CreateShader(sphere_fs_shaderName);
-            var ballooncat_vsShader = renderer.ShaderMgr.CreateShader(ballooncat_vs_shaderName);
-            var ballooncat_fsShader = renderer.ShaderMgr.CreateShader(ballooncat_fs_shaderName);
             List<ShaderBase> shaders = new List<ShaderBase>(
                 new ShaderBase[] {
-                    vsShader,fsShader,
-                    vsShader,fsShader,
-                    sphere_vsShader,sphere_fsShader,
-                    ballooncat_vsShader,ballooncat_fsShader,
+                    shader1,
+                    shader1,
+                    shader2,
+                    shader3,
                 });
 
             //var tex_bmp = new Bitmap("Images/texture.png");
@@ -352,13 +340,13 @@ namespace SoftRenderer
             //var tex_bmp = new Bitmap("Images/heightMap1.jpg");
             //var tex_bmp = new Bitmap("Images/tex.jpg");
             //var tex_bmp = new Bitmap("Images/icon.PNG");
-            fsShader.ShaderProperties.SetUniform("mainTex", new Texture2D(tex_bmp));
-            sphere_fsShader.ShaderProperties.SetUniform("mainTex", new Texture2D(sp_tex_bmp));
-            ballooncat_fsShader.ShaderProperties.SetUniform("mainTex", new Texture2D(ballooncat_tex_bmp));
+            shader1.ShaderProperties.SetUniform("mainTex", new Texture2D(tex_bmp));
+            shader2.ShaderProperties.SetUniform("mainTex", new Texture2D(sp_tex_bmp));
+            shader3.ShaderProperties.SetUniform("mainTex", new Texture2D(ballooncat_tex_bmp));
 
             for (int i = 0; i < gameObjs.Count; i++)
             {
-                gameObjs[i].Material = new Material(shaders[i * 2 + 0], shaders[i * 2 + 1]);
+                gameObjs[i].Material = new Material(shaders[i]);
             }
 #endif
         }
@@ -482,8 +470,7 @@ namespace SoftRenderer
 
             for (int i = 0; i < gameObjs.Count; i++)
             {
-                gameObjs[i].Material.VS.ShaderProperties.SetUniform(outlineOffsetHash, normalOutlineOffset);
-                gameObjs[i].Material.FS.ShaderProperties.SetUniform(specularPowHash, specularPow);
+                gameObjs[i].Material.Shader.ShaderProperties.SetUniform(outlineOffsetHash, normalOutlineOffset);
             }
 #else
             renderer.State.CamX = camera.Translate.x;

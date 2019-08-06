@@ -28,6 +28,19 @@ namespace RendererCore.Renderer.Rasterization
         private List<FragInfo> fragInfosHelper1 = new List<FragInfo>();
         private List<FragInfo> fragInfosHelper2 = new List<FragInfo>();
 
+        private DrawState drawState;
+        public DrawState DrawState
+        {
+            get
+            {
+                if (drawState == null)
+                    return renderer.State.DrawState;
+                else
+                    return drawState;
+            }
+            set => drawState = value;
+        }
+
         public Rasterizer(Renderer renderer)
         {
             this.renderer = renderer;
@@ -41,7 +54,7 @@ namespace RendererCore.Renderer.Rasterization
             var v2 = p2 - p0;
             var crossV = v1.Cross(v2);
 
-            if (Renderer.State.FrontFace == FrontFace.Clock)
+            if (DrawState.FrontFace == FrontFace.Clock)
                 return crossV > 0;
             else
                 return crossV < 0;
@@ -59,12 +72,12 @@ namespace RendererCore.Renderer.Rasterization
         // 参数点都是属于屏幕空间下的坐标
         public bool CullingTriangle(Vector2 p0, Vector3 p1, Vector3 p2)
         {
-            if (Renderer.State.Cull == FaceCull.Off)
+            if (DrawState.Cull == FaceCull.Off)
                 return false;
 
             var isFront = IsFrontFace(p0, p1, p2);
 
-            if (Renderer.State.Cull == FaceCull.Back)
+            if (DrawState.Cull == FaceCull.Back)
                 return !isFront;
 
             return isFront;
@@ -195,12 +208,12 @@ namespace RendererCore.Renderer.Rasterization
             var maxX = renderer.BackBufferWidth - 1;
             var maxY = renderer.BackBufferHeight - 1;
 
-            if (Renderer.State.Scissor == Scissor.On)
+            if (DrawState.Scissor == Scissor.On && !DrawState.ScissorRect.IsEmpty)
             {
-                minX = Renderer.State.ScissorRect.X;
-                minY = Renderer.State.ScissorRect.Y;
-                maxX = Renderer.State.ScissorRect.Right;
-                maxY = Renderer.State.ScissorRect.Bottom;
+                minX = DrawState.ScissorRect.X;
+                minY = DrawState.ScissorRect.Y;
+                maxX = DrawState.ScissorRect.Right;
+                maxY = DrawState.ScissorRect.Bottom;
             }
 
             var p = f0.p;
@@ -462,12 +475,12 @@ namespace RendererCore.Renderer.Rasterization
             var maxX = renderer.BackBufferWidth - 1;
             var maxY = renderer.BackBufferHeight - 1;
 
-            if (Renderer.State.Scissor == Scissor.On)
+            if (DrawState.Scissor == Scissor.On && !DrawState.ScissorRect.IsEmpty)
             {
-                minX = Renderer.State.ScissorRect.X;
-                minY = Renderer.State.ScissorRect.Y;
-                maxX = Renderer.State.ScissorRect.Right;
-                maxY = Renderer.State.ScissorRect.Bottom;
+                minX = DrawState.ScissorRect.X;
+                minY = DrawState.ScissorRect.Y;
+                maxX = DrawState.ScissorRect.Right;
+                maxY = DrawState.ScissorRect.Bottom;
             }
 
             // shaded fragments
@@ -724,12 +737,12 @@ namespace RendererCore.Renderer.Rasterization
             var maxX = renderer.BackBufferWidth - 1;
             var maxY = renderer.BackBufferHeight - 1;
 
-            if (Renderer.State.Scissor == Scissor.On)
+            if (DrawState.Scissor == Scissor.On && !DrawState.ScissorRect.IsEmpty)
             {
-                minX = Renderer.State.ScissorRect.X;
-                minY = Renderer.State.ScissorRect.Y;
-                maxX = Renderer.State.ScissorRect.Right;
-                maxY = Renderer.State.ScissorRect.Bottom;
+                minX = DrawState.ScissorRect.X;
+                minY = DrawState.ScissorRect.Y;
+                maxX = DrawState.ScissorRect.Right;
+                maxY = DrawState.ScissorRect.Bottom;
             }
 
             var triangleVertices = new FragInfo[] { triangle.f0, triangle.f1, triangle.f2 };
@@ -914,12 +927,12 @@ namespace RendererCore.Renderer.Rasterization
             var maxX = renderer.BackBufferWidth - 1;
             var maxY = renderer.BackBufferHeight - 1;
 
-            if (Renderer.State.Scissor == Scissor.On)
+            if (DrawState.Scissor == Scissor.On && !DrawState.ScissorRect.IsEmpty)
             {
-                minX = Renderer.State.ScissorRect.X;
-                minY = Renderer.State.ScissorRect.Y;
-                maxX = Renderer.State.ScissorRect.Right;
-                maxY = Renderer.State.ScissorRect.Bottom;
+                minX = DrawState.ScissorRect.X;
+                minY = DrawState.ScissorRect.Y;
+                maxX = DrawState.ScissorRect.Right;
+                maxY = DrawState.ScissorRect.Bottom;
             }
 
             ToPool(fragList);
@@ -1017,7 +1030,7 @@ namespace RendererCore.Renderer.Rasterization
 
             var framebuff = renderer.FrameBuffer;
             var depthbuff = framebuff.Attachment.DepthBuffer;
-            var depthwrite = renderer.State.DepthWrite;
+            var depthwrite = DrawState.DepthWrite;
             var maxZ = renderer.State.CameraFar;
             maxZ += renderer.State.CameraFar * renderer.State.CameraNear;
             var depthInv = 1 / maxZ;
@@ -1031,10 +1044,10 @@ namespace RendererCore.Renderer.Rasterization
             var faceNormalDotForward = 1 - Math.Abs(faceNormal.Dot(Vector3.forward));
             // 我之前翻译的文章：https://blog.csdn.net/linjf520/article/details/94596764
             // 我的理解是上面的这个算法
-            offsetDepth = faceNormalDotForward * renderer.State.DepthOffsetFactor
-                + depthInv * renderer.State.DepthOffsetUnit;
+            offsetDepth = faceNormalDotForward * DrawState.DepthOffsetFactor
+                + depthInv * DrawState.DepthOffsetUnit;
             //}
-            var depthOffset = renderer.State.DepthOffset;
+            var depthOffset = DrawState.DepthOffset;
 
             fragList.AddRange(fragsHelper1);
             fragList.AddRange(fragsHelper2);
@@ -1067,7 +1080,7 @@ namespace RendererCore.Renderer.Rasterization
                 var testDepth = f.depth;
                 if (depthOffset == DepthOffset.On)
                     testDepth += offsetDepth;
-                if (framebuff.DepthTest(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                if (framebuff.DepthTest(DrawState.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
                 {
                     // 是否开启深度写入
                     if (depthwrite == DepthWrite.On)
@@ -1093,15 +1106,15 @@ namespace RendererCore.Renderer.Rasterization
             if ((renderer.State.ShadingMode & ShadingMode.Wireframe) != 0)
             {
                 var count = fragsHelper1.Count;
-                offsetDepth = faceNormalDotForward * (renderer.State.DepthOffsetFactor)
-                + depthInv * (renderer.State.DepthOffsetUnit - 0.01f);
+                offsetDepth = faceNormalDotForward * (DrawState.DepthOffsetFactor)
+                + depthInv * (DrawState.DepthOffsetUnit - 0.01f);
                 for (int i = 0; i < count; i++)
                 {
                     var f = fragsHelper1[i];
                     if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
                     f.depth = 1 - f.p.z * depthInv;
                     var testDepth = f.depth + offsetDepth;
-                    if (framebuff.DepthTest(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                    if (framebuff.DepthTest(DrawState.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
                     {
                         // 是否开启深度写入
                         if (depthwrite == DepthWrite.On)
@@ -1118,7 +1131,7 @@ namespace RendererCore.Renderer.Rasterization
                     if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
                     f.depth = 1 - f.p.z * depthInv + offsetDepth;
                     var testDepth = f.depth + offsetDepth;
-                    if (framebuff.DepthTest(renderer.State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                    if (framebuff.DepthTest(DrawState.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
                     {
                         // 是否开启深度写入
                         if (depthwrite == DepthWrite.On)

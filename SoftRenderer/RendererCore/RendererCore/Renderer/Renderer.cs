@@ -31,14 +31,17 @@ namespace RendererCore.Renderer
         private List<FragInfo> genWireframeFragHelper = new List<FragInfo>();  // wireframe 的片段
         private List<FragInfo> genNormalLineFragHelper = new List<FragInfo>();  // normal line 的片段
 
+        internal SubShader UsingSubShader;
+        internal Pass UsingPass;
+
 #if DOUBLE_BUFF
         private bool bufferDirty = false;
 #endif
         public FrameBuffer FrameBuffer { get; set; }
-        public ShaderProgram ShaderProgram { get; set; }
+        public ShaderBase Shader { get; set; }
         public ShaderLoadMgr ShaderMgr { get; private set; }
         public BasicShaderData ShaderData { get; set; }
-        public RenderState State { get; private set; }
+        public RendererState State { get; private set; }
         public GlobalRenderSstate GlobalState { get; private set; }
         public Rasterizer Rasterizer { get; private set; }
         public int BackBufferWidth { get; }
@@ -63,12 +66,11 @@ namespace RendererCore.Renderer
 
             this.frontBuffer = new Buffer_Color(bufferW, bufferH);
 
-            State = new RenderState(this);
+            State = new RendererState(this);
             GlobalState = new GlobalRenderSstate();
             Rasterizer = new Rasterizer(this);
             ShaderData = new ShaderData(1);
             ShaderMgr = new ShaderLoadMgr(this);
-            ShaderProgram = new ShaderProgram(this);
 
             if (Instance == null) Instance = this;
         }
@@ -166,20 +168,42 @@ namespace RendererCore.Renderer
         public void Present()
         {
             // draw call
-
             if (CurVertexBuffer == null)
                 throw new Exception("current vertex buffer not binding.");
             if (CurIndexBuffer == null)
                 throw new Exception("current index buffer not binding.");
 
-            var vs = ShaderProgram.GetShader(ShaderType.VertexShader);
-            var fs = ShaderProgram.GetShader(ShaderType.FragmentShader) as FSBase;
+            var subShaderCount = Shader.SubShaderList.Count;
+            for (int i = 0; i < subShaderCount; i++)
+            {
+                var subshader = Shader.SubShaderList[i];
+                if (!subshader.IsSupported) continue;
 
-            if (vs == null) throw new Exception("Not setting vs, it is required shader.");
-            if (fs == null) throw new Exception("Not setting fs, it is required shader.");
+                UsingSubShader = subshader;
+                break; // Is Supported == true;
+            }
 
+            var jLen = UsingSubShader.passList.Count;
+            for (int j = 0; j < jLen; j++)
+            {
+                if (UsingSubShader.passList[j].Actived)
+                {
+                    UsingPass = UsingSubShader.passList[j];
+                    UsingPass.Attach();
+                    Rasterizer.DrawState = UsingPass.State;
+                    Pipeline();
+                }
+            }
+
+#if DOUBLE_BUFF
+            bufferDirty = true;
+#endif
+        }
+
+        private void Pipeline()
+        {
             // vertex shader
-            VertexShader(vs);
+            VertexShader();
             // 如果需要clip处理的话，一般需要在这里就先PrimitiveAssebly
             // 然后再VS PostProcessing
             //PrimitiveAssembly();
@@ -201,11 +225,7 @@ namespace RendererCore.Renderer
             // 为了节省内存，我就将每个图元Rasterizer光栅出来的片段就马上处理shader了
             // 而不必等到所有的所有图元都光栅完再处理FragmentShader
             // 那个时候，片段列表会非常大，因为片段多
-            RasterizeAndFragmentShader(fs);
-
-#if DOUBLE_BUFF
-            bufferDirty = true;
-#endif
+            RasterizeAndFragmentShader();
         }
 
         // 后效
@@ -576,10 +596,13 @@ namespace RendererCore.Renderer
             }
         }
 
-        private void VertexShader(ShaderBase vs)
+        private void VertexShader()
         {
             var buffer = CurVertexBuffer;
             var floatBuff = buffer.buff;
+
+            var passProperties = UsingPass.VertField.Properties;
+
             vertexshaderOutput.Clear();
             for (int i = 0; i < floatBuff.Length; i += buffer.floatNumPerVertice)
             {
@@ -595,7 +618,7 @@ namespace RendererCore.Renderer
                                 floatBuff[offset + 2],
                                 1
                                 );
-                            vs.ShaderProperties.SetIn(InLayout.Position, pos);
+                            passProperties.SetIn(InLayout.Position, pos);
                             break;
                         case VertexDataType.Color:
                             var color = Vector4.Get(
@@ -604,14 +627,14 @@ namespace RendererCore.Renderer
                                 floatBuff[offset + 2],
                                 floatBuff[offset + 3]
                                 );
-                            vs.ShaderProperties.SetIn(InLayout.Color, color);
+                            passProperties.SetIn(InLayout.Color, color);
                             break;
                         case VertexDataType.UV:
                             var uv = new Vector2(
                                 floatBuff[offset + 0],
                                 floatBuff[offset + 1]
                                 );
-                            vs.ShaderProperties.SetIn(InLayout.Texcoord, uv);
+                            passProperties.SetIn(InLayout.Texcoord, uv);
                             break;
                         case VertexDataType.Normal:
                             var normal = new Vector3(
@@ -619,7 +642,7 @@ namespace RendererCore.Renderer
                                 floatBuff[offset + 1],
                                 floatBuff[offset + 2]
                                 );
-                            vs.ShaderProperties.SetIn(InLayout.Normal, normal);
+                            passProperties.SetIn(InLayout.Normal, normal);
                             break;
                         case VertexDataType.Tangent:
                             var tangent = new Vector3(
@@ -627,15 +650,15 @@ namespace RendererCore.Renderer
                                 floatBuff[offset + 1],
                                 floatBuff[offset + 2]
                                 );
-                            vs.ShaderProperties.SetIn(InLayout.Tangent, tangent);
+                            passProperties.SetIn(InLayout.Tangent, tangent);
                             break;
                         default:
                             break;
                     }
                 }
-                vs.Main();
+                UsingSubShader.Shader.vert();
 
-                var outs = vs.ShaderProperties.GetVertexOuts();
+                var outs = passProperties.GetVertexOuts();
                 vertexshaderOutput.Add(new ShaderOut {  upperStageOutInfos = outs });
             }
         }
@@ -709,7 +732,9 @@ namespace RendererCore.Renderer
 
         private void PrimitiveAssembly()
         {
-            switch (State.PolygonMode)
+            var usingPass = UsingPass;
+            var drawState = usingPass.State;
+            switch (drawState.PolygonMode)
             {
                 case PolygonMode.Triangle:
                     var len = CurIndexBuffer.Buffer.Length;
@@ -742,11 +767,11 @@ namespace RendererCore.Renderer
                     }
                     break;
                 case PolygonMode.Line:
-                    throw new Exception($"not implements polygonMode:{State.PolygonMode}");
+                    throw new Exception($"not implements polygonMode:{drawState.PolygonMode}");
                 case PolygonMode.Point:
-                    throw new Exception($"not implements polygonMode:{State.PolygonMode}");
+                    throw new Exception($"not implements polygonMode:{drawState.PolygonMode}");
                 default:
-                    throw new Exception($"not implements polygonMode:{State.PolygonMode}");
+                    throw new Exception($"not implements polygonMode:{drawState.PolygonMode}");
             }
         }
 
@@ -755,9 +780,11 @@ namespace RendererCore.Renderer
             return pos.x < -1 || pos.x > 1 || pos.y < -1 || pos.y > 1 || pos.z < -1 || pos.z > 1;
         }
 
-        private void RasterizeAndFragmentShader(FSBase fs)
+        private void RasterizeAndFragmentShader()
         {
-            switch (State.PolygonMode)
+            var usingPass = UsingPass;
+            var drawState = usingPass.State;
+            switch (drawState.PolygonMode)
             {
                 case PolygonMode.Triangle:
                     var len = trianglePrimitiveHelper.Count;
@@ -768,28 +795,32 @@ namespace RendererCore.Renderer
                         // 光栅化成片段
                         Rasterizer.GenFragInfo(t, genShadedFragHelper, genWireframeFragHelper, genNormalLineFragHelper);
                         // 处理片段
-                        InnerFragmentShader(fs, genShadedFragHelper, genWireframeFragHelper, genNormalLineFragHelper);
+                        InnerFragmentShader(genShadedFragHelper, genWireframeFragHelper, genNormalLineFragHelper);
                     }
                     break;
                 case PolygonMode.Line:
-                    throw new Exception($"not implements polygonMode:{State.PolygonMode}");
+                    throw new Exception($"not implements polygonMode:{drawState.PolygonMode}");
                 case PolygonMode.Point:
-                    throw new Exception($"not implements polygonMode:{State.PolygonMode}");
+                    throw new Exception($"not implements polygonMode:{drawState.PolygonMode}");
                 default:
-                    throw new Exception($"not implements polygonMode:{State.PolygonMode}");
+                    throw new Exception($"not implements polygonMode:{drawState.PolygonMode}");
             }
         }
 
         private void InnerFragmentShader(
-            FSBase fs, 
             List<FragInfo> shadedResult, 
             List<FragInfo> wireframeResult,
             List<FragInfo> normalLineResult)
         {
+            var usingPass = UsingPass;
+            var usingSubShader = UsingSubShader;
+            var properties = usingPass.FragField.Properties;
+
+            var drawState = usingPass.State;
             /* ======depth start====== */
             var framebuff = FrameBuffer;
             var depthbuff = FrameBuffer.Attachment.DepthBuffer;
-            var depthwrite = State.DepthWrite;
+            var depthwrite = drawState.DepthWrite;
             //var maxZ = State.CameraFar;
             //maxZ += State.CameraFar * State.CameraNear;
             //var depthInv = 1 / maxZ;
@@ -807,7 +838,7 @@ namespace RendererCore.Renderer
             //    //faceNormalDotForward * renderer.State.DepthOffsetFactor + 
             //    depthInv * State.DepthOffsetUnit;
             //}
-            var depthOffset = State.DepthOffset;
+            var depthOffset = drawState.DepthOffset;
             /* ======depth end====== */
 
             /* ======alpha test start====== */
@@ -817,13 +848,13 @@ namespace RendererCore.Renderer
             /* ======alpha test start====== */
 
             /* ======blend start====== */
-            var blend = State.Blend;
-            var srcColorFactor = State.BlendSrcColorFactor;
-            var dstColorFactor = State.BlendDstColorFactor;
-            var srcAlphaFactor = State.BlendSrcAlphaFactor;
-            var dstAlphaFactor = State.BlendDstAlphaFactor;
-            var colorOp = State.BlendColorOp;
-            var alphaOp = State.BlendAlphaOp;
+            var blend = drawState.Blend;
+            var srcColorFactor = drawState.BlendSrcColorFactor;
+            var dstColorFactor = drawState.BlendDstColorFactor;
+            var srcAlphaFactor = drawState.BlendSrcAlphaFactor;
+            var dstAlphaFactor = drawState.BlendDstAlphaFactor;
+            var colorOp = drawState.BlendColorOp;
+            var alphaOp = drawState.BlendAlphaOp;
             /* ======blend end====== */
 
             // shaded
@@ -837,20 +868,20 @@ namespace RendererCore.Renderer
                     testDepth += offsetDepth;
 
                 // 深度测试
-                if (framebuff.DepthTest(State.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                if (framebuff.DepthTest(drawState.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
                 {
                     // 执行fragment shader
                     var jLen = f.ShaderOut.upperStageOutInfos.Length;
                     for (int j = 0; j < jLen; j++)
                     {
                         var info = f.ShaderOut.upperStageOutInfos[j];
-                        fs.ShaderProperties.SetInWithOut(info.layout, info.value, info.location);
+                        properties.SetInWithOut(info.layout, info.value, info.location);
                     }
-                    fs.f = f;
-                    fs.Reset();
-                    fs.Main();
+                    usingSubShader.Shader.f = f;
+                    usingSubShader.Shader.Reset();
+                    usingSubShader.Shader.frag();
                     // 丢弃片段
-                    if (fs.discard) continue;
+                    if (usingSubShader.Shader.discard) continue;
 
                     // 是否开启深度写入
                     if (depthwrite == DepthWrite.On)
@@ -859,14 +890,14 @@ namespace RendererCore.Renderer
                         depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
                     }
 
-                    var targets = fs.ShaderProperties.GetTargetOut();
+                    var targets = properties.GetTargetOut();
                     var tLen = targets.Length;
                     for (int ti = 0; ti < tLen; ti++)
                     {
                         var tInfo = targets[ti];
                         if (tInfo.localtion == 0)
                         {
-                            var srcColor = fs.ShaderProperties.GetOut<Vector4>(OutLayout.SV_Target); // 目前值处理SV_Target0
+                            var srcColor = properties.GetOut<Vector4>(OutLayout.SV_Target); // 目前值处理SV_Target0
                                                                                                      // 是否开启混合
                             if (blend == Blend.On)
                             {
@@ -949,12 +980,11 @@ namespace RendererCore.Renderer
                 ShaderMgr.Dispose();
                 ShaderMgr = null;
             }
-            if (ShaderProgram != null)
-            {
-                ShaderProgram.Dispose();
-                ShaderProgram = null;
-            }
-            
+
+            Shader = null;
+            UsingSubShader = null;
+            UsingPass = null;
+
         }
     }
 }

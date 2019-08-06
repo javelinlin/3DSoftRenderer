@@ -9,62 +9,10 @@ using System.Reflection;
 
 namespace RendererCore.Renderer
 {
-    [Description("Shader程序")]
-    [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class ShaderProgram : IDisposable
-    {
-        private Dictionary<ShaderType, ShaderBase> usingShader = new Dictionary<ShaderType, ShaderBase>();
-
-        public Renderer Renderer { get; private set; }
-
-        public ShaderProgram(Renderer renderer)
-        {
-            Renderer = renderer;
-        }
-
-        public void SetShader(ShaderType type, ShaderBase shader)
-        {
-            usingShader[type] = shader;
-        }
-
-        public ShaderBase GetShader(ShaderType type)
-        {
-            usingShader.TryGetValue(type, out ShaderBase shader);
-            return shader;
-        }
-
-        public void Dispose()
-        {
-            GC.SuppressFinalize(this);
-
-            if (usingShader != null)
-            {
-                foreach (var kv in usingShader)
-                {
-                    kv.Value.Dispose();
-                }
-                usingShader.Clear();
-                usingShader = null;
-            }
-        }
-    }
     [Description("Shader加载管理")]
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ShaderLoadMgr : IDisposable
     {
-        private Type baseType = typeof(ShaderBase);
-
-        private Type vsAtType = typeof(VSAttribute);
-        private Type fsAtType = typeof(FSAttribute);
-        private Type inAtType = typeof(InAttribute);
-        private Type outAtType = typeof(OutAttribute);
-        private Type positionAtType = typeof(PositionAttribute);
-        private Type colorAtType = typeof(ColorAttribute);
-        private Type uvAtType = typeof(TexcoordAttribute);
-        private Type normalAtType = typeof(NormalAttribute);
-        private Type mainAtType = typeof(MainAttribute);
-        private Type svPositionAtType = typeof(SV_PositionAttribute);
-        private Type svTargetAtType = typeof(SV_TargetAttribute);
 
         private Dictionary<string, Type> shaderTypeDictName = new Dictionary<string, Type>();
         private Dictionary<int, Type> shaderTypeDictHash = new Dictionary<int, Type>();
@@ -89,133 +37,46 @@ namespace RendererCore.Renderer
 
             var module = assembly.ManifestModule;
             var types = module.GetTypes();
+            var baseType = typeof(ShaderBase);
 
             string name = "Name";
             string hash = "NameHash";
 
-            //ShaderBase vs = null;
-            //ShaderBase fs = null;
-
             foreach (var type in types)
             {
+                var shader_at = type.GetCustomAttribute<ShaderAttribute>();
+                if (shader_at == null) continue; // 不是shader的都过滤掉
+
+                var vert_delegate = type.GetField("vert");
+                if (vert_delegate == null)
+                    throw new Exception($"shader:{type.Name} not found vert");
+
+                var frag_delegate = type.GetField("frag");
+                if (frag_delegate == null)
+                    throw new Exception($"shader:{type.Name} not found frag");
+
                 var methods = type.GetMethods();
                 var fields = type.GetFields();
-                foreach (var at in type.CustomAttributes)
-                {
-                    var check = type.IsSubclassOf(baseType);
-                    if (!check)
-                    {
-                        throw new Exception("shader type invalidated");
-                    }
-                    var foundMainMethod = false;
-                    foreach (var method in methods)
-                    {
-                        foreach (var mAt in method.CustomAttributes)
-                        {
-                            if (mAt.AttributeType.IsEquivalentTo(mainAtType))
-                            {
-                                foundMainMethod = true;
-                                break;
-                            }
-                        }
-                        if (foundMainMethod)
-                        {
-                            break;
-                        }
-                    }
-                    if (!foundMainMethod)
-                    {
-                        throw new Exception($"shader:{type.Name} not found main attribute method");
-                    }
-                    if (at.AttributeType.IsEquivalentTo(vsAtType))
-                    {
-                        var foundOutSVPos = false;
-                        foreach (var field in fields)
-                        {
-                            var foundOut = false;
-                            var foundSV_Pos = false;
-                            foreach (var fAt in field.CustomAttributes)
-                            {
-                                if (!foundOut && fAt.AttributeType.IsEquivalentTo(outAtType))
-                                {
-                                    foundOut = true;
-                                }
-                                if (!foundSV_Pos && fAt.AttributeType.IsEquivalentTo(svPositionAtType))
-                                {
-                                    foundSV_Pos = true;
-                                }
-                                if (foundOut && foundSV_Pos)
-                                {
-                                    foundOutSVPos = true;
-                                    break;
-                                }
-                            }
-                            if (foundOutSVPos) break;
-                        }
-                        if (!foundOutSVPos)
-                        {
-                            throw new Exception($"shader:{type.Name} not found Out & SV_Position attribute");
-                        }
-                        //if (vs == null)
-                        //{
-                        //    vs = Activator.CreateInstance(type, new[] { shaderData }) as ShaderBase;
-                        //}
-                    }
-                    else if (at.AttributeType.IsEquivalentTo(fsAtType))
-                    {
-                        var foundOutSVTraget = false;
-                        foreach (var field in fields)
-                        {
-                            var foundOut = false;
-                            var foundSV_Target = false;
-                            foreach (var fAt in field.CustomAttributes)
-                            {
-                                if (!foundOut && fAt.AttributeType.IsEquivalentTo(outAtType))
-                                {
-                                    foundOut = true;
-                                }
-                                if (!foundSV_Target && fAt.AttributeType.IsEquivalentTo(svTargetAtType))
-                                {
-                                    foundSV_Target = true;
-                                }
-                                if (foundOut && foundSV_Target)
-                                {
-                                    foundOutSVTraget = true;
-                                    break;
-                                }
-                            }
-                            if (foundOutSVTraget) break;
-                        }
-                        if (!foundOutSVTraget)
-                        {
-                            throw new Exception($"shader:{type.Name} not found Out & SV_Position attribute");
-                        }
-                    }
-                    else
-                    {
-                        // other attributes
-                        // noops
-                        continue;
-                    }
+                if (!type.IsSubclassOf(baseType))
+                    throw new Exception($"shader:{type.Name} invalidated");
 
-                    var f = type.GetField(name, BindingFlags.GetField | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
-                    if (f == null || !f.IsInitOnly)
-                        throw new Exception($"Shader Class Name:{type.Name}, not defines the 'public static readonly string {name};' field");
-                    var shaderName = (string)f.GetValue(null);
-                    f = type.GetField(hash, BindingFlags.GetField | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
-                    if (f == null || !f.IsInitOnly)
-                        throw new Exception($"Shader Class Name:{type.Name}, not defines the 'public static readonly string {hash};' field");
-                    var shaderHash = (int)f.GetValue(null);
+                var f = type.GetField(name, BindingFlags.GetField | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                if (f == null || !f.IsInitOnly)
+                    throw new Exception($"Shader Class Name:{type.Name}, not defines the 'public static readonly string {name};' field");
+                var shaderName = (string)f.GetValue(null);
+                f = type.GetField(hash, BindingFlags.GetField | BindingFlags.DeclaredOnly | BindingFlags.Public | BindingFlags.Static);
+                if (f == null || !f.IsInitOnly)
+                    throw new Exception($"Shader Class Name:{type.Name}, not defines the 'public static readonly string {hash};' field");
+                var shaderHash = (int)f.GetValue(null);
 
-                    if (shaderTypeDictName.ContainsKey(shaderName))
-                        throw new Exception($"shaderName existing, shader:{shaderName}, type:{type.Name}, in buff shader.type:{shaderTypeDictName[shaderName].Name}");
-                    if (shaderTypeDictHash.ContainsKey(shaderHash))
-                        throw new Exception($"shaderName existing, shaderHash:{shaderHash}, type:{type.Name}, in buff shader.type:{shaderTypeDictName[shaderName].Name}");
-                    shaderTypeDictName[shaderName] = type;
-                    shaderTypeDictHash[shaderHash] = type;
+                if (shaderTypeDictName.ContainsKey(shaderName))
+                    throw new Exception($"shaderName existing, shader:{shaderName}, type:{type.Name}, in buff shader.type:{shaderTypeDictName[shaderName].Name}");
+                if (shaderTypeDictHash.ContainsKey(shaderHash))
+                    throw new Exception($"shaderName existing, shaderHash:{shaderHash}, type:{type.Name}, in buff shader.type:{shaderTypeDictHash[shaderHash].Name}");
+                shaderTypeDictName[shaderName] = type;
+                shaderTypeDictHash[shaderHash] = type;
 
-                    Console.WriteLine($"Loading shader type:{type.Name} complete!");
-                }
+                Console.WriteLine($"Loading shader type:{type.Name} complete!");
             }
 
             Console.WriteLine("Loading Shader bytes end.");

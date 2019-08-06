@@ -11,137 +11,170 @@ using vec4 = RendererCoreCommon.Renderer.Common.Mathes.Vector4;
 
 namespace RendererShader
 {
-    [VS]
+    [Shader]
     [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class BallooncatVertexShader : ShaderBase
+    public class BallooncatShader : ShaderBase
     {
-        [Name] public static readonly string Name = "BallooncatVertexShader";
+        [Name] public static readonly string Name = "BallooncatShader";
         [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
 
         /* ==========Uniform======== */
+        // vert
         [Uniform] public mat4 MVP;
         [Uniform] public mat4 M;
         [Uniform] public mat4 M_IT;
         [Uniform] public float outlineOffset;
 
-        /* ==========In or Out======== */
-
-        [In] [Position] public vec4 inPos;
-
-        [In] [Out] [Texcoord] public vec2 ioUV;
-        [In] [Out] [Normal] public vec3 ioNormal;
-        [In] [Out] [Tangent] public vec3 ioTangent;
-
-        [Out] [Tangent(1)] public vec3 outBitangent;
-
-        [Out] [SV_Position] public vec4 outPos;
-        [Out] [Position] public vec4 outWorldPos;
-
-        public BallooncatVertexShader(BasicShaderData data) : base(data)
-        {
-        }
-
-        [Main]
-        public override void Main()
-        {
-            inPos.xyz += ioNormal * outlineOffset;
-            outPos = MVP * inPos;
-            outWorldPos = M * inPos;
-            ioNormal = M_IT * ioNormal;
-            ioTangent = M_IT * ioTangent;
-            outBitangent = ioNormal.Cross(ioTangent);
-        }
-    }
-
-    [FS]
-    [TypeConverter(typeof(ExpandableObjectConverter))]
-    public class BallooncatFragmentShader : FSBase
-    {
-        [Name] public static readonly string Name = "BallooncatFragmentShader";
-        [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
-
+        // frag
         [Uniform] public Texture2D mainTex;
         [Uniform] public float specularPow = 1;
-
         private Sampler2D sampler = default(Sampler2D);
 
-        [In] [SV_Position] public vec4 inPos;
-        [In] [Position] public vec4 inWorldPos;
-        [In] [Texcoord] public vec2 inUV;
-        [In] [Normal] public vec3 inNormal;
-        [In] [Tangent] public vec3 inTangent;
-        [In] [Tangent(1)] public vec3 inBitangent;
-
-        [Out] [SV_Target] public color outColor;
-
-        public BallooncatFragmentShader(BasicShaderData data) : base(data)
+        private class _SubShader : SubShaderExt<BallooncatShader>
         {
-            //sampler.wrapMode = SampleWrapMode.Clamp;
-            //sampler.wrapMode = SampleWrapMode.Repeat;
-            //sampler.wrapMode = SampleWrapMode.Mirror;
-            //sampler.wrapMode = SampleWrapMode.MirrorOnce;
-            //sampler.wrapMode = SampleWrapMode.RepeatX | SampleWrapMode.MirrorOnceY;
-            //sampler.wrapMode = SampleWrapMode.RepeatY | SampleWrapMode.MirrorOnceX;
-            //sampler.wrapMode = SampleWrapMode.ClampX | SampleWrapMode.MirrorY;
-            //sampler.wrapMode = SampleWrapMode.ClampY | SampleWrapMode.MirrorX;
-            //sampler.wrapMode = SampleWrapMode.ClampX | SampleWrapMode.RepeatY;
-            //sampler.wrapMode = SampleWrapMode.ClampY | SampleWrapMode.RepeatX;
-            //sampler.wrapMode = SampleWrapMode.RepeatX | SampleWrapMode.MirrorY;
-            //sampler.wrapMode = SampleWrapMode.RepeatY | SampleWrapMode.MirrorX;
+            public _SubShader(BallooncatShader shader) : base(shader)
+            {
+                passList.Add(new _PassExt(this));
+            }
         }
 
-        [Main]
-        public override void Main()
+        private class _PassExt : PassExt<_SubShader>
         {
-            //outColor.rgb = inNormal;return;
-            //var v = inUV.y * 100;
-            //var times = (int)(v / 10);
-            //if (times % 2 == 0) outColor = color.red;
-            //else outColor = color.green;
-            //return;
-            //outColor = f.depth;return;
-            //outColor = inColor; return;
-            var shaderData = Data as ShaderData;
-
-            // diffuse
-            var lightPos = shaderData.LightPos[0];
-            var lightType = lightPos.w;
-            vec3 lightDir;
-            if (lightType == 0) // 方向光
-                lightDir = lightPos.xyz;
-            else if (lightType == 1) // 点光源
-                lightDir = (lightPos.xyz - inWorldPos.xyz).normalized;
-            // intensity = max(0, 1 - distance / range);
-            else
-                throw new Exception($"not implements lightType:{lightType}");
-            var LdotN = dot(lightDir, inNormal);// * 0.5f + 0.5f;
-            var diffuse = (tex2D(sampler, mainTex, inUV)) * 2 * (LdotN);
-            // specular
-            var viewDir = (shaderData.CameraPos.xyz - inWorldPos.xyz);
-            viewDir.Normalize();
-            var specular = color.black;
-
-            if (LdotN > 0)
+            /* ==========In or Out======== */
+            public class _VertField : FuncField
             {
-                // specular 1 - blinn-phong
-                // 高光也可以使用：光源角与视角的半角来算
-                //var halfAngleDir = (lightDir + viewDir);
-                //halfAngleDir.Normalize();
-                //var HdotN = max(0, dot(halfAngleDir, inNormal));
-                //HdotN = pow(HdotN, specularPow);
-                //specular.rgb = (shaderData.LightColor[0] * HdotN).rgb * shaderData.LightColor[0].a;
-                // specular 2 - phong
-                var reflectDir = reflect(-lightDir, inNormal);
-                var RnotV = max(0, dot(reflectDir, viewDir));
-                RnotV = pow(RnotV, specularPow) * (LdotN * 0.5f + 0.5f);
-                specular.rgb = (shaderData.LightColor[0] * RnotV).rgb * shaderData.LightColor[0].a;
+                [In] [Position] public vec4 inPos;
+                [In] [Out] [Texcoord] public vec2 ioUV;
+                [In] [Out] [Normal] public vec3 ioNormal;
+                [In] [Out] [Tangent] public vec3 ioTangent;
+                [Out] [Tangent(1)] public vec3 outBitangent;
+                [Out] [SV_Position] public vec4 outPos;
+                [Out] [Position] public vec4 outWorldPos;
+
+                public _VertField(Pass pass) : base(pass)
+                {
+                }
             }
 
-            // ambient
-            var ambient = shaderData.Ambient;
-            ambient.rgb *= ambient.a;
+            public class _FragField : FuncField
+            {
+                [In] [SV_Position] public vec4 inPos;
+                [In] [Position] public vec4 inWorldPos;
+                [In] [Texcoord] public vec2 inUV;
+                [In] [Normal] public vec3 inNormal;
+                [In] [Tangent] public vec3 inTangent;
+                [In] [Tangent(1)] public vec3 inBitangent;
+                [Out] [SV_Target] public color outColor;
 
-            outColor = diffuse + specular + ambient;
+                public _FragField(Pass pass) : base(pass)
+                {
+                }
+            }
+
+            private _VertField vertexField;
+            private _FragField fragField;
+            private BallooncatShader shader;
+
+            public override FuncField VertField
+            {
+                get => vertexField;
+                protected set => vertexField = value as _VertField;
+            }
+
+            public override FuncField FragField
+            {
+                get => fragField;
+                protected set => fragField = value as _FragField;
+            }
+
+            public _PassExt(_SubShader subshader) : base(subshader)
+            {
+                shader = subshader.Shader_T;
+
+                VertField = new _VertField(this);
+                FragField = new _FragField(this);
+            }
+
+            public override void Attach()
+            {
+                shader.vert = Vert;
+                shader.frag = Frag;
+            }
+
+            private void Vert()
+            {
+                vertexField.inPos.xyz += vertexField.ioNormal * shader.outlineOffset;
+                vertexField.outPos = shader.MVP * vertexField.inPos;
+                vertexField.outWorldPos = shader.M * vertexField.inPos;
+                vertexField.ioNormal = shader.M_IT * vertexField.ioNormal;
+                vertexField.ioTangent = shader.M_IT * vertexField.ioTangent;
+                vertexField.outBitangent = vertexField.ioNormal.Cross(vertexField.ioTangent);
+            }
+
+            private void Frag()
+            {
+                var shaderData = shader.Data as ShaderData;
+
+                // diffuse
+                var lightPos = shaderData.LightPos[0];
+                var lightType = lightPos.w;
+                vec3 lightDir;
+                if (lightType == 0) // 方向光
+                    lightDir = lightPos.xyz;
+                else if (lightType == 1) // 点光源
+                    lightDir = (lightPos.xyz - fragField.inWorldPos.xyz).normalized;
+                // intensity = max(0, 1 - distance / range);
+                else
+                    throw new Exception($"not implements lightType:{lightType}");
+                var LdotN = dot(lightDir, fragField.inNormal);// * 0.5f + 0.5f;
+                var diffuse = (tex2D(shader.sampler, shader.mainTex, fragField.inUV)) * 2 * (LdotN);
+                // specular
+                var viewDir = (shaderData.CameraPos.xyz - fragField.inWorldPos.xyz);
+                viewDir.Normalize();
+                var specular = color.black;
+
+                if (LdotN > 0)
+                {
+                    // specular 1 - blinn-phong
+                    // 高光也可以使用：光源角与视角的半角来算
+                    //var halfAngleDir = (lightDir + viewDir);
+                    //halfAngleDir.Normalize();
+                    //var HdotN = max(0, dot(halfAngleDir, inNormal));
+                    //HdotN = pow(HdotN, specularPow);
+                    //specular.rgb = (shaderData.LightColor[0] * HdotN).rgb * shaderData.LightColor[0].a;
+                    // specular 2 - phong
+                    var reflectDir = reflect(-lightDir, fragField.inNormal);
+                    var RnotV = max(0, dot(reflectDir, viewDir));
+                    RnotV = pow(RnotV, shader.specularPow) * (LdotN * 0.5f + 0.5f);
+                    specular.rgb = (shaderData.LightColor[0] * RnotV).rgb * shaderData.LightColor[0].a;
+                }
+
+                // ambient
+                var ambient = shaderData.Ambient;
+                ambient.rgb *= ambient.a;
+
+                fragField.outColor = diffuse + specular + ambient;
+            }
+
+            public override void Dispose()
+            {
+                if (vertexField != null)
+                {
+                    vertexField.Dispose();
+                    vertexField = null;
+                }
+                if (fragField != null)
+                {
+                    fragField.Dispose();
+                    fragField = null;
+                }
+                base.Dispose();
+            }
+        }
+
+        public BallooncatShader(BasicShaderData data) : base(data)
+        {
+            SubShaderList.Add(new _SubShader(this));
         }
     }
 }

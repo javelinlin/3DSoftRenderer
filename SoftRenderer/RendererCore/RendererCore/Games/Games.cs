@@ -222,16 +222,20 @@ namespace RendererCore.Games
     {
         private static readonly int MVP_Hash = "MVP".GetHashCode();
         private static readonly int M_Hash = "M".GetHashCode();
+        private static readonly int P_Hash = "P".GetHashCode();
         private static readonly int M_IT_Hash = "M_IT".GetHashCode();
+        private static readonly int MV_IT_Hash = "MV_IT".GetHashCode();
 
         public VertexBuffer VertexBuffer { get; private set; }
         public IndexBuffer IndexBuffer { get; private set; }
 
         public Matrix4x4 ModelMat { get; private set; }
-        public Matrix4x4 ModelITMat { get; private set; }
-
         public Matrix4x4 ModelViewMat { get; private set; }
         public Matrix4x4 ModelViewProjMat { get; private set; }
+        public Matrix4x4 ProjMat { get; private set; }
+
+        public Matrix4x4 ModelITMat { get; private set; }
+        public Matrix4x4 ModelViewITMat { get; private set; }
 
         [Description("名字")]
         public string Name { get; set; }
@@ -257,6 +261,7 @@ namespace RendererCore.Games
         {
             ModelMat = Matrix4x4.Get();
             ModelITMat = Matrix4x4.Get();
+            ModelViewITMat = Matrix4x4.Get();
 
             Mesh = new Mesh();
             Name = name;
@@ -280,6 +285,11 @@ namespace RendererCore.Games
 
             ModelViewMat = camera.View * ModelMat;
             ModelViewProjMat = camera.Proj * ModelViewMat;
+            ProjMat = camera.Proj;
+
+            ModelViewITMat.CopyFrom(ModelViewMat);
+            ModelViewITMat.Invert();
+            ModelViewITMat.Transpose();
 
             WorldPosition = ModelMat * Vector4.zeroPos;
         }
@@ -348,13 +358,14 @@ namespace RendererCore.Games
             MR.Renderer.BindVertexBuff(VertexBuffer);
             MR.Renderer.BindIndexBuff(IndexBuffer);
             
-            Material.VS.ShaderProperties.SetUniform(MVP_Hash, ModelViewProjMat);
-            Material.VS.ShaderProperties.SetUniform(M_Hash, ModelMat);
-            Material.VS.ShaderProperties.SetUniform(M_IT_Hash, ModelITMat);
+            MR.Renderer.Shader = Material.Shader;
 
-            MR.Renderer.ShaderProgram.SetShader(ShaderType.VertexShader, Material.VS);
-            MR.Renderer.ShaderProgram.SetShader(ShaderType.FragmentShader, Material.FS);
-
+            Material.Shader.ShaderProperties.SetUniform(MVP_Hash, ModelViewProjMat);
+            Material.Shader.ShaderProperties.SetUniform(M_Hash, ModelMat);
+            Material.Shader.ShaderProperties.SetUniform(P_Hash, ProjMat);
+            Material.Shader.ShaderProperties.SetUniform(M_IT_Hash, ModelITMat);
+            Material.Shader.ShaderProperties.SetUniform(MV_IT_Hash, ModelViewITMat);
+            
             MR.Renderer.Present();
         }
 
@@ -383,13 +394,11 @@ namespace RendererCore.Games
     public class Material : IDisposable
     {
         public bool DisposedShdaer = false;
-        public ShaderBase VS { get; private set; }
-        public ShaderBase FS { get; private set; }
+        public ShaderBase Shader;
 
-        public Material(ShaderBase vs, ShaderBase fs)
+        public Material(ShaderBase shader)
         {
-            VS = vs;
-            FS = fs;
+            Shader = shader;
         }
 
         public void Dispose()
@@ -397,15 +406,10 @@ namespace RendererCore.Games
             GC.SuppressFinalize(this);
             if (DisposedShdaer)
             {
-                if (VS != null)
+                if (Shader != null)
                 {
-                    VS.Dispose();
-                    VS = null;
-                }
-                if (FS != null)
-                {
-                    FS.Dispose();
-                    FS = null;
+                    Shader.Dispose();
+                    Shader = null;
                 }
             }
         }
