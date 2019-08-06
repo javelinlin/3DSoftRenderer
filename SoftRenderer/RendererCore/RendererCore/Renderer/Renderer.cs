@@ -859,32 +859,27 @@ namespace RendererCore.Renderer
                         depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
                     }
 
-                    var srcColor = fs.ShaderProperties.GetOut<Vector4>(OutLayout.SV_Target); // 目前值处理SV_Target0
                     var targets = fs.ShaderProperties.GetTargetOut();
                     var tLen = targets.Length;
                     for (int ti = 0; ti < tLen; ti++)
                     {
                         var tInfo = targets[ti];
-                        framebuff.WriteColor(tInfo.localtion, (int)f.p.x, (int)f.p.y, tInfo.data);
+                        if (tInfo.localtion == 0)
+                        {
+                            var srcColor = fs.ShaderProperties.GetOut<Vector4>(OutLayout.SV_Target); // 目前值处理SV_Target0
+                                                                                                     // 是否开启混合
+                            if (blend == Blend.On)
+                            {
+                                var dstColor = backbuffer.Get((int)f.p.x, (int)f.p.y);
+                                srcColor = BlendHandle(srcColor, dstColor, srcColorFactor, dstColorFactor, srcAlphaFactor, dstAlphaFactor, colorOp, alphaOp);
+                            }
+                            framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, srcColor);
+                        }
+                        else
+                        {
+                            framebuff.WriteColor(tInfo.localtion, (int)f.p.x, (int)f.p.y, tInfo.data);
+                        }
                     }
-                    //// alpha 测试
-                    //if (alphaTest == AlphaTest.On)
-                    //{
-                    //    var srcAlpha = Mathf.Clamp(srcColor.a, 0, 1);
-                    //    if (!Per_Frag.AlphaTest(alphaTestComp, alphaTestRef, srcAlpha))
-                    //    {
-                    //        //f.discard = true; // alpha 测试失败
-                    //        continue;
-                    //    }
-                    //}
-
-                    // 是否开启混合
-                    if (blend == Blend.On)
-                    {
-                        var dstColor = backbuffer.Get((int)f.p.x, (int)f.p.y);
-                        srcColor  = BlendHandle(srcColor, dstColor, srcColorFactor, dstColorFactor, srcAlphaFactor, dstAlphaFactor, colorOp, alphaOp);
-                    }
-                    framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, srcColor);
                 }
             }
 

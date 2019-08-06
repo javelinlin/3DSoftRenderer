@@ -515,7 +515,7 @@ namespace RendererCoreCommon.Renderer.Common.Mathes
         }
         public static Vector4 operator +(Vector4 a, Vector4 b)
         {
-            return Get(a.x + b.x, a.y + b.y, a.z + b.z, a.w);
+            return Get(a.x + b.x, a.y + b.y, a.z + b.z, a.w + b.w);
         }
         public static Vector4 operator +(Vector4 a, float b)
         {
@@ -535,7 +535,7 @@ namespace RendererCoreCommon.Renderer.Common.Mathes
         }
         public static Vector4 operator *(float s, Vector4 a)
         {
-            return Get(a.x * s, a.y * s, a.z * s, a.w);
+            return Get(a.x * s, a.y * s, a.z * s, a.w * s);
         }
         public static Vector4 operator /(Vector4 a, float s)
         {
