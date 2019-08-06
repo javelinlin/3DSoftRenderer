@@ -8,9 +8,10 @@ blog:https://blog.csdn.net/linjf520/article/details/96047240
 代码有很大的优化空间。
 
 # 项目简单分类
-- SoftRenderer 是主要运行入口的项目
-- SoftRendererCommon 公共库SoftRenderer、SoftRendererShader都会应用到
-- SoftRendererShader 自定义Shader库
+- App 应用SoftRenderer的项目，也是主要启动的项目
+- RendererCore 渲染器核心代码
+- RendererCoreCommon 公共库，RendererCore、RendererShader 都会应用到
+- RendererShader 自定义Shader库
 
 # 遗留问题
 - 投影矩阵：未能完全理解数值的推导
