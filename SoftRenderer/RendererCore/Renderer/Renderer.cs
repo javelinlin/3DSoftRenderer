@@ -830,9 +830,6 @@ namespace RendererCore.Renderer
             var framebuff = FrameBuffer;
             var depthbuff = FrameBuffer.Attachment.DepthBuffer;
             var depthwrite = drawState.DepthWrite;
-            //var maxZ = State.CameraFar;
-            //maxZ += State.CameraFar * State.CameraNear;
-            //var depthInv = 1 / maxZ;
             // depth offset
             var offsetDepth = 0.0f;
             //if (renderer.State.DepthOffset == DepthOffset.On) // 这里需要优化,法线应该顶点数据中传进来的
@@ -850,25 +847,33 @@ namespace RendererCore.Renderer
             var depthOffset = drawState.DepthOffset;
             /* ======depth end====== */
 
-            /* ======alpha test start====== */
-            //var alphaTest = State.AlphaTest;
-            //var alphaTestComp = State.AlphaTestComp;
-            //var alphaTestRef = State.AlphaTestRef;
-            /* ======alpha test start====== */
-
             /* ======blend start====== */
-            var blend = drawState.Blend;
-            var srcColorFactor = drawState.BlendSrcColorFactor;
-            var dstColorFactor = drawState.BlendDstColorFactor;
-            var srcAlphaFactor = drawState.BlendSrcAlphaFactor;
-            var dstAlphaFactor = drawState.BlendDstAlphaFactor;
-            var colorOp = drawState.BlendColorOp;
-            var alphaOp = drawState.BlendAlphaOp;
+            var blend               = drawState.Blend;
+            var srcColorFactor      = drawState.BlendSrcColorFactor;
+            var dstColorFactor      = drawState.BlendDstColorFactor;
+            var srcAlphaFactor      = drawState.BlendSrcAlphaFactor;
+            var dstAlphaFactor      = drawState.BlendDstAlphaFactor;
+            var colorOp             = drawState.BlendColorOp;
+            var alphaOp             = drawState.BlendAlphaOp;
+
             /* ======blend end====== */
+
+            /* ======stencil start====== */
+            var stencil             = drawState.Stencil;
+            var stencilRef          = drawState.StencilRef;
+            var stencilComp         = drawState.StencilComp;
+            var stencilPass         = drawState.StencilPass;
+            var stencilFail         = drawState.StencilFail;
+            var stencilZFail        = drawState.StencilZFail;
+            var stencilReadkMask    = drawState.StencilReadMask;
+            var stencilWriteMask    = drawState.StencilWriteMask;
+
+            /* ======stencil end====== */
 
             // shaded
             var len = shadedResult.Count;
-            var backbuffer = FrameBuffer.Attachment.ColorBuffer[0];
+            var backbuffer = framebuff.Attachment.ColorBuffer[0];
+            int x, y;
             for (int i = 0; i < len; i++)
             {
                 var f = shadedResult[i];
@@ -876,49 +881,69 @@ namespace RendererCore.Renderer
                 if (depthOffset == DepthOffset.On)
                     testDepth += offsetDepth;
 
-                // 深度测试
-                if (framebuff.DepthTest(drawState.DepthTest, (int)f.p.x, (int)f.p.y, testDepth))
+                x = (int)f.p.x;
+                y = (int)f.p.y;
+
+                var isDepthTest = framebuff.DepthTest(drawState.DepthTest, x, y, testDepth); ;
+                // 模板测试
+                if (stencil == Stencil.On)
                 {
-                    // 执行fragment shader
-                    var jLen = f.ShaderOut.upperStageOutInfos.Length;
-                    for (int j = 0; j < jLen; j++)
+                    var isStencilPass = framebuff.StencilTest(stencilComp, x, y, stencilRef, stencilReadkMask);
+                    if (isStencilPass)
                     {
-                        var info = f.ShaderOut.upperStageOutInfos[j];
-                        properties.SetInWithOut(info.layout, info.value, info.location);
-                    }
-                    usingPass.f = f;
-                    usingPass.Reset();
-                    usingPass.Frag();
-                    // 丢弃片段
-                    if (usingPass.discard) continue;
-
-                    // 是否开启深度写入
-                    if (depthwrite == DepthWrite.On)
-                    {
-                        testDepth = Mathf.Clamp(testDepth, 0, 1);
-                        depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
-                    }
-
-                    var targets = properties.GetTargetOut();
-                    var tLen = targets.Length;
-                    for (int ti = 0; ti < tLen; ti++)
-                    {
-                        var tInfo = targets[ti];
-                        if (tInfo.localtion == 0)
-                        {
-                            var srcColor = properties.GetOut<Vector4>(OutLayout.SV_Target); // 目前值处理SV_Target0
-                                                                                                     // 是否开启混合
-                            if (blend == Blend.On)
-                            {
-                                var dstColor = backbuffer.Get((int)f.p.x, (int)f.p.y);
-                                srcColor = BlendHandle(srcColor, dstColor, srcColorFactor, dstColorFactor, srcAlphaFactor, dstAlphaFactor, colorOp, alphaOp);
-                            }
-                            framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, srcColor);
-                        }
+                        if (isDepthTest)
+                            framebuff.StencilOpHandle(stencilPass, x, y, stencilRef, stencilWriteMask);
                         else
+                            framebuff.StencilOpHandle(stencilZFail, x, y, stencilRef, stencilWriteMask);
+                    }
+                    else
+                    {
+                        framebuff.StencilOpHandle(stencilFail, x, y, stencilRef, stencilWriteMask);
+                        continue;
+                    }
+                }
+
+                if (!isDepthTest) continue;
+                // 深度测试
+                var jLen = f.ShaderOut.upperStageOutInfos.Length;
+                for (int j = 0; j < jLen; j++)
+                {
+                    var info = f.ShaderOut.upperStageOutInfos[j];
+                    properties.SetInWithOut(info.layout, info.value, info.location);
+                }
+                usingPass.f = f;
+                usingPass.Reset();
+                // 执行fragment shader
+                usingPass.Frag();
+                // 丢弃片段
+                if (usingPass.discard) continue;
+
+                // 是否开启深度写入
+                if (depthwrite == DepthWrite.On)
+                {
+                    testDepth = Mathf.Clamp(testDepth, 0, 1);
+                    depthbuff.Set(x, y, testDepth);
+                }
+
+                var targets = properties.GetTargetOut();
+                var tLen = targets.Length;
+                for (int ti = 0; ti < tLen; ti++)
+                {
+                    var tInfo = targets[ti];
+                    if (tInfo.localtion == 0)
+                    {
+                        var srcColor = properties.GetOut<Vector4>(OutLayout.SV_Target); // 目前值处理SV_Target0
+                                                                                                    // 是否开启混合
+                        if (blend == Blend.On)
                         {
-                            framebuff.WriteColor(tInfo.localtion, (int)f.p.x, (int)f.p.y, tInfo.data);
+                            var dstColor = backbuffer.Get(x, y);
+                            srcColor = BlendHandle(srcColor, dstColor, srcColorFactor, dstColorFactor, srcAlphaFactor, dstAlphaFactor, colorOp, alphaOp);
                         }
+                        framebuff.WriteColor(0, x, y, srcColor);
+                    }
+                    else
+                    {
+                        framebuff.WriteColor(tInfo.localtion, x, y, tInfo.data);
                     }
                 }
             }
@@ -935,14 +960,16 @@ namespace RendererCore.Renderer
                 var f = wireframeResult[i];
                 var testDepth = f.depth + offsetDepth;
                 var c = wireframeColor;
-                if (framebuff.DepthTest(ComparisonFunc.Less, (int)f.p.x, (int)f.p.y, testDepth))
+                x = (int)f.p.x;
+                y = (int)f.p.y;
+                if (framebuff.DepthTest(ComparisonFunc.Less, x, y, testDepth))
                 {
                     // 是否开启深度写入
                     if (depthwrite == DepthWrite.On)
                     {
-                        depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
+                        depthbuff.Set(x, y, testDepth);
                     }
-                    backbuffer.Set((int)f.p.x, (int)f.p.y, c);
+                    backbuffer.Set(x, y, c);
                 }
             }
 

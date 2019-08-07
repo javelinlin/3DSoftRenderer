@@ -194,6 +194,7 @@ namespace RendererCore.Renderer
             if ((flag & ClearFlag.StencilBuffer) != 0 && Attachment.StencilBuffer != null)
                 Attachment.StencilBuffer.CopyFrom(this.clearedStencilBuff);
         }
+
         public void AttachColor(Texture v, int localtion = 0) => 
             Attachment.ColorBuffer[localtion] = v.ColorBuffer;
         public void AttachColor(Buffer_Color v, int localtion = 0) =>
@@ -202,6 +203,12 @@ namespace RendererCore.Renderer
             Attachment.DepthBuffer = v;
         public void AttachStencil(Buffer_Stencil v) =>
             Attachment.StencilBuffer = v;
+
+        public void CreateStencil(/*params*/)
+        {
+            if (this.Attachment.StencilBuffer == null)
+                this.Attachment.StencilBuffer = new Buffer_Stencil(W, H);
+        }
 
         public bool DepthTest(ComparisonFunc comp, int x, int y, float depth)
         {
@@ -221,7 +228,61 @@ namespace RendererCore.Renderer
             }
         }
 
+        public bool StencilTest(ComparisonFunc comp, int x, int y, byte refV, byte readkMask)
+        {
+            if (comp == ComparisonFunc.Always) return true;
+            else if (comp == ComparisonFunc.Never) return false;
+            var buffV = Attachment.StencilBuffer[x, y] & readkMask;
+            switch (comp)
+            {
+                case ComparisonFunc.LEqual: return refV <= buffV;
+                case ComparisonFunc.GEqual: return refV >= buffV;
+                case ComparisonFunc.Equal: return refV == buffV;
+                case ComparisonFunc.NotEqual: return refV != buffV;
+                case ComparisonFunc.Less: return refV < buffV;
+                case ComparisonFunc.Greater: return refV > buffV;
+                default: throw new Exception("Not implements");
+            }
+        }
 
+        public void StencilOpHandle(StencilOp op, int x, int y, byte refV, byte writeMask)
+        {
+            if (op == StencilOp.Keep)/*noops*/ return;
+            if(op == StencilOp.Zero) Attachment.StencilBuffer[x, y] = 0;
+
+            var buff = Attachment.StencilBuffer;
+            
+            switch (op)
+            {
+                case StencilOp.Replace:
+                    buff[x, y] = (byte)(refV & writeMask);
+                    break;
+                case StencilOp.Incr:
+                    buff[x, y] = (byte)Math.Max((buff[x, y] - 1), 0);
+                    break;
+                case StencilOp.Decr:
+                    buff[x, y] = (byte)Math.Min((buff[x, y] - 1), byte.MaxValue);
+                    break;
+                case StencilOp.Invert:
+                    buff[x, y] = (byte)(~(buff[x, y] - 1));
+                    break;
+                case StencilOp.Incrwrap:
+                    {
+                        var buffV = buff[x, y] - 1;
+                        if (buffV < 0) buff[x, y] = byte.MaxValue;
+                        else  buff[x, y] = (byte)buffV;
+                    }
+                    break;
+                case StencilOp.Decrwrap:
+                    {
+                        var buffV = buff[x, y] + 1;
+                        if (buffV > byte.MaxValue) buff[x, y] = 0;
+                        else buff[x, y] = (byte)buffV;
+                    }
+                    break;
+                default:throw new Exception($"not implements");
+            }
+        }
 
         public void WriteColor(int localtion, int x, int y, Vector4 color)
         {
