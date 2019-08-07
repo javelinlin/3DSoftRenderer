@@ -318,7 +318,7 @@ namespace SoftRenderer
             renderer.ShaderMgr.Load("Shaders/RendererShader.dll");
 
             var shaderName1 = "Test/TestShader";
-            var shaderName2 = "SphereVertexShader";
+            var shaderName2 = "SphereShader";
             var shaderName3 = "BallooncatShader";
 
             var shader1 = renderer.ShaderMgr.CreateShader(shaderName1);

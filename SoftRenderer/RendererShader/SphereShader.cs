@@ -15,7 +15,7 @@ namespace RendererShader
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SphereShader : ShaderBase
     {
-        [Name] public static readonly string Name = "SphereVertexShader";
+        [Name] public static readonly string Name = "SphereShader";
         [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
 
         /* ==========Uniform======== */
