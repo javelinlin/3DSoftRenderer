@@ -111,27 +111,28 @@ namespace RendererCore.Renderer
         private List<FragInfo> genWireframeFragHelper = new List<FragInfo>();  // wireframe 的片段
         private List<FragInfo> genNormalLineFragHelper = new List<FragInfo>();  // normal line 的片段
 
-        internal SubShader UsingSubShader;
-        internal Pass UsingPass;
+        private VertexBuffer curVertexBuffer;       // 当前处理的顶点数据
+        private IndexBuffer curIndexBuffer;         // 当前处理的索引数据
+
+        internal SubShader UsingSubShader;          // 当前使用的subshader
+        internal Pass UsingPass;                    // 当前使用的pass
+
+        internal Rasterizer Rasterizer { get; private set; }              // 光栅器
 
 #if DOUBLE_BUFF
         private bool bufferDirty = false;
 #endif
-        public FrameBuffer FrameBuffer { get; set; }
-        public ShaderBase Shader { get; set; }
-        public ShaderLoadMgr ShaderMgr { get; private set; }
-        public BasicShaderData ShaderData { get; set; }
-        public RendererState State { get; private set; }
-        public GlobalRenderSstate GlobalState { get; private set; }
-        public Rasterizer Rasterizer { get; private set; }
+        public FrameBuffer FrameBuffer { get; set; }                    // 当前使用的帧缓存对象: fbo
+        public ShaderBase Shader { get; set; }                          // 当前使用的shader集
+        public ShaderLoadMgr ShaderMgr { get; private set; }            // Shader加载管理类
+        public BasicShaderData ShaderData { get; set; }                 // 当前shader的uniform block数据
+        public RendererState State { get; private set; }                // 当前的渲染器的参数
+        public GlobalRenderSstate GlobalState { get; private set; }     // 当前全局状态 - 目前测试用，后面需要重构的
         public int BackBufferWidth { get; }
         public int BackBufferHeight { get; }
 
-        public VertexBuffer CurVertexBuffer { get; private set; }
-        public IndexBuffer CurIndexBuffer { get; private set; }
-
-        public PixelFormat OutPxielFormat { get; }
-        public int OutPixelFormatSize { get; }
+        public PixelFormat OutPxielFormat { get; }                      // 当前输出的画布像素格式
+        public int OutPixelFormatSize { get; }                          // 当前输出的画布的像素单精度浮点数个数
 
         public Renderer(int bufferW = 512, int bufferH = 512, PixelFormat outPixelFormat = PixelFormat.Format24bppRgb)
         {
@@ -168,29 +169,29 @@ namespace RendererCore.Renderer
         public void Present()
         {
             // draw call
-            if (CurVertexBuffer == null)
+            if (curVertexBuffer == null)
                 throw new Exception("current vertex buffer not binding.");
-            if (CurIndexBuffer == null)
+            if (curIndexBuffer == null)
                 throw new Exception("current index buffer not binding.");
 
             var subShaderCount = Shader.SubShaderList.Count;
             for (int i = 0; i < subShaderCount; i++)
             {
                 var subshader = Shader.SubShaderList[i];
-                if (!subshader.IsSupported) continue;
+                if (!subshader.IsSupported) continue;           // 找到第一个可支持的sub shader，并使用它
 
                 UsingSubShader = subshader;
                 break; // Is Supported == true;
             }
 
             var jLen = UsingSubShader.passList.Count;
-            for (int j = 0; j < jLen; j++)
+            for (int j = 0; j < jLen; j++)                      // 遍历所有的pass
             {
                 if (UsingSubShader.passList[j].Actived)
                 {
                     UsingPass = UsingSubShader.passList[j];
                     Rasterizer.DrawState = UsingPass.State;
-                    Pipeline();
+                    Pipeline();                                 // 单次绘制管线
                 }
             }
 
@@ -234,15 +235,19 @@ namespace RendererCore.Renderer
             AAHandle();
             // 全屏模糊
             FullScreenBlurHandle();
+
+#if DOUBLE_BUFF
+            bufferDirty = true;
+#endif
         }
 
         public void BindVertexBuff(VertexBuffer buffer)
         {
-            CurVertexBuffer = buffer;
+            curVertexBuffer = buffer;
         }
         public void BindIndexBuff(IndexBuffer buffer)
         {
-            CurIndexBuffer = buffer;
+            curIndexBuffer = buffer;
         }
         public void BackbuffSaveAs(string path)
         {
@@ -319,6 +324,7 @@ namespace RendererCore.Renderer
             }
             result.UnlockBits(bmd);
         }
+
         public void TargetWrite(Bitmap result, int targetLocal = 0)
         {
             var targetPixelSize = GetDevicePixelSize(result.PixelFormat);
@@ -367,12 +373,15 @@ namespace RendererCore.Renderer
             }
             result.UnlockBits(bmd);
         }
+
         private int GetDevicePixelSize(PixelFormat format)
         {
             if (format == PixelFormat.Format24bppRgb) return 3;
             if (format == PixelFormat.Format32bppArgb) return 4;
             else throw new Exception($"not supporting out pixel size:{format}");
         }
+
+        #region 测试post-process代码，需要重构的
         // 为了外部测试用，所以我这里公开了AA的函数
         private void AAHandle()
         {
@@ -594,10 +603,11 @@ namespace RendererCore.Renderer
                 }
             }
         }
+        #endregion
 
         private void VertexShader()
         {
-            var buffer = CurVertexBuffer;
+            var buffer = curVertexBuffer;
             var floatBuff = buffer.buff;
 
             var passProperties = UsingPass.VertField.Properties;
@@ -736,8 +746,8 @@ namespace RendererCore.Renderer
             switch (drawState.PolygonMode)
             {
                 case PolygonMode.Triangle:
-                    var len = CurIndexBuffer.Buffer.Length;
-                    var buff = CurIndexBuffer.Buffer;
+                    var len = curIndexBuffer.Buffer.Length;
+                    var buff = curIndexBuffer.Buffer;
                     trianglePrimitiveHelper.Clear();
                     for (int i = 0; i < len; i += 3)
                     {
