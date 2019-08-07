@@ -45,13 +45,13 @@ blog:https://blog.csdn.net/linjf520/article/details/96047240
 - Scissor 裁剪矩形
 - Depth offset 深度偏移
 - DepthTest 更像是Early-z，因为在fragment shader前测试
-- AlphaTest Alpha测试
-- Blend 混合
+- AlphaTest Alpha测试 - 该功能已改为使用fragment shader来控制discard来决定是否丢弃片段的方式
+- Blend 混合 - 可调整混合参数
 - Similar Programmable pipeline 没有并行的可编程管线
   - Vertex Shader
   - Fragment Shader
-- PrimitiveAssembly
-  - 目前值有三角形
+- PrimitiveAssembly - 目前值有三角形
 - Texture2D & Sampler2D(WrapMode, FilterMode(only point))
 - Shader/SubShader/Pass - 新版
   - 旧版的Vertex Shader, Fragment Shader可编程方式没用上了
+- Stencil 模板缓存、测试，更像是Early-Stencil，因为在fragment shader前测试
