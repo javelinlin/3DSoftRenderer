@@ -100,7 +100,7 @@
       <Project>{6c875b2c-dbf3-4b33-a28b-00a90dbf970c}</Project>
       <Name>RendererCoreCommon</Name>
     </ProjectReference>
-    <ProjectReference Include="..\RendererCore\RendererCore\RendererCore.csproj">
+    <ProjectReference Include="..\RendererCore\RendererCore.csproj">
       <Project>{f35d0a09-7a23-444a-b320-5efec642a494}</Project>
       <Name>RendererCore</Name>
     </ProjectReference>
