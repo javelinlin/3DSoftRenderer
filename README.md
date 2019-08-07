@@ -50,4 +50,8 @@ blog:https://blog.csdn.net/linjf520/article/details/96047240
 - Similar Programmable pipeline 没有并行的可编程管线
   - Vertex Shader
   - Fragment Shader
+- PrimitiveAssembly
+  - 目前值有三角形
 - Texture2D & Sampler2D(WrapMode, FilterMode(only point))
+- Shader/SubShader/Pass - 新版
+  - 旧版的Vertex Shader, Fragment Shader可编程方式没用上了
