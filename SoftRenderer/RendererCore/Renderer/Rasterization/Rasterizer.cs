@@ -597,10 +597,6 @@ namespace RendererCore.Renderer.Rasterization
                         var p0InvZ = leftF.ClipZ == 0 ? 0 : 1 / leftF.ClipZ;
                         var p1InvZ = rightF.ClipZ == 0 ? 0 : 1 / rightF.ClipZ;
 #endif
-                        var p1top0 = (triangle.f1.p - triangle.f0.p).xyz;
-                        var p2top0 = (triangle.f2.p - triangle.f0.p).xyz;
-                        var n = p1top0.Cross(p2top0).normalized;
-
                         for (int i = 1; i < dx; i++)
                         {
                             var newP = leftF.p + dir * i;
