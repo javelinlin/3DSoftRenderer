@@ -884,27 +884,29 @@ namespace RendererCore.Renderer
                 x = (int)f.p.x;
                 y = (int)f.p.y;
 
-                var isDepthTest = framebuff.DepthTest(drawState.DepthTest, x, y, testDepth); ;
-                // 模板测试
+                // 深度测试 - early-z
+                var isDepthTest = framebuff.DepthTest(drawState.DepthTest, x, y, testDepth);
+                var isStencilPass = true;
+                // 模板测试 - early-stencil
                 if (stencil == Stencil.On)
                 {
-                    var isStencilPass = framebuff.StencilTest(stencilComp, x, y, stencilRef, stencilReadkMask);
+                    isStencilPass = framebuff.StencilTest(stencilComp, x, y, stencilRef, stencilReadkMask);
                     if (isStencilPass)
                     {
-                        if (isDepthTest)
-                            framebuff.StencilOpHandle(stencilPass, x, y, stencilRef, stencilWriteMask);
-                        else
+                        if (!isDepthTest)
+                            // early-stencil 测试失败，模板写入在fs前
                             framebuff.StencilOpHandle(stencilZFail, x, y, stencilRef, stencilWriteMask);
                     }
                     else
                     {
+                        // early-stencil 测试失败，模板写入在fs前
                         framebuff.StencilOpHandle(stencilFail, x, y, stencilRef, stencilWriteMask);
                         continue;
                     }
                 }
 
                 if (!isDepthTest) continue;
-                // 深度测试
+
                 var jLen = f.ShaderOut.upperStageOutInfos.Length;
                 for (int j = 0; j < jLen; j++)
                 {
@@ -918,6 +920,13 @@ namespace RendererCore.Renderer
                 // 丢弃片段
                 if (usingPass.discard) continue;
 
+                // early-stencil 测试成功，模板写入在fs后
+                if (stencil == Stencil.On)
+                {
+                    framebuff.StencilOpHandle(stencilPass, x, y, stencilRef, stencilWriteMask);
+                }
+
+                // early-z 深度写入在fs后
                 // 是否开启深度写入
                 if (depthwrite == DepthWrite.On)
                 {
@@ -932,8 +941,8 @@ namespace RendererCore.Renderer
                     var tInfo = targets[ti];
                     if (tInfo.localtion == 0)
                     {
-                        var srcColor = properties.GetOut<Vector4>(OutLayout.SV_Target); // 目前值处理SV_Target0
-                                                                                                    // 是否开启混合
+                        var srcColor = properties.GetOut<Vector4>(OutLayout.SV_Target);
+                        // 是否开启混合
                         if (blend == Blend.On)
                         {
                             var dstColor = backbuffer.Get(x, y);
