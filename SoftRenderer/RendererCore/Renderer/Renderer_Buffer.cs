@@ -191,7 +191,7 @@ namespace RendererCore.Renderer
             }
             if ((flag & ClearFlag.DepthBuffer) != 0 && Attachment.DepthBuffer != null)
                 Attachment.DepthBuffer.CopyFrom(this.clearedDepthBuff);
-            if ((flag & ClearFlag.DepthBuffer) != 0 && Attachment.StencilBuffer != null)
+            if ((flag & ClearFlag.StencilBuffer) != 0 && Attachment.StencilBuffer != null)
                 Attachment.StencilBuffer.CopyFrom(this.clearedStencilBuff);
         }
         public void AttachColor(Texture v, int localtion = 0) => 
@@ -220,6 +220,8 @@ namespace RendererCore.Renderer
                 default: throw new Exception("Not implements");
             }
         }
+
+
 
         public void WriteColor(int localtion, int x, int y, Vector4 color)
         {

@@ -21,72 +21,8 @@ namespace RendererCore.Renderer
     {
         public static Renderer Instance { get; private set; }
 
-        private Buffer_Color frontBuffer;           // frontbuffer
-        private FrameBuffer defaultFrameBuffer;     // backbuffer
-        private List<ShaderOut> vertexshaderOutput = new List<ShaderOut>();
-        private List<Primitive_Triangle> trianglePrimitiveHelper = new List<Primitive_Triangle>();
-        private List<Primitive_Line> linePrimitiveHelper = new List<Primitive_Line>();
-        private List<Primitive_Point> pointPrimitiveHelper = new List<Primitive_Point>();
-        private List<FragInfo> genShadedFragHelper = new List<FragInfo>();  // shaded 的片段
-        private List<FragInfo> genWireframeFragHelper = new List<FragInfo>();  // wireframe 的片段
-        private List<FragInfo> genNormalLineFragHelper = new List<FragInfo>();  // normal line 的片段
-
-        internal SubShader UsingSubShader;
-        internal Pass UsingPass;
-
-#if DOUBLE_BUFF
-        private bool bufferDirty = false;
-#endif
-        public FrameBuffer FrameBuffer { get; set; }
-        public ShaderBase Shader { get; set; }
-        public ShaderLoadMgr ShaderMgr { get; private set; }
-        public BasicShaderData ShaderData { get; set; }
-        public RendererState State { get; private set; }
-        public GlobalRenderSstate GlobalState { get; private set; }
-        public Rasterizer Rasterizer { get; private set; }
-        public int BackBufferWidth { get; }
-        public int BackBufferHeight { get; }
-
-        public VertexBuffer CurVertexBuffer { get; private set; }
-        public IndexBuffer CurIndexBuffer { get; private set; }
-
-        public PixelFormat OutPxielFormat { get; }
-        public int OutPixelFormatSize { get; }
-
-        public Renderer(int bufferW = 512, int bufferH = 512, PixelFormat outPixelFormat = PixelFormat.Format24bppRgb)
-        {
-            this.BackBufferWidth = bufferW;
-            this.BackBufferHeight = bufferH;
-
-            this.OutPxielFormat = outPixelFormat;
-            this.OutPixelFormatSize = GetDevicePixelSize(outPixelFormat);
-
-            this.defaultFrameBuffer = new FrameBuffer(bufferW, bufferH);
-            this.FrameBuffer = this.defaultFrameBuffer;     // using default buffer
-
-            this.frontBuffer = new Buffer_Color(bufferW, bufferH);
-
-            State = new RendererState(this);
-            GlobalState = new GlobalRenderSstate();
-            Rasterizer = new Rasterizer(this);
-            ShaderData = new ShaderData(1);
-            ShaderMgr = new ShaderLoadMgr(this);
-
-            if (Instance == null) Instance = this;
-        }
-
-        public void Clear(ClearFlag flag = ClearFlag.ColorBuffer | ClearFlag.DepthBuffer)
-        {
-            FrameBuffer.Clear(flag);
-        }
-
-        public void SetBackbuffer()
-        {
-            FrameBuffer = defaultFrameBuffer;
-        }
-
         // 混合
-        public Vector4 BlendHandle(
+        public static Vector4 BlendHandle(
             Vector4 src, Vector4 dst,
             BlendFactor srcColorFactor, BlendFactor dstColorFactor,
             BlendFactor srcAlphaFactor, BlendFactor dstAlphaFactor,
@@ -165,6 +101,70 @@ namespace RendererCore.Renderer
             return Vector4.Get(sr, sg, sb, sa);
         }
 
+        private Buffer_Color frontBuffer;           // frontbuffer
+        private FrameBuffer defaultFrameBuffer;     // backbuffer
+        private List<ShaderOut> vertexshaderOutput = new List<ShaderOut>();
+        private List<Primitive_Triangle> trianglePrimitiveHelper = new List<Primitive_Triangle>();
+        private List<Primitive_Line> linePrimitiveHelper = new List<Primitive_Line>();
+        private List<Primitive_Point> pointPrimitiveHelper = new List<Primitive_Point>();
+        private List<FragInfo> genShadedFragHelper = new List<FragInfo>();  // shaded 的片段
+        private List<FragInfo> genWireframeFragHelper = new List<FragInfo>();  // wireframe 的片段
+        private List<FragInfo> genNormalLineFragHelper = new List<FragInfo>();  // normal line 的片段
+
+        internal SubShader UsingSubShader;
+        internal Pass UsingPass;
+
+#if DOUBLE_BUFF
+        private bool bufferDirty = false;
+#endif
+        public FrameBuffer FrameBuffer { get; set; }
+        public ShaderBase Shader { get; set; }
+        public ShaderLoadMgr ShaderMgr { get; private set; }
+        public BasicShaderData ShaderData { get; set; }
+        public RendererState State { get; private set; }
+        public GlobalRenderSstate GlobalState { get; private set; }
+        public Rasterizer Rasterizer { get; private set; }
+        public int BackBufferWidth { get; }
+        public int BackBufferHeight { get; }
+
+        public VertexBuffer CurVertexBuffer { get; private set; }
+        public IndexBuffer CurIndexBuffer { get; private set; }
+
+        public PixelFormat OutPxielFormat { get; }
+        public int OutPixelFormatSize { get; }
+
+        public Renderer(int bufferW = 512, int bufferH = 512, PixelFormat outPixelFormat = PixelFormat.Format24bppRgb)
+        {
+            this.BackBufferWidth = bufferW;
+            this.BackBufferHeight = bufferH;
+
+            this.OutPxielFormat = outPixelFormat;
+            this.OutPixelFormatSize = GetDevicePixelSize(outPixelFormat);
+
+            this.defaultFrameBuffer = new FrameBuffer(bufferW, bufferH);
+            this.FrameBuffer = this.defaultFrameBuffer;     // using default buffer
+
+            this.frontBuffer = new Buffer_Color(bufferW, bufferH);
+
+            State = new RendererState(this);
+            GlobalState = new GlobalRenderSstate();
+            Rasterizer = new Rasterizer(this);
+            ShaderData = new ShaderData(1);
+            ShaderMgr = new ShaderLoadMgr(this);
+
+            if (Instance == null) Instance = this;
+        }
+
+        public void Clear(ClearFlag flag = ClearFlag.ColorBuffer | ClearFlag.DepthBuffer | ClearFlag.StencilBuffer)
+        {
+            FrameBuffer.Clear(flag);
+        }
+
+        public void SetBackbuffer()
+        {
+            FrameBuffer = defaultFrameBuffer;
+        }
+
         public void Present()
         {
             // draw call
@@ -189,7 +189,6 @@ namespace RendererCore.Renderer
                 if (UsingSubShader.passList[j].Actived)
                 {
                     UsingPass = UsingSubShader.passList[j];
-                    UsingPass.Attach();
                     Rasterizer.DrawState = UsingPass.State;
                     Pipeline();
                 }
@@ -372,7 +371,7 @@ namespace RendererCore.Renderer
         {
             if (format == PixelFormat.Format24bppRgb) return 3;
             if (format == PixelFormat.Format32bppArgb) return 4;
-            else throw new Exception($"not iplements out pixel size:{format}");
+            else throw new Exception($"not supporting out pixel size:{format}");
         }
         // 为了外部测试用，所以我这里公开了AA的函数
         private void AAHandle()
@@ -656,7 +655,7 @@ namespace RendererCore.Renderer
                             break;
                     }
                 }
-                UsingSubShader.Shader.vert();
+                UsingPass.Vert();
 
                 var outs = passProperties.GetVertexOuts();
                 vertexshaderOutput.Add(new ShaderOut {  upperStageOutInfos = outs });
@@ -877,11 +876,11 @@ namespace RendererCore.Renderer
                         var info = f.ShaderOut.upperStageOutInfos[j];
                         properties.SetInWithOut(info.layout, info.value, info.location);
                     }
-                    usingSubShader.Shader.f = f;
-                    usingSubShader.Shader.Reset();
-                    usingSubShader.Shader.frag();
+                    usingPass.f = f;
+                    usingPass.Reset();
+                    usingPass.Frag();
                     // 丢弃片段
-                    if (usingSubShader.Shader.discard) continue;
+                    if (usingPass.discard) continue;
 
                     // 是否开启深度写入
                     if (depthwrite == DepthWrite.On)

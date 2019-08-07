@@ -306,14 +306,6 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             var type = shader.GetType();
             var fs = type.GetFields();
             var uniformAtType = typeof(UniformAttribute);
-            var inAtType = typeof(InAttribute);
-            var outAtType = typeof(OutAttribute);
-            var nointerpolation = typeof(NointerpolationAttribute);
-
-            var fType = typeof(float);
-            var vec2Type = typeof(Vector2);
-            var vec3Type = typeof(Vector3);
-            var vec4Type = typeof(Vector4);
 
             foreach (var f in fs)
             {
@@ -477,27 +469,30 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         [Category("Blend")] public BlendOp BlendColorOp { get; set; } = BlendOp.Add;
         [Category("Blend")] public BlendOp BlendAlphaOp { get; set; } = BlendOp.Add;
 
-        [Category("Scissor")]
-        public Rectangle ScissorRect { get; set; }
-        [Category("Scissor")]
-        public Scissor Scissor { get; set; } = Scissor.Off;
-        [Category("Facing-Culling")]
-        public FrontFace FrontFace { get; set; } = FrontFace.Clock;
-        [Category("Facing-Culling")]
-        public FaceCull Cull { get; set; } = FaceCull.Back;
-        [Category("Depth")]
-        public DepthWrite DepthWrite { get; set; } = DepthWrite.On;
-        [Category("Depth")]
-        public ComparisonFunc DepthTest { get; set; } = ComparisonFunc.Less;
-        [Category("Depth")]
-        public DepthOffset DepthOffset { get; set; } = DepthOffset.Off;
-        [Category("PolygonMode")]
-        public PolygonMode PolygonMode { get; set; } = PolygonMode.Triangle;
-        [Category("Depth")]
+        [Category("Scissor")] public Rectangle ScissorRect { get; set; }
+        [Category("Scissor")] public Scissor Scissor { get; set; } = Scissor.Off;
+
+        [Category("Facing & Culling")] public FrontFace FrontFace { get; set; } = FrontFace.Clock;
+        [Category("Facing & Culling")] public FaceCull Cull { get; set; } = FaceCull.Back;
+
+        [Category("Depth")] public DepthWrite DepthWrite { get; set; } = DepthWrite.On;
+        [Category("Depth")] public ComparisonFunc DepthTest { get; set; } = ComparisonFunc.Less;
+        [Category("Depth")] public DepthOffset DepthOffset { get; set; } = DepthOffset.Off;
         [Description("Depth的掠射角偏移系数")]
-        public float DepthOffsetFactor { get; set; } = 0;
-        [Category("Depth的最小深度刻度单位偏移系数")]
-        public float DepthOffsetUnit { get; set; } = 0;
+        [Category("Depth")] public float DepthOffsetFactor { get; set; } = 0;
+        [Description("Depth的最小深度刻度单位偏移系数")]
+        [Category("Depth")] public float DepthOffsetUnit { get; set; } = 0;
+
+        [Category("PolygonMode")] public PolygonMode PolygonMode { get; set; } = PolygonMode.Triangle;
+
+        [Category("Stencil")] public Stencil Stencil { get; set; } = Stencil.Off;
+        [Category("Stencil")] public byte StencilRef { get; set; }                                          // required
+        [Category("Stencil")] public ComparisonFunc StencilComp { get; set; } = ComparisonFunc.Always;      // required
+        [Category("Stencil")] public StencilOp StencilPass { get; set; }                                    // required
+        [Category("Stencil")] public StencilOp StencilFail { get; set; }                                    // required
+        [Category("Stencil")] public StencilOp StencilZFail { get; set; }                                   // required
+        [Category("Stencil")] public byte StencilReadMask { get; set; } = 0xff;                             // optional
+        [Category("Stencil")] public byte StencilWriteMask { get; set; } = 0xff;                            // optional
     }
 
     [Description("Shader.SubShader.Pass")]
@@ -514,6 +509,9 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         //public virtual FuncField TessEvaField { get; protected set; }
         //public virtual FuncField GeometryField { get; protected set; }
         public virtual FuncField FragField { get; protected set; }
+
+        public FragInfo f;
+        public bool discard;
 
         protected static float dot(Vector2 v1, Vector2 v2) => v1.Dot(v2);
         protected static float dot(Vector3 v1, Vector3 v2) => v1.Dot(v2);
@@ -540,10 +538,16 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             SubShader = subshader;
         }
 
-        public virtual void Attach()
+        public virtual void Reset()
         {
-
+            discard = false;
         }
+
+        public virtual void Vert() { }
+        //public virtual void TessCtrl() { }
+        //public virtual void TessEva() { }
+        //public virtual void Geometry() { }
+        public virtual void Frag() { }
 
         public virtual void Dispose()
         {
@@ -560,6 +564,7 @@ namespace RendererCoreCommon.Renderer.Common.Shader
                 FragField = null;
             }
 
+            f = null;
             State = null;
             SubShader = null;
         }
@@ -645,15 +650,6 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         public ShaderFieldReflection ShaderProperties;
         public BasicShaderData Data { get; private set; }
 
-        public Vert vert;           // required
-        public TessCtrl tessCtrl;   // optional
-        public TessEva tessEva;     // optional
-        public Geometry geometry;   // optional
-        public Frag frag;           // required
-
-        public FragInfo f;
-        public bool discard;
-
         public List<SubShader> SubShaderList { get; private set; }
 
         public ShaderBase(BasicShaderData data)
@@ -670,11 +666,6 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             }
 
             SubShaderList = new List<SubShader>();
-        }
-
-        public void Reset()
-        {
-            discard = false;
         }
 
         public void Init()
@@ -704,12 +695,6 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             }
 
             Data = null;
-
-            vert = null;
-            tessCtrl = null;
-            tessEva = null;
-            geometry = null;
-            frag = null;
         }
     }
 

@@ -47,16 +47,6 @@ namespace RendererCore.Renderer
                 var shader_at = type.GetCustomAttribute<ShaderAttribute>();
                 if (shader_at == null) continue; // 不是shader的都过滤掉
 
-                var vert_delegate = type.GetField("vert");
-                if (vert_delegate == null)
-                    throw new Exception($"shader:{type.Name} not found vert");
-
-                var frag_delegate = type.GetField("frag");
-                if (frag_delegate == null)
-                    throw new Exception($"shader:{type.Name} not found frag");
-
-                var methods = type.GetMethods();
-                var fields = type.GetFields();
                 if (!type.IsSubclassOf(baseType))
                     throw new Exception($"shader:{type.Name} invalidated");
 

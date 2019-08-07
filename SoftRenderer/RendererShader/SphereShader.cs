@@ -107,13 +107,7 @@ namespace RendererShader
                 FragField = new _FragField(this);
             }
 
-            public override void Attach()
-            {
-                shader.vert = Vert;
-                shader.frag = Frag;
-            }
-
-            private void Vert()
+            public override void Vert()
             {
                 vertexField.ioColor = color.yellow;
                 vertexField.inPos.xyz += vertexField.ioNormal * shader.outlineOffset;
@@ -124,7 +118,7 @@ namespace RendererShader
                 vertexField.outBitangent = vertexField.ioNormal.Cross(vertexField.ioTangent);
             }
 
-            private void Frag()
+            public override void Frag()
             {
                 var shaderData = shader.Data as ShaderData;
 
@@ -194,9 +188,7 @@ namespace RendererShader
             public class _VertField : FuncField
             {
                 [In] [Position] public vec4 inPos;
-
                 [In] [Out] [Normal] public vec3 ioNormal;
-
                 [Out] [SV_Position] public vec4 outPos;
 
                 public _VertField(Pass pass) : base(pass)
@@ -244,23 +236,17 @@ namespace RendererShader
                 };
             }
 
-            public override void Attach()
-            {
-                shader.vert = Vert;
-                shader.frag = Frag;
-            }
-
-            private void Vert()
+            public override void Vert()
             {
                 //https://blog.csdn.net/linjf520/article/details/95064552#t10
                 vertexField.outPos = shader.MVP * vertexField.inPos;
                 var n = shader.MV_IT * vertexField.ioNormal;
                 n = shader.P * n;
                 vertexField.ioNormal = shader.M_IT * vertexField.ioNormal;
-                vertexField.outPos.xy += n.xy * 0.1f;// * vertexField.outPos.w;
+                vertexField.outPos.xy += n.xy * 0.1f * vertexField.outPos.w;
             }
 
-            private void Frag()
+            public override void Frag()
             {
                 fragField.outColor = color.yellow;
             }

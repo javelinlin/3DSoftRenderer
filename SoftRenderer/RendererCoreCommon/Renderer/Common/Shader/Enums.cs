@@ -87,7 +87,7 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         Line,                   // 线 - 未实现
         Point,                  // 点 - 未实现
     }
-    [Description("AA：Anti-Aliasing，抗锯齿")]
+    [Description("AA：Anti-Aliasing，抗锯齿")] // 抗锯齿算法后面再去优化
     public enum AA
     {
         Off,        // 默认是关闭的（本想默认开的，但这个功能太卡，就改为默认Off吧）
@@ -98,5 +98,26 @@ namespace RendererCoreCommon.Renderer.Common.Shader
     {
         MSAA,       // 目前实现的
         //ETC,  以后再实现其他的
+    }
+
+    // 模板缓存、测试相关的文章：
+    // https://blog.csdn.net/linjf520/article/details/95064552#t14
+    [Description("模板测试开关")]
+    public enum Stencil
+    {
+        Off,
+        On
+    }
+    [Description("使用参考值对模板缓存值操作的枚举")]
+    public enum StencilOp
+    {
+        Keep,
+        Zero,
+        Replace,
+        Incr,
+        Decr,
+        Invert,
+        Incrwrap,
+        Decrwrap
     }
 }

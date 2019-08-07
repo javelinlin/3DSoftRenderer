@@ -104,13 +104,7 @@ namespace RendererShader
                 FragField = new _FragField(this);
             }
 
-            public override void Attach()
-            {
-                shader.vert = Vert;
-                shader.frag = Frag;
-            }
-
-            private void Vert()
+            public override void Vert()
             {
                 vertexField.inPos.xyz += vertexField.ioNormal * shader.outlineOffset;
                 vertexField.outPos = shader.MVP * vertexField.inPos;
@@ -120,7 +114,7 @@ namespace RendererShader
                 vertexField.outBitangent = vertexField.ioNormal.Cross(vertexField.ioTangent);
             }
 
-            private void Frag()
+            public override void Frag()
             {
                 var shaderData = shader.Data as ShaderData;
 
