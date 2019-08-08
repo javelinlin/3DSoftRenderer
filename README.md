@@ -55,3 +55,4 @@ blog:https://blog.csdn.net/linjf520/article/details/96047240
 - Shader/SubShader/Pass - 新版
   - 旧版的Vertex Shader, Fragment Shader可编程方式没用上了
 - Stencil 模板缓存、测试，更像是Early-Stencil，因为在fragment shader前测试
+- ColorMask 写入颜色缓存是的通道掩码，默认是RGBA，即：所有通道全写
