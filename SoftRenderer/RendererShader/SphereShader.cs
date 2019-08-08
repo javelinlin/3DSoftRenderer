@@ -15,8 +15,8 @@ namespace RendererShader
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SphereShader : ShaderBase
     {
-        [Name] public static readonly string Name = "SphereShader";
-        [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
+        public static readonly string Name = "SphereShader";
+        public static readonly int NameHash = NameUtil.HashID(Name);
 
         /* ==========Uniform======== */
         // vert
@@ -105,6 +105,13 @@ namespace RendererShader
 
                 VertField = new _VertField(this);
                 FragField = new _FragField(this);
+
+                State = new DrawState
+                {
+                    Stencil = Stencil.On,
+                    StencilComp = ComparisonFunc.NotEqual,
+                    StencilRef = 1,
+                };
             }
 
             public override void Vert()
@@ -233,6 +240,9 @@ namespace RendererShader
                 {
                     Cull = FaceCull.Front,
                     DepthWrite = DepthWrite.Off,
+                    Stencil = Stencil.On,
+                    StencilComp = ComparisonFunc.NotEqual,
+                    StencilRef = 1,
                 };
             }
 

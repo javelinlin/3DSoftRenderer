@@ -15,8 +15,8 @@ namespace RendererShader
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class BallooncatShader : ShaderBase
     {
-        [Name] public static readonly string Name = "BallooncatShader";
-        [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
+        public static readonly string Name = "BallooncatShader";
+        public static readonly int NameHash = NameUtil.HashID(Name);
 
         /* ==========Uniform======== */
         // vert

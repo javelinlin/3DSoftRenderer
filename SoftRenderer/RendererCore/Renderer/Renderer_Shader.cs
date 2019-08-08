@@ -13,7 +13,6 @@ namespace RendererCore.Renderer
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class ShaderLoadMgr : IDisposable
     {
-
         private Dictionary<string, Type> shaderTypeDictName = new Dictionary<string, Type>();
         private Dictionary<int, Type> shaderTypeDictHash = new Dictionary<int, Type>();
 

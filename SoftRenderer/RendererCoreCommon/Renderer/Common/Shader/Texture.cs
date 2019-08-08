@@ -33,6 +33,14 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         public int Width { get; private set; }
         public int Height { get; private set; }
 
+        public Texture2D(string file = null)
+        {
+            if (!string.IsNullOrEmpty(file))
+            {
+                using(var bmp = new Bitmap(file))
+                    Set(bmp);
+            }
+        }
         public Texture2D(Bitmap bmp = null)
         {
             Set(bmp);

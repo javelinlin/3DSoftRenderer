@@ -258,25 +258,25 @@ namespace RendererCore.Renderer
                     buff[x, y] = (byte)(refV & writeMask);
                     break;
                 case StencilOp.Incr:
-                    buff[x, y] = (byte)Math.Max((buff[x, y] - 1), 0);
+                    buff[x, y] = (byte)Math.Max((buff[x, y] + 1), 0);
                     break;
                 case StencilOp.Decr:
                     buff[x, y] = (byte)Math.Min((buff[x, y] - 1), byte.MaxValue);
                     break;
                 case StencilOp.Invert:
-                    buff[x, y] = (byte)(~(buff[x, y] - 1));
+                    buff[x, y] = (byte)(~(buff[x, y]));
                     break;
                 case StencilOp.Incrwrap:
                     {
-                        var buffV = buff[x, y] - 1;
-                        if (buffV < 0) buff[x, y] = byte.MaxValue;
+                        var buffV = buff[x, y] + 1;
+                        if (buffV > byte.MaxValue) buff[x, y] = 0;
                         else  buff[x, y] = (byte)buffV;
                     }
                     break;
                 case StencilOp.Decrwrap:
                     {
-                        var buffV = buff[x, y] + 1;
-                        if (buffV > byte.MaxValue) buff[x, y] = 0;
+                        var buffV = buff[x, y] - 1;
+                        if (buffV < 0) buff[x, y] = byte.MaxValue;
                         else buff[x, y] = (byte)buffV;
                     }
                     break;
@@ -284,8 +284,23 @@ namespace RendererCore.Renderer
             }
         }
 
-        public void WriteColor(int localtion, int x, int y, Vector4 color)
+        public void WriteColor(int localtion, int x, int y, Vector4 color, ColorMask colorMask)
         {
+            if (colorMask == ColorMask.None)
+                return;
+
+            if (colorMask != ColorMask.RGBA)
+            {
+                if ((colorMask & ColorMask.R) == 0)
+                    color.r = 0;
+                if ((colorMask & ColorMask.G) == 0)
+                    color.g = 0;
+                if ((colorMask & ColorMask.B) == 0)
+                    color.b = 0;
+                if ((colorMask & ColorMask.A) == 0)
+                    color.a = 0;
+            }
+
             color.Clamp();
             Attachment.ColorBuffer[localtion].Set(x, y, color);
         }

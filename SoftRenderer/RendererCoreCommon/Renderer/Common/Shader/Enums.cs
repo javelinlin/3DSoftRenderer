@@ -120,4 +120,15 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         Incrwrap,
         Decrwrap
     }
+    [Flags]
+    [Description("目标颜色通道写入掩码")]
+    public enum ColorMask
+    {
+        None,
+        R = 1,
+        G = 2,
+        B = 4,
+        A = 8,
+        RGBA = R | G| B|A,
+    }
 }

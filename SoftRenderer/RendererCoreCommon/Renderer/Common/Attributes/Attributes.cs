@@ -29,10 +29,6 @@ namespace RendererCoreCommon.Renderer.Common.Attributes
     [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
     public sealed class OutAttribute : Attribute { }
     [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
-    public sealed class NameAttribute : Attribute { }
-    [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
-    public sealed class NameHashAttribute : Attribute { }
-    [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
     public sealed class PositionAttribute : Attribute { }
     [AttributeUsage(AttributeTargets.Field, Inherited = false, AllowMultiple = false)]
     public sealed class ColorAttribute : Attribute

@@ -216,6 +216,16 @@ namespace RendererCore.Games
         }
     }
 
+    [Description("绘制队列")]
+    public enum DrawQueue
+    {
+        Background = 1000,          // skybox
+        Geometry = 2000,            // opaque
+        AlphaCut = 3000,            // alpha test
+        Transparency = 4000,        // semi-transparent
+        Overlap = 5000,             // ui
+    }
+
     [TypeConverter(typeof(ExpandableObjectConverter))]
     [Description("游戏对象")]
     public class GameObject : IDisposable
@@ -239,6 +249,9 @@ namespace RendererCore.Games
 
         [Description("名字")]
         public string Name { get; set; }
+
+        [Description("渲染优先级，越小越先绘制-临时的，后面需要重构")]
+        public int RenderPrority { get; set; }
 
         [Description("父对象")]
         public GameObject Parent { get; private set; }
@@ -396,6 +409,15 @@ namespace RendererCore.Games
         public bool DisposedShdaer = false;
         public ShaderBase Shader;
 
+        //public bool UseShaderQueue = true;
+
+        //private DrawQueue shaderQueue;
+
+        //public DrawQueue DrawQueue
+        //{
+
+        //}
+
         public Material(ShaderBase shader)
         {
             Shader = shader;
@@ -414,4 +436,54 @@ namespace RendererCore.Games
             }
         }
     }
+
+    //[TypeConverter(typeof(ExpandableObjectConverter))]
+    //[Description("世界对象")]
+    //public class World : IDisposable
+    //{
+    //    //public class Layer
+    //    //{
+    //    //    public SortedList<int, GameObject> drawObjs = new SortedList<int, GameObject>();
+    //    //}
+
+    //    //private SortedList<int, Layer> drawList;
+
+    //    public List<GameObject> GameObjs { get; private set; }
+
+    //    public World()
+    //    {
+    //        GameObjs = new List<GameObject>();
+    //    }
+
+    //    public void Update(float deltaMs)
+    //    {
+    //        GameObjs.Sort(gameObj_Comparison);
+    //    }
+
+    //    private int gameObj_Comparison(GameObject x, GameObject y)
+    //    {
+    //        return x.RenderPrority - y.RenderPrority;
+    //    }
+
+    //    public void Draw()
+    //    {
+
+    //    }
+
+    //    public void Dispose()
+    //    {
+    //        GC.SuppressFinalize(this);
+
+    //        if (GameObjs != null)
+    //        {
+    //            var len = GameObjs.Count;
+    //            for (int i = 0; i < len; i++)
+    //            {
+    //                GameObjs[i].Dispose();
+    //            }
+    //            GameObjs.Clear();
+    //            GameObjs = null;
+    //        }
+    //    }
+    //}
 }

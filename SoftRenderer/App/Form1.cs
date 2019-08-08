@@ -99,6 +99,12 @@ namespace SoftRenderer
             normalTex = new Texture(normalBmp = new Bitmap(deviceBmp.Width, deviceBmp.Height, deviceBmp.PixelFormat));
             renderer.FrameBuffer.AttachColor(normalTex, 1);
 
+#if PROGRAMMABLE_PIPELINE
+            renderer.ShaderData = shaderData = new ShaderData(1);
+            renderer.ShaderMgr.Load("Shaders/RendererShader.dll");
+            renderer.FrameBuffer.CreateStencil();
+#endif
+
             autoRotate = AutoRotateCheckBox.Checked;
 
             PropertyGrid.SelectedObject = renderer;
@@ -254,7 +260,11 @@ namespace SoftRenderer
             mesh.colors = colors;
             mesh.CaculateNormalAndTangent();
             go.Mesh = mesh;
-            // 第一个游戏对象
+
+            var shader = renderer.ShaderMgr.CreateShader("Test/TestShader");
+            shader.ShaderProperties.SetUniform("mainTex", new Texture2D("Images/GitHubIcon.PNG"));
+            go.Material = new Material(shader);
+            // cube
             gameObjs.Add(go);
 
             colors = new Vector4[vertices.Length];
@@ -278,7 +288,58 @@ namespace SoftRenderer
             mesh.colors = colors;
             mesh.CaculateNormalAndTangent();
             go.Mesh = mesh;
-            // 第二个游戏对象
+            go.Material = new Material(shader);
+            // cube1
+            gameObjs.Add(go);
+
+            vertices = new Vector3[]
+{
+                #region front
+                new Vector3(size, size,size),          // 12
+                new Vector3(-size,-size,size),           // 13
+                new Vector3(size,-size,size),          // 14
+                new Vector3(-size, size,size),           // 15
+                #endregion
+};
+            indices = new int[vertices.Length / 4 * 6];
+            idx = 0;
+            //for (int i = 0; i < 36; i+=6)
+            for (int i = 0; i < indices.Length; i += 6)
+            {
+                indices[i + 0] = 0 + 4 * idx;
+                indices[i + 1] = 1 + 4 * idx;
+                indices[i + 2] = 2 + 4 * idx;
+                indices[i + 3] = 0 + 4 * idx;
+                indices[i + 4] = 3 + 4 * idx;
+                indices[i + 5] = 1 + 4 * idx;
+                idx++;
+            }
+            uvs = new Vector2[vertices.Length];
+            //uvScale = 3;
+            //offsetU = -1.5f;
+            //offsetV = -1.5f;
+            uvScale = 1;
+            offsetU = 0;
+            offsetV = 0;
+            for (int i = 0; i < vertices.Length; i += 4)
+            {
+                uvs[i + 0] = new Vector2(0, 0) * uvScale + new Vector2(offsetU, offsetV);    // 0
+                uvs[i + 1] = new Vector2(1, 1) * uvScale + new Vector2(offsetU, offsetV);    // 1
+                uvs[i + 2] = new Vector2(0, 1) * uvScale + new Vector2(offsetU, offsetV);    // 2
+                uvs[i + 3] = new Vector2(1, 0) * uvScale + new Vector2(offsetU, offsetV);    // 3
+            }
+            mesh = new Mesh();
+            mesh.vertices = vertices;
+            mesh.triangles = indices;
+            mesh.uv = uvs;
+            go = new GameObject("Mask");
+            go.Mesh = mesh;
+            go.LocalScale = 2;
+            shader = renderer.ShaderMgr.CreateShader("MaskStencilShader");
+            shader.ShaderProperties.SetUniform("mainTex", new Texture2D("Images/heightMap1.jpg"));
+            go.Material = new Material(shader);
+            go.RenderPrority = -1;
+            // mask
             gameObjs.Add(go);
 
             go = new GameObject("Sphere");
@@ -286,7 +347,10 @@ namespace SoftRenderer
             go.Mesh = sphere;
             go.LocalPosition = new Vector3(3, 0, -1);
             go.LocalScale = 3;
-            // 第三个是球体
+            shader = renderer.ShaderMgr.CreateShader("SphereShader");
+            shader.ShaderProperties.SetUniform("mainTex", new Texture2D("Images/my_tex.png"));
+            go.Material = new Material(shader);
+            // 球体
             gameObjs.Add(go);
 
             go = new GameObject("Ballooncat");
@@ -294,7 +358,10 @@ namespace SoftRenderer
             go.Mesh = ballooncat;
             go.LocalPosition = new Vector3(6, 0, -1);
             go.LocalScale = 3;
-            // 第四个是气球猫
+            shader = renderer.ShaderMgr.CreateShader("BallooncatShader");
+            shader.ShaderProperties.SetUniform("mainTex", new Texture2D("Images/balloonstupidcat_sg.png"));
+            go.Material = new Material(shader);
+            // 气球猫
             //gameObjs.Add(go);
 
             camera = new Camera();
@@ -311,47 +378,6 @@ namespace SoftRenderer
             {
                 camera.TranslateTo(new Vector3(0, 0, 8));
             }
-
-#if PROGRAMMABLE_PIPELINE
-            renderer.ShaderData = shaderData = new ShaderData(1);
-
-            renderer.ShaderMgr.Load("Shaders/RendererShader.dll");
-
-            var shaderName1 = "Test/TestShader";
-            //var shaderName2 = "SphereShader";
-            var shaderName2 = "SphereStencilOutlineShader";
-            var shaderName3 = "BallooncatShader";
-
-            var shader1 = renderer.ShaderMgr.CreateShader(shaderName1);
-            var shader2 = renderer.ShaderMgr.CreateShader(shaderName2);
-            var shader3 = renderer.ShaderMgr.CreateShader(shaderName3);
-
-            List<ShaderBase> shaders = new List<ShaderBase>(
-                new ShaderBase[] {
-                    shader1,
-                    shader1,
-                    shader2,
-                    shader3,
-                });
-
-            //var tex_bmp = new Bitmap("Images/texture.png");
-            var tex_bmp = new Bitmap("Images/GitHubIcon.PNG");
-            var sp_tex_bmp = new Bitmap("Images/my_tex.png");
-            var ballooncat_tex_bmp = new Bitmap("Images/balloonstupidcat_sg.png");
-            //var tex_bmp = new Bitmap("Images/heightMap1.jpg");
-            //var tex_bmp = new Bitmap("Images/tex.jpg");
-            //var tex_bmp = new Bitmap("Images/icon.PNG");
-            shader1.ShaderProperties.SetUniform("mainTex", new Texture2D(tex_bmp));
-            shader2.ShaderProperties.SetUniform("mainTex", new Texture2D(sp_tex_bmp));
-            shader3.ShaderProperties.SetUniform("mainTex", new Texture2D(ballooncat_tex_bmp));
-
-            for (int i = 0; i < gameObjs.Count; i++)
-            {
-                gameObjs[i].Material = new Material(shaders[i]);
-            }
-
-            renderer.FrameBuffer.CreateStencil();
-#endif
         }
 
         private void GlobalMsg_OnAltAndLDownEvent()
@@ -471,6 +497,8 @@ namespace SoftRenderer
 
             shaderData.NowDataWriteToBuff();
 
+            gameObjs.Sort(gameObj_Comparison);
+
             for (int i = 0; i < gameObjs.Count; i++)
             {
                 gameObjs[i].Material.Shader.ShaderProperties.SetUniform(outlineOffsetHash, normalOutlineOffset);
@@ -480,6 +508,11 @@ namespace SoftRenderer
             renderer.State.CamY = camera.Translate.y;
             renderer.State.CamZ = camera.Translate.z;
 #endif
+        }
+
+        private int gameObj_Comparison(GameObject x, GameObject y)
+        {
+            return x.RenderPrority - y.RenderPrority;
         }
 
         public Vector3 r_before_t;
@@ -521,6 +554,8 @@ namespace SoftRenderer
 #endif
         }
 
+        private float sin_v = 0;
+
         private void UpdateGameObjs(float deltaMs)
         {
             GameObject target = null;
@@ -550,7 +585,10 @@ namespace SoftRenderer
                 var go = gameObjs[i];
                 if (autoRotate)
                 {
-                    go.LocalRotation += new Vector3(0.1f + i * 0.01f, 0.055f + i * 0.02f, 0.016f + i * 0.03f) * deltaMs;
+                    if (go.Name == "Mask")
+                        go.LocalPosition = new Vector3((float)Math.Sin(sin_v += deltaMs * 0.001f), 0, 0);
+                    else
+                        go.LocalRotation += new Vector3(0.1f + i * 0.01f, 0.055f + i * 0.02f, 0.016f + i * 0.03f) * deltaMs;
                 }
 #if !PROGRAMMABLE_PIPELINE
                 if (go.Mesh != null)

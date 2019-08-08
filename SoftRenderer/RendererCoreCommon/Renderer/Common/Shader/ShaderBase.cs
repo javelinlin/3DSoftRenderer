@@ -493,6 +493,8 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         [Category("Stencil")] public StencilOp StencilZFail { get; set; }                                   // required
         [Category("Stencil")] public byte StencilReadMask { get; set; } = 0xff;                             // optional
         [Category("Stencil")] public byte StencilWriteMask { get; set; } = 0xff;                            // optional
+
+        [Category("Color")] public ColorMask ColorMask { get; set; } = ColorMask.RGBA;
     }
 
     [Description("Shader.SubShader.Pass")]

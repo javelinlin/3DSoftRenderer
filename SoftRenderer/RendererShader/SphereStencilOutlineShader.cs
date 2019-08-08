@@ -15,8 +15,10 @@ namespace RendererShader
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class SphereStencilOutlineShader : ShaderBase
     {
-        [Name] public static readonly string Name = "SphereStencilOutlineShader";
-        [NameHash] public static readonly int NameHash = NameUtil.HashID(Name);
+        //public const string Queue = "Geometry-1";
+
+        public static readonly string Name = "SphereStencilOutlineShader";
+        public static readonly int NameHash = NameUtil.HashID(Name);
 
         /* ==========Uniform======== */
         // vert
@@ -110,8 +112,8 @@ namespace RendererShader
                 {
                     Stencil = Stencil.On,
                     StencilRef = 1,
-                    StencilComp = ComparisonFunc.Always,
-                    StencilPass = StencilOp.Replace,
+                    StencilComp = ComparisonFunc.Equal,
+                    StencilPass = StencilOp.Incr,
                 };
             }
 
@@ -240,9 +242,8 @@ namespace RendererShader
                 State = new DrawState
                 {
                     Stencil = Stencil.On,
-                    StencilRef = 1,
+                    StencilRef = 2,
                     StencilComp = ComparisonFunc.NotEqual,
-                    StencilPass = StencilOp.Keep,
                 };
             }
 

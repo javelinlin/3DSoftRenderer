@@ -480,7 +480,7 @@ namespace RendererCore.Renderer
                     {
                         if (show_edge)
                         {
-                            FrameBuffer.WriteColor(0, x, y, edgeColor);
+                            FrameBuffer.WriteColor(0, x, y, edgeColor, ColorMask.RGBA);
                         }
                         AA_edgePosList[AA_edge_count] = x;
                         AA_edgePosList[AA_edge_count + 1] = y;
@@ -542,7 +542,7 @@ namespace RendererCore.Renderer
                     }
                 }
                 srcPosColor /= half_sampleCount * resampleCount + 1;
-                FrameBuffer.WriteColor(0, x, y, srcPosColor);
+                FrameBuffer.WriteColor(0, x, y, srcPosColor, ColorMask.RGBA);
             }
         }
 
@@ -599,7 +599,7 @@ namespace RendererCore.Renderer
                         }
                     }
                     srcPosColor /= half_sampleCount * resampleCount + 1;
-                    FrameBuffer.WriteColor(0, x, y, srcPosColor);
+                    FrameBuffer.WriteColor(0, x, y, srcPosColor, ColorMask.RGBA);
                 }
             }
         }
@@ -870,6 +870,9 @@ namespace RendererCore.Renderer
 
             /* ======stencil end====== */
 
+            // color mask
+            var colorMask           = drawState.ColorMask;
+
             // shaded
             var len = shadedResult.Count;
             var backbuffer = framebuff.Attachment.ColorBuffer[0];
@@ -948,11 +951,11 @@ namespace RendererCore.Renderer
                             var dstColor = backbuffer.Get(x, y);
                             srcColor = BlendHandle(srcColor, dstColor, srcColorFactor, dstColorFactor, srcAlphaFactor, dstAlphaFactor, colorOp, alphaOp);
                         }
-                        framebuff.WriteColor(0, x, y, srcColor);
+                        framebuff.WriteColor(0, x, y, srcColor, colorMask);
                     }
                     else
                     {
-                        framebuff.WriteColor(tInfo.localtion, x, y, tInfo.data);
+                        framebuff.WriteColor(tInfo.localtion, x, y, tInfo.data, colorMask);
                     }
                 }
             }

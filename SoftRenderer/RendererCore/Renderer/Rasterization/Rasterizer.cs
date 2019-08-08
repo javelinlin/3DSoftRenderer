@@ -1094,7 +1094,7 @@ namespace RendererCore.Renderer.Rasterization
                         finalColor += specular;
                     }
 #endif
-                    framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, finalColor);
+                    framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, finalColor, ColorMask.RGBA);
                 }
             }
 
@@ -1117,7 +1117,7 @@ namespace RendererCore.Renderer.Rasterization
                         {
                             depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
                         }
-                        framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, wireFrameColor);
+                        framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, wireFrameColor, ColorMask.RGBA);
                     }
                 }
                 count = fragsHelper2.Count;
@@ -1134,7 +1134,7 @@ namespace RendererCore.Renderer.Rasterization
                         {
                             depthbuff.Set((int)f.p.x, (int)f.p.y, testDepth);
                         }
-                        framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, wireFrameColor);
+                        framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, wireFrameColor, ColorMask.RGBA);
                     }
                 }
             }
@@ -1152,7 +1152,7 @@ namespace RendererCore.Renderer.Rasterization
                 {
                     var f = fragsHelper1[i];
                     if (f.p.x < minX || f.p.x > maxX || f.p.y < minY || f.p.y > maxY) continue;
-                    framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, blueColor);
+                    framebuff.WriteColor(0, (int)f.p.x, (int)f.p.y, blueColor, ColorMask.RGBA);
                 }
             }
 
