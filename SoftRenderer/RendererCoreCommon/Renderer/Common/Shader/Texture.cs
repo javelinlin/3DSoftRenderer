@@ -28,7 +28,7 @@ namespace RendererCoreCommon.Renderer.Common.Shader
     [TypeConverter(typeof(ExpandableObjectConverter))]
     public class Texture2D : IDisposable
     {
-        private Vector4[,] buffer;
+        public Buffer_Color ColorBuffer { get; private set; }
 
         public int Width { get; private set; }
         public int Height { get; private set; }
@@ -37,7 +37,7 @@ namespace RendererCoreCommon.Renderer.Common.Shader
         {
             if (!string.IsNullOrEmpty(file))
             {
-                using(var bmp = new Bitmap(file))
+                using (var bmp = new Bitmap(file))
                     Set(bmp);
             }
         }
@@ -50,7 +50,7 @@ namespace RendererCoreCommon.Renderer.Common.Shader
             Width = bmp.Width;
             Height = bmp.Height;
 
-            buffer = new Vector4[Width, Height];
+            ColorBuffer = new Buffer_Color(Width, Height);
 
             var bmd = bmp.LockBits(new Rectangle(0, 0, Width, Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
             var ptr = bmd.Scan0;
@@ -63,20 +63,20 @@ namespace RendererCoreCommon.Renderer.Common.Shader
                     var g = Marshal.ReadByte(ptr, offset + 1) / 255f;
                     var r = Marshal.ReadByte(ptr, offset + 2) / 255f;
                     var a = Marshal.ReadByte(ptr, offset + 3) / 255f;
-                    buffer[x, y] = Vector4.Get(r, g, b, a);
+                    ColorBuffer[x, y] = Vector4.Get(r, g, b, a);
                 }
             }
             bmp.UnlockBits(bmd);
         }
         public Vector4 Get(int x, int y)
         { // 获取纹素 texel
-            return buffer[x, y];
+            return ColorBuffer[x, y];
         }
         public void Dispose()
         {
             GC.SuppressFinalize(this);
 
-            buffer = null;
+            ColorBuffer = null;
         }
     }
 

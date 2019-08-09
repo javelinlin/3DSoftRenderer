@@ -74,7 +74,7 @@ namespace SoftRenderer
 
         private Bitmap deviceBmp;
         private Bitmap normalBmp;
-        private Texture normalTex;
+        private Texture2D normalTex;
 
         public MainForm()
         {
@@ -96,7 +96,7 @@ namespace SoftRenderer
             renderer.State.WireframeColor = Color.Black;
             // test
             //renderer.State.Cull = FaceCull.Off;
-            normalTex = new Texture(normalBmp = new Bitmap(deviceBmp.Width, deviceBmp.Height, deviceBmp.PixelFormat));
+            normalTex = new Texture2D(normalBmp = new Bitmap(deviceBmp.Width, deviceBmp.Height, deviceBmp.PixelFormat));
             renderer.FrameBuffer.AttachColor(normalTex, 1);
 
 #if PROGRAMMABLE_PIPELINE
@@ -262,7 +262,7 @@ namespace SoftRenderer
             go.Mesh = mesh;
 
             var shader = renderer.ShaderMgr.CreateShader("Test/TestShader");
-            shader.ShaderProperties.SetUniform("mainTex", new Texture2D("Images/GitHubIcon.PNG"));
+            shader.ShaderProperties.SetUniform("mainTex", new RendererCoreCommon.Renderer.Common.Shader.Texture2D("Images/GitHubIcon.PNG"));
             go.Material = new Material(shader);
             // cube
             gameObjs.Add(go);
@@ -336,7 +336,7 @@ namespace SoftRenderer
             go.Mesh = mesh;
             go.LocalScale = 2;
             shader = renderer.ShaderMgr.CreateShader("MaskStencilShader");
-            shader.ShaderProperties.SetUniform("mainTex", new Texture2D("Images/heightMap1.jpg"));
+            shader.ShaderProperties.SetUniform("mainTex", new RendererCoreCommon.Renderer.Common.Shader.Texture2D("Images/heightMap1.jpg"));
             go.Material = new Material(shader);
             go.RenderPrority = -1;
             // mask
@@ -348,7 +348,7 @@ namespace SoftRenderer
             go.LocalPosition = new Vector3(3, 0, -1);
             go.LocalScale = 3;
             shader = renderer.ShaderMgr.CreateShader("SphereShader");
-            shader.ShaderProperties.SetUniform("mainTex", new Texture2D("Images/my_tex.png"));
+            shader.ShaderProperties.SetUniform("mainTex", new RendererCoreCommon.Renderer.Common.Shader.Texture2D("Images/my_tex.png"));
             go.Material = new Material(shader);
             // 球体
             gameObjs.Add(go);
@@ -359,7 +359,7 @@ namespace SoftRenderer
             go.LocalPosition = new Vector3(6, 0, -1);
             go.LocalScale = 3;
             shader = renderer.ShaderMgr.CreateShader("BallooncatShader");
-            shader.ShaderProperties.SetUniform("mainTex", new Texture2D("Images/balloonstupidcat_sg.png"));
+            shader.ShaderProperties.SetUniform("mainTex", new RendererCoreCommon.Renderer.Common.Shader.Texture2D("Images/balloonstupidcat_sg.png"));
             go.Material = new Material(shader);
             // 气球猫
             //gameObjs.Add(go);
